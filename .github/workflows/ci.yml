@@ -69,16 +69,15 @@ jobs:
           case "${{ matrix.container }}" in
             fedora*)
               dnf install -y python3 python3-pip python3-devel git
-              echo "pip_extra=" >> $GITHUB_OUTPUT
               ;;
             debian*)
               apt-get update -qq
-              apt-get install -y -qq python3 python3-pip python3-venv python3-dev git
-              echo "pip_extra=--break-system-packages" >> $GITHUB_OUTPUT
+              DEBIAN_FRONTEND=noninteractive apt-get install -y -qq python3 python3-pip python3-venv python3-dev git
+              # Work around PEP 668 (externally-managed-environment)
+              rm -f /usr/lib/python3.11/EXTERNALLY-MANAGED
               ;;
             archlinux*)
               pacman -Syu --noconfirm python python-pip git
-              echo "pip_extra=--break-system-packages" >> $GITHUB_OUTPUT
               ;;
           esac
       - name: Debug info
@@ -86,10 +85,8 @@ jobs:
           python3 --version
           python3 -m pip --version
       - name: Install project
-        env:
-          PIP_EXTRA: ${{ steps.distro.outputs.pip_extra }}
         run: |
-          python3 -m pip install $PIP_EXTRA -e ".[dev]"
+          python3 -m pip install -e ".[dev]"
       - name: Run tests
         run: |
           python3 -m pytest -v
