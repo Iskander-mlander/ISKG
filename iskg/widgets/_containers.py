@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-import json
-from typing import Any, Optional
+from typing import Any
 
 from ..base import Widget
 
@@ -33,7 +32,7 @@ class Frame(Widget):
 
     def __init__(
         self,
-        parent: Optional[Widget] = None,
+        parent: Widget | None = None,
         text: str = "",
         **kwargs: Any,
     ) -> None:
@@ -44,9 +43,7 @@ class Frame(Widget):
         self._grid_column_weights: dict[int, tuple[float, int]] = {}
         self._grid_row_weights: dict[int, tuple[float, int]] = {}
 
-    def grid_columnconfigure(
-        self, column: int, weight: float = 0, minsize: int = 0
-    ) -> None:
+    def grid_columnconfigure(self, column: int, weight: float = 0, minsize: int = 0) -> None:
         """Configure a grid column's weight and minimum size.
 
         Args:
@@ -63,9 +60,7 @@ class Frame(Widget):
             self._grid_column_weights[column] = (weight, minsize)
         self._sync()
 
-    def grid_rowconfigure(
-        self, row: int, weight: float = 0, minsize: int = 0
-    ) -> None:
+    def grid_rowconfigure(self, row: int, weight: float = 0, minsize: int = 0) -> None:
         """Configure a grid row's weight and minimum size.
 
         Args:
@@ -95,9 +90,7 @@ class Frame(Widget):
         return m
 
     def _detect_layout(self) -> str:
-        has_pack = any(c._layout_mode == "pack" for c in self._children if not c._destroyed)
-        has_grid = any(c._layout_mode == "grid" for c in self._children if not c._destroyed)
-        if has_grid:
+        if any(c._layout_mode == "grid" for c in self._children if not c._destroyed):
             return "grid"
         return "pack"
 
@@ -146,7 +139,9 @@ class Frame(Widget):
         js = []
         propagate = self._config_dict.get("propagate", True)
         if not propagate:
-            js.append(f'var e=document.getElementById("{self._id}");if(e)e.style.overflow="hidden";')
+            js.append(
+                f'var e=document.getElementById("{self._id}");if(e)e.style.overflow="hidden";'
+            )
         return ";".join(js) if js else ""
 
 
@@ -164,9 +159,9 @@ class ScrolledFrame(Frame):
 
     def __init__(
         self,
-        parent: Optional[Widget] = None,
-        width: Optional[int] = None,
-        height: Optional[int] = None,
+        parent: Widget | None = None,
+        width: int | None = None,
+        height: int | None = None,
         scroll: str = "vertical",
         autoscroll: bool = False,
         **kwargs: Any,
@@ -195,7 +190,9 @@ class ScrolledFrame(Frame):
         if text:
             header = f'<div class="iskg-frame-header"><span class="hdr-dot"></span> {text}</div>'
         children_html = "".join(
-            child._render() for child in self._children if not child._destroyed and not child._config_dict.get("hidden")
+            child._render()
+            for child in self._children
+            if not child._destroyed and not child._config_dict.get("hidden")
         )
         return f'<div id="{self._id}" class="iskg-scrollframe" style="{style}">{header}{children_html}</div>'
 
@@ -218,7 +215,7 @@ class PanedWindow(Widget):
 
     def __init__(
         self,
-        parent: Optional[Widget] = None,
+        parent: Widget | None = None,
         orient: str = "horizontal",
         sash_pos: float = 0.5,
         minsize: int = 30,
@@ -249,8 +246,8 @@ class PanedWindow(Widget):
             sash_style = "height:5px;"
 
         children_html = ""
-        pane1_style = f"flex:{pos};min-{'width' if orient=='horizontal' else 'height'}:{minsize}px;overflow:hidden;"
-        pane2_style = f"flex:{1-pos};min-{'width' if orient=='horizontal' else 'height'}:{minsize}px;overflow:hidden;"
+        pane1_style = f"flex:{pos};min-{'width' if orient == 'horizontal' else 'height'}:{minsize}px;overflow:hidden;"
+        pane2_style = f"flex:{1 - pos};min-{'width' if orient == 'horizontal' else 'height'}:{minsize}px;overflow:hidden;"
 
         panes: list[Widget] = []
         for child in self._children:
@@ -295,7 +292,7 @@ class Notebook(Widget):
 
     def __init__(
         self,
-        parent: Optional[Widget] = None,
+        parent: Widget | None = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(parent, **kwargs)
@@ -343,7 +340,7 @@ class Separator(Widget):
 
     def __init__(
         self,
-        parent: Optional[Widget] = None,
+        parent: Widget | None = None,
         orient: str = "horizontal",
         **kwargs: Any,
     ) -> None:
@@ -366,7 +363,7 @@ class Spacer(Widget):
 
     def __init__(
         self,
-        parent: Optional[Widget] = None,
+        parent: Widget | None = None,
         width: int = 0,
         height: int = 0,
         expand: bool = False,
@@ -393,7 +390,7 @@ class ScrollBar(Widget):
 
     def __init__(
         self,
-        parent: Optional[Widget] = None,
+        parent: Widget | None = None,
         orient: str = "vertical",
         value: float = 0,
         **kwargs: Any,

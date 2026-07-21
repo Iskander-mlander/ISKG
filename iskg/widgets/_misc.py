@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 from ..base import Widget
 
@@ -10,7 +10,7 @@ class Tooltip(Widget):
 
     def __init__(
         self,
-        parent: Optional[Widget] = None,
+        parent: Widget | None = None,
         text: str = "",
         delay: int = 500,
         **kwargs: Any,

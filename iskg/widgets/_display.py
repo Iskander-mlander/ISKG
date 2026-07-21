@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-import json
-from typing import Any, Optional
+from typing import Any
 
 from ..base import Widget
 
@@ -11,9 +10,9 @@ class Label(Widget):
 
     def __init__(
         self,
-        parent: Optional[Widget] = None,
+        parent: Widget | None = None,
         text: str = "",
-        wraplength: Optional[int] = None,
+        wraplength: int | None = None,
         anchor: str = "",
         justify: str = "",
         **kwargs: Any,
@@ -37,11 +36,11 @@ class Label(Widget):
         self._sync()
 
     @property
-    def wraplength(self) -> Optional[int]:
+    def wraplength(self) -> int | None:
         return self._config_dict.get("wraplength")
 
     @wraplength.setter
-    def wraplength(self, value: Optional[int]) -> None:
+    def wraplength(self, value: int | None) -> None:
         if value is not None:
             self._config_dict["wraplength"] = value
         else:
@@ -102,7 +101,7 @@ class ProgressBar(Widget):
 
     def __init__(
         self,
-        parent: Optional[Widget] = None,
+        parent: Widget | None = None,
         value: float = 0,
         max_: int = 100,
         **kwargs: Any,
@@ -150,7 +149,7 @@ class LEDDisplay(Widget):
 
     def __init__(
         self,
-        parent: Optional[Widget] = None,
+        parent: Widget | None = None,
         value: Any = 0,
         digits: int = 4,
         color: str = "green",
@@ -205,7 +204,7 @@ class IndicatorLED(Widget):
 
     def __init__(
         self,
-        parent: Optional[Widget] = None,
+        parent: Widget | None = None,
         color: str = "green",
         size: int = 8,
         active: bool = True,
@@ -262,7 +261,7 @@ class RadialGauge(Widget):
 
     def __init__(
         self,
-        parent: Optional[Widget] = None,
+        parent: Widget | None = None,
         from_: int = 0,
         to: int = 100,
         value: float = 50,
@@ -360,8 +359,8 @@ class StatusBar(Widget):
 
     def __init__(
         self,
-        parent: Optional[Widget] = None,
-        sections: Optional[list] = None,
+        parent: Widget | None = None,
+        sections: list | None = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(parent, **kwargs)
@@ -395,7 +394,7 @@ class IconLabel(Widget):
 
     def __init__(
         self,
-        parent: Optional[Widget] = None,
+        parent: Widget | None = None,
         text: str = "",
         icon: str = "",
         icon_size: int = 14,
@@ -428,7 +427,7 @@ class ImageBox(Widget):
 
     def __init__(
         self,
-        parent: Optional[Widget] = None,
+        parent: Widget | None = None,
         src: str = "",
         width: int = 100,
         height: int = 100,

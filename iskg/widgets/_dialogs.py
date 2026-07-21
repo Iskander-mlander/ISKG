@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any
 
 from ..base import Widget
 
@@ -15,11 +16,11 @@ class MessageDialog(Widget):
 
     def __init__(
         self,
-        parent: Optional[Widget] = None,
+        parent: Widget | None = None,
         title: str = "",
         text: str = "",
-        buttons: Optional[list[str]] = None,
-        callback: Optional[Callable[[str], None]] = None,
+        buttons: list[str] | None = None,
+        callback: Callable[[str], None] | None = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(parent, **kwargs)
@@ -74,8 +75,8 @@ class MessageDialog(Widget):
 def showinfo(
     title: str = "",
     text: str = "",
-    parent: Optional[Widget] = None,
-    callback: Optional[Callable[[str], None]] = None,
+    parent: Widget | None = None,
+    callback: Callable[[str], None] | None = None,
 ) -> MessageDialog:
     """Show an info message box (HTML overlay)."""
     md = MessageDialog(parent=parent, title=title, text=text, buttons=["OK"], callback=callback)
@@ -85,8 +86,8 @@ def showinfo(
 def showwarning(
     title: str = "",
     text: str = "",
-    parent: Optional[Widget] = None,
-    callback: Optional[Callable[[str], None]] = None,
+    parent: Widget | None = None,
+    callback: Callable[[str], None] | None = None,
 ) -> MessageDialog:
     """Show a warning message box (HTML overlay)."""
     md = MessageDialog(parent=parent, title=title, text=text, buttons=["OK"], callback=callback)
@@ -96,8 +97,8 @@ def showwarning(
 def showerror(
     title: str = "",
     text: str = "",
-    parent: Optional[Widget] = None,
-    callback: Optional[Callable[[str], None]] = None,
+    parent: Widget | None = None,
+    callback: Callable[[str], None] | None = None,
 ) -> MessageDialog:
     """Show an error message box (HTML overlay)."""
     md = MessageDialog(parent=parent, title=title, text=text, buttons=["OK"], callback=callback)
@@ -107,8 +108,8 @@ def showerror(
 def showquestion(
     title: str = "",
     text: str = "",
-    parent: Optional[Widget] = None,
-    callback: Optional[Callable[[str], None]] = None,
+    parent: Widget | None = None,
+    callback: Callable[[str], None] | None = None,
 ) -> MessageDialog:
     """Show a question dialog with Yes/No buttons (HTML overlay)."""
     md = MessageDialog(parent=parent, title=title, text=text, buttons=["Yes", "No"], callback=callback)
@@ -123,7 +124,7 @@ class FileDialog:
         app: Any,
         title: str = "Open",
         directory: str = "",
-        file_types: Optional[list[str]] = None,
+        file_types: list[str] | None = None,
         multiple: bool = False,
     ) -> Any:
         return app.file_dialog("open", directory, file_types, multiple)
@@ -133,7 +134,7 @@ class FileDialog:
         app: Any,
         title: str = "Save As",
         directory: str = "",
-        file_types: Optional[list[str]] = None,
+        file_types: list[str] | None = None,
     ) -> Any:
         return app.file_dialog("save", directory, file_types, False)
 

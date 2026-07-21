@@ -1,40 +1,40 @@
 """All widget classes re-exported for convenient access via ``iskg.widgets``."""
 
+from ._canvas import Canvas, Knob
+from ._containers import Frame, Notebook, PanedWindow, ScrollBar, ScrolledFrame, Separator, Spacer
 from ._controls import (
     Button,
-    Entry,
     CheckBox,
-    RadioButton,
     ComboBox,
+    Entry,
+    RadioButton,
+    Scale,
     Slider,
     SpinBox,
-    Scale,
     ToggleSwitch,
 )
+from ._data import DataGrid, DropTarget, ListBox, TreeView
+from ._dialogs import (
+    FileDialog,
+    MessageDialog,
+    showerror,
+    showinfo,
+    showquestion,
+    showwarning,
+)
 from ._display import (
-    Label,
-    ProgressBar,
-    LEDDisplay,
-    IndicatorLED,
-    RadialGauge,
-    StatusBar,
     IconLabel,
     ImageBox,
+    IndicatorLED,
+    Label,
+    LEDDisplay,
+    ProgressBar,
+    RadialGauge,
+    StatusBar,
 )
-from ._containers import Frame, ScrolledFrame, PanedWindow, Notebook, Separator, Spacer, ScrollBar
-from ._text import Text, RichText
-from ._data import ListBox, DataGrid, TreeView, DropTarget
-from ._canvas import Canvas, Knob
-from ._menus import MenuItem, Menu, MenuBar
-from ._dialogs import (
-    MessageDialog,
-    FileDialog,
-    showinfo,
-    showwarning,
-    showerror,
-    showquestion,
-)
+from ._menus import Menu, MenuBar, MenuItem
 from ._misc import Tooltip
+from ._text import RichText, Text
 
 __all__ = [
     "Label",

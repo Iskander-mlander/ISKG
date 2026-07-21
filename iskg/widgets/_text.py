@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 from ..base import Widget
 
@@ -10,12 +10,14 @@ class Text(Widget):
 
     def __init__(
         self,
-        parent: Optional[Widget] = None,
+        parent: Widget | None = None,
         text: str = "",
         **kwargs: Any,
     ) -> None:
         super().__init__(parent, **kwargs)
-        self._config_dict["text"] = self._textvariable.get() if self._textvariable is not None else str(text)
+        self._config_dict["text"] = (
+            self._textvariable.get() if self._textvariable is not None else str(text)
+        )
 
     @property
     def text(self) -> str:
@@ -50,7 +52,6 @@ class Text(Widget):
         style = self._render_style()
         width = self._config_dict.get("width", 200)
         height = self._config_dict.get("height", 100)
-        disabled = "disabled" if self._config_dict.get("disabled") else ""
         attrs = self._render_attrs()
         return f'<textarea id="{self._id}" class="iskg-text" style="{style}width:{width}px;height:{height}px;" {attrs}>{escaped}</textarea>'
 
@@ -73,7 +74,7 @@ class RichText(Widget):
 
     def __init__(
         self,
-        parent: Optional[Widget] = None,
+        parent: Widget | None = None,
         text: str = "",
         height: int = 150,
         show_toolbar: bool = True,

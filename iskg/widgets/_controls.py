@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import contextlib
 import json
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any
 
 from ..base import Widget
 
@@ -11,9 +13,9 @@ class Button(Widget):
 
     def __init__(
         self,
-        parent: Optional[Widget] = None,
+        parent: Widget | None = None,
         text: str = "",
-        command: Optional[Callable] = None,
+        command: Callable | None = None,
         **kwargs: Any,
     ) -> None:
         if command:
@@ -45,9 +47,7 @@ class Button(Widget):
         width = self._config_dict.get("width", "")
         if width:
             style += f"width:{width}px;"
-        return (
-            f'<button id="{self._id}" class="{cls}" style="{style}" {attrs}>{escaped}</button>'
-        )
+        return f'<button id="{self._id}" class="{cls}" style="{style}" {attrs}>{escaped}</button>'
 
     def _render_js(self) -> str:
         return f'''document.getElementById("{self._id}").onclick=function(){{
@@ -68,14 +68,16 @@ class Entry(Widget):
 
     def __init__(
         self,
-        parent: Optional[Widget] = None,
+        parent: Widget | None = None,
         text: str = "",
         justify: str = "",
-        maxlength: Optional[int] = None,
+        maxlength: int | None = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(parent, **kwargs)
-        self._config_dict["text"] = self._textvariable.get() if self._textvariable is not None else str(text)
+        self._config_dict["text"] = (
+            self._textvariable.get() if self._textvariable is not None else str(text)
+        )
         if justify:
             self._config_dict["justify"] = justify
         if maxlength is not None:
@@ -100,11 +102,11 @@ class Entry(Widget):
         self._sync()
 
     @property
-    def maxlength(self) -> Optional[int]:
+    def maxlength(self) -> int | None:
         return self._config_dict.get("maxlength")
 
     @maxlength.setter
-    def maxlength(self, value: Optional[int]) -> None:
+    def maxlength(self, value: int | None) -> None:
         if value is not None:
             self._config_dict["maxlength"] = value
         else:
@@ -172,10 +174,10 @@ class CheckBox(Widget):
 
     def __init__(
         self,
-        parent: Optional[Widget] = None,
+        parent: Widget | None = None,
         text: str = "",
         checked: bool = False,
-        command: Optional[Callable] = None,
+        command: Callable | None = None,
         **kwargs: Any,
     ) -> None:
         if command:
@@ -240,15 +242,16 @@ class CheckBox(Widget):
         checked = self._config_dict.get("checked", False)
         return f'var el=document.getElementById("{self._id}");if(el)el.querySelector(".iskg-check").classList.toggle("checked",{json.dumps(checked)});'
 
+
 class RadioButton(Widget):
     """A radio button for single-selection within a group."""
 
     def __init__(
         self,
-        parent: Optional[Widget] = None,
+        parent: Widget | None = None,
         text: str = "",
         group: str = "default",
-        command: Optional[Callable] = None,
+        command: Callable | None = None,
         value: str = "",
         variable: Any = None,
         **kwargs: Any,
@@ -294,10 +297,9 @@ class RadioButton(Widget):
             self._sync()
 
     def _handle_bridge_event(self, event_name: str, event_data: Any) -> None:
-        if event_name == "change":
-            if self._variable is not None:
-                self._variable_handled = True
-                self._variable.set(self.value, _from_widget=self)
+        if event_name == "change" and self._variable is not None:
+            self._variable_handled = True
+            self._variable.set(self.value, _from_widget=self)
         super()._handle_bridge_event(event_name, event_data)
         self._variable_handled = False
 
@@ -342,10 +344,10 @@ class ComboBox(Widget):
 
     def __init__(
         self,
-        parent: Optional[Widget] = None,
-        values: Optional[list[str]] = None,
+        parent: Widget | None = None,
+        values: list[str] | None = None,
         current: int = 0,
-        command: Optional[Callable] = None,
+        command: Callable | None = None,
         editable: bool = False,
         **kwargs: Any,
     ) -> None:
@@ -510,11 +512,11 @@ class Slider(Widget):
 
     def __init__(
         self,
-        parent: Optional[Widget] = None,
+        parent: Widget | None = None,
         value: float = 50,
         min_value: float = 0,
         max_value: float = 100,
-        command: Optional[Callable] = None,
+        command: Callable | None = None,
         from_: float = 0,
         to: float = 100,
         orient: str = "horizontal",
@@ -577,11 +579,9 @@ class Slider(Widget):
 
     def _handle_bridge_event(self, event_name: str, event_data: Any) -> None:
         if event_name == "change":
-            try:
+            with contextlib.suppress(ValueError, TypeError):
                 self._config_dict["value"] = float(event_data)
-            except (ValueError, TypeError):
-                pass
-        super()._handle_bridge_event(event_name, event_data)
+            super()._handle_bridge_event(event_name, event_data)
 
     def _render_js(self) -> str:
         return f'''var el=document.getElementById("{self._id}");
@@ -621,12 +621,12 @@ class SpinBox(Widget):
 
     def __init__(
         self,
-        parent: Optional[Widget] = None,
+        parent: Widget | None = None,
         value: int = 0,
         min_value: int = 0,
         max_value: int = 100,
         step: int = 1,
-        command: Optional[Callable] = None,
+        command: Callable | None = None,
         from_: int = 0,
         to: int = 100,
         **kwargs: Any,
@@ -648,8 +648,6 @@ class SpinBox(Widget):
         self._sync()
 
     def _render(self) -> str:
-        lo = self._config_dict.get("from", 0)
-        hi = self._config_dict.get("to", 100)
         val = self._config_dict.get("value", 0)
         style = self._render_style()
         return f'''<div class="iskg-spinbox-wrap" style="{style}">
@@ -679,10 +677,8 @@ document.getElementById("{self._id}-dn").onclick=function(){{
 
     def _handle_bridge_event(self, event_name: str, event_data: Any) -> None:
         if event_name == "change":
-            try:
+            with contextlib.suppress(ValueError, TypeError):
                 self._config_dict["value"] = int(event_data)
-            except (ValueError, TypeError):
-                pass
         super()._handle_bridge_event(event_name, event_data)
 
     def _default_takefocus(self) -> bool:
@@ -698,15 +694,17 @@ class Scale(Slider):
 
     def __init__(
         self,
-        parent: Optional[Widget] = None,
+        parent: Widget | None = None,
         value: float = 0.5,
-        command: Optional[Callable] = None,
+        command: Callable | None = None,
         from_: float = 0.0,
         to: float = 1.0,
         orient: str = "horizontal",
         **kwargs: Any,
     ) -> None:
-        super().__init__(parent, value=value, command=command, from_=from_, to=to, orient=orient, **kwargs)
+        super().__init__(
+            parent, value=value, command=command, from_=from_, to=to, orient=orient, **kwargs
+        )
 
     def _render(self) -> str:
         lo = self._config_dict.get("from", 0)
@@ -737,10 +735,10 @@ class ToggleSwitch(Widget):
 
     def __init__(
         self,
-        parent: Optional[Widget] = None,
+        parent: Widget | None = None,
         text: str = "",
         active: bool = False,
-        command: Optional[Callable] = None,
+        command: Callable | None = None,
         checked: bool = False,
         **kwargs: Any,
     ) -> None:

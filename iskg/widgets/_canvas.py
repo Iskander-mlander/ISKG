@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Optional
+from typing import Any
 
 from ..base import Widget
 
@@ -11,7 +11,7 @@ class Canvas(Widget):
 
     def __init__(
         self,
-        parent: Optional[Widget] = None,
+        parent: Widget | None = None,
         width: int = 300,
         height: int = 200,
         **kwargs: Any,
@@ -133,7 +133,7 @@ class Knob(Widget):
 
     def __init__(
         self,
-        parent: Optional[Widget] = None,
+        parent: Widget | None = None,
         from_: int = 0,
         to: int = 100,
         value: float = 0,

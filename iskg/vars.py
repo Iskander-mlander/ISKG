@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 
 class Variable:
@@ -22,7 +23,7 @@ class Variable:
             value: new value (type-coerced by subclasses).
             _from_widget: widget that triggered the change (prevents echo).
         """
-        old, self._value = self._value, value
+        self._value = value
         for mode, cb in self._traces:
             if mode == "write":
                 cb(None, None, "write")

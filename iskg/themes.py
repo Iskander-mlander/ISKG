@@ -17,8 +17,6 @@ Usage::
 
 from __future__ import annotations
 
-from typing import Any
-
 THEMES: dict[str, dict[str, str]] = {
     "ifaz": {
         "--bg-primary": "#070b10",

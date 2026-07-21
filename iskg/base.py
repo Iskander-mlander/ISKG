@@ -4,7 +4,8 @@ style rendering, and widget tree management."""
 from __future__ import annotations
 
 import json
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any
 
 _counter: list[int] = [0]
 
@@ -49,12 +50,12 @@ class Widget:
     Every concrete widget (Button, Label, Frame, etc.) inherits from this class.
     """
 
-    def __init__(self, parent: Optional[Widget] = None, **kwargs: Any) -> None:
+    def __init__(self, parent: Widget | None = None, **kwargs: Any) -> None:
         self._id: str = _new_id()
-        self._parent: Optional[Widget] = None
+        self._parent: Widget | None = None
         self._children: list[Widget] = []
         self._config_dict: dict[str, Any] = {}
-        self._layout_mode: Optional[str] = None
+        self._layout_mode: str | None = None
         self._layout_info: dict[str, Any] = {}
         self._bindings: dict[str, Callable] = {}
         self._key_bindings: list[dict[str, Any]] = []
@@ -94,7 +95,7 @@ class Widget:
         return self._id
 
     @property
-    def parent(self) -> Optional[Widget]:
+    def parent(self) -> Widget | None:
         """Parent widget, or None if this is a root widget."""
         return self._parent
 
@@ -203,8 +204,8 @@ class Widget:
         self,
         x: int = 0,
         y: int = 0,
-        width: Optional[int] = None,
-        height: Optional[int] = None,
+        width: int | None = None,
+        height: int | None = None,
         anchor: str = "nw",
     ) -> Widget:
         """Position this widget at absolute coordinates.
@@ -377,11 +378,11 @@ el.onmouseleave=function(){{clearTimeout(timer);tip.style.display="none";}};
         self._eval_js(f'iskg_set_visible("{self._id}",{str(value).lower()});')
 
     @property
-    def width(self) -> Optional[int]:
+    def width(self) -> int | None:
         return self._config_dict.get("width")
 
     @width.setter
-    def width(self, value: Optional[int]) -> None:
+    def width(self, value: int | None) -> None:
         if value is None:
             self._config_dict.pop("width", None)
         else:
@@ -389,11 +390,11 @@ el.onmouseleave=function(){{clearTimeout(timer);tip.style.display="none";}};
         self._sync()
 
     @property
-    def height(self) -> Optional[int]:
+    def height(self) -> int | None:
         return self._config_dict.get("height")
 
     @height.setter
-    def height(self, value: Optional[int]) -> None:
+    def height(self, value: int | None) -> None:
         if value is None:
             self._config_dict.pop("height", None)
         else:
@@ -528,7 +529,7 @@ el.onmouseleave=function(){{clearTimeout(timer);tip.style.display="none";}};
         self._sync()
 
     @staticmethod
-    def _parse_key_event(spec: str) -> Optional[dict[str, Any]]:
+    def _parse_key_event(spec: str) -> dict[str, Any] | None:
         """Parse a tkinter-style key event spec like ``"<KeyPress-a>"``.
 
         Returns a dict with keys: ``event_type`` (``"keypress"``/``"keyrelease"``),
@@ -635,7 +636,7 @@ el.onmouseleave=function(){{clearTimeout(timer);tip.style.display="none";}};
             return self._parent.event_generate(event, data)
         return False
 
-    def _handle_bridge_event(self, event_name: str, event_data: Any) -> Optional[str]:
+    def _handle_bridge_event(self, event_name: str, event_data: Any) -> str | None:
         if event_name in ("change", "input"):
             if self._textvariable is not None and not getattr(self, "_variable_handled", False):
                 self._textvariable.set(str(event_data), _from_widget=self)

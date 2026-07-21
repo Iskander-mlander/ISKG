@@ -39,7 +39,7 @@ def test_all_widgets_importable():
         VERSION,
     )
 
-    assert VERSION == "0.2.0"
+    assert VERSION == "0.3.7"
     assert issubclass(Button, Widget)
 
 

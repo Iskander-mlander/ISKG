@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any
 
 from ..base import Widget
 
@@ -11,7 +12,7 @@ class MenuItem:
     def __init__(
         self,
         text: str,
-        command: Optional[Callable] = None,
+        command: Callable | None = None,
         shortcut: str = "",
         icon: str = "",
     ) -> None:
@@ -19,7 +20,7 @@ class MenuItem:
         self.command = command
         self.shortcut = shortcut
         self.icon = icon
-        self.submenu: Optional[Menu] = None
+        self.submenu: Menu | None = None
 
 
 class Menu:
@@ -31,12 +32,12 @@ class Menu:
         Menu._counter += 1
         self._id: str = f"iskg-m{Menu._counter}"
         self.text = text
-        self.items: list[Optional[MenuItem]] = []
+        self.items: list[MenuItem | None] = []
 
     def add_item(
         self,
         text: str,
-        command: Optional[Callable] = None,
+        command: Callable | None = None,
         shortcut: str = "",
         icon: str = "",
     ) -> MenuItem:
@@ -60,7 +61,7 @@ class MenuBar(Widget):
 
     def __init__(
         self,
-        parent: Optional[Widget] = None,
+        parent: Widget | None = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(parent, **kwargs)
@@ -71,7 +72,7 @@ class MenuBar(Widget):
         self._menus.append(m)
         return m
 
-    def _render_menu_dd(self, menu: Menu, top_level_text: Optional[str] = None) -> str:
+    def _render_menu_dd(self, menu: Menu, top_level_text: str | None = None) -> str:
         mn_attr = f' data-mn="{top_level_text}"' if top_level_text else ""
         parts = []
         for item in menu.items:
@@ -196,13 +197,13 @@ class MenuBar(Widget):
     def _render_update_js(self) -> str:
         return ""
 
-    def _find_command(self, path_parts: list[str]) -> Optional[Callable]:
+    def _find_command(self, path_parts: list[str]) -> Callable | None:
         for m in self._menus:
             if path_parts and m.text == path_parts[0]:
                 return self._walk_items(m.items, path_parts[1:])
         return None
 
-    def _walk_items(self, items: list[Optional[MenuItem]], parts: list[str]) -> Optional[Callable]:
+    def _walk_items(self, items: list[MenuItem | None], parts: list[str]) -> Callable | None:
         if not parts:
             return None
         for item in items:

@@ -2,27 +2,29 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import threading
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any
 
-from .theme import IFAZ_CSS
-from .template import build_html
 from .base import Widget
+from .template import build_html
+from .theme import IFAZ_CSS
 
 _HANDLERS: dict[str, Callable] = {}
 _LOCK = threading.Lock()
 
 
 class _JSAPI:
-    _in_progress: set[tuple[str, str, Optional[str]]] = set()
+    _in_progress: set[tuple[str, str, str | None]] = set()
 
     def on_event(
         self,
         widget_id: str,
         event_name: str,
-        event_data_json: Optional[str],
+        event_data_json: str | None,
     ) -> None:
         key = (widget_id, event_name, event_data_json)
         with _LOCK:
@@ -103,7 +105,7 @@ class Application:
         """Register a callback to call when the window is closed."""
         self._on_close_callbacks.append(callback)
 
-    def title(self, text: Optional[str] = None) -> str:
+    def title(self, text: str | None = None) -> str:
         """Get or set the window title."""
         if text is not None:
             self._title = text
@@ -111,10 +113,10 @@ class Application:
 
     def geometry(
         self,
-        x: Optional[int] = None,
-        y: Optional[int] = None,
-        w: Optional[int] = None,
-        h: Optional[int] = None,
+        x: int | None = None,
+        y: int | None = None,
+        w: int | None = None,
+        h: int | None = None,
     ) -> tuple[int, int, int, int]:
         """Get or set the window position and size."""
         if w is not None and h is not None:
@@ -130,7 +132,7 @@ class Application:
             self._height,
         )
 
-    _saved_stderr: Optional[int] = None
+    _saved_stderr: int | None = None
 
     def run(self, extra_js: str = "") -> None:
         """Open the window and start the application main loop.
@@ -192,10 +194,8 @@ class Application:
 
     def _eval_js(self, js: str) -> None:
         if self._window and self._running:
-            try:
+            with contextlib.suppress(Exception):
                 self._window.evaluate_js(js)
-            except Exception:
-                pass
 
     def _widget_destroyed(self, widget_id: str) -> None:
         _HANDLERS.pop(widget_id, None)
@@ -224,7 +224,7 @@ class Application:
         """
         from .themes import resolve_theme, theme_js
 
-        resolved = resolve_theme(name)
+        resolve_theme(name)
         self._theme_name = name
         self._eval_js(theme_js(name))
         return self
@@ -245,9 +245,8 @@ class Application:
 
         THEMES[name] = dict(overrides)
         import json
-        self._eval_js(
-            f"iskg_register_themes({json.dumps({name: overrides})});"
-        )
+
+        self._eval_js(f"iskg_register_themes({json.dumps({name: overrides})});")
         return self
 
     def execute_js(self, js_code: str) -> Application:
@@ -283,9 +282,9 @@ class Application:
         self,
         dialog_type: str = "open",
         directory: str = "",
-        file_types: Optional[list[str]] = None,
+        file_types: list[str] | None = None,
         allow_multiple: bool = False,
-    ) -> Optional[Any]:
+    ) -> Any | None:
         """Open a native OS file dialog.
 
         Uses GTK directly (same toolkit as pywebview underneath) with
@@ -322,9 +321,9 @@ class Application:
         self,
         dialog_type: str,
         directory: str,
-        file_types: Optional[list[str]],
+        file_types: list[str] | None,
         allow_multiple: bool,
-    ) -> Optional[Any]:
+    ) -> Any | None:
         try:
             import gi  # type: ignore[import-untyped]
 
@@ -350,8 +349,10 @@ class Application:
             parent=None,
             action=action,
             buttons=(
-                "_Cancel", Gtk.ResponseType.CANCEL,
-                accept, Gtk.ResponseType.ACCEPT,
+                "_Cancel",
+                Gtk.ResponseType.CANCEL,
+                accept,
+                Gtk.ResponseType.ACCEPT,
             ),
         )
         dialog.set_default_size(700, 500)
@@ -394,7 +395,7 @@ class Application:
         self,
         title: str = "Choose Color",
         initial_color: str = "#000000",
-    ) -> Optional[str]:
+    ) -> str | None:
         """Open a native GTK color chooser dialog.
 
         Returns a hex color string (e.g. ``"#ff8800"``) or ``None`` if cancelled.
@@ -406,9 +407,7 @@ class Application:
             gi.require_version("Gtk", "3.0")
             from gi.repository import Gdk, Gtk  # type: ignore[import-untyped]
         except (ImportError, ValueError):
-            return self._eval_js(
-                f"prompt({json.dumps(title)},{json.dumps(initial_color)})"
-            )
+            return self._eval_js(f"prompt({json.dumps(title)},{json.dumps(initial_color)})")
 
         rgba = Gdk.RGBA()
         rgba.parse(initial_color)
@@ -416,14 +415,10 @@ class Application:
         dialog.set_rgba(rgba)
         dialog.set_use_alpha(False)
 
-        result: Optional[str] = None
+        result: str | None = None
         if dialog.run() == Gtk.ResponseType.OK:
             c = dialog.get_rgba()
-            result = (
-                f"#{int(c.red * 255):02x}"
-                f"{int(c.green * 255):02x}"
-                f"{int(c.blue * 255):02x}"
-            )
+            result = f"#{int(c.red * 255):02x}{int(c.green * 255):02x}{int(c.blue * 255):02x}"
         dialog.destroy()
         return result
 
@@ -431,7 +426,7 @@ class Application:
         self,
         title: str = "Choose Font",
         initial_font: str = "",
-    ) -> Optional[dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Open a native GTK font chooser dialog.
 
         Returns a dict with keys ``family``, ``size``, ``weight``, ``style``,
@@ -449,7 +444,7 @@ class Application:
         if initial_font:
             dialog.set_font_name(initial_font)
 
-        result: Optional[dict[str, Any]] = None
+        result: dict[str, Any] | None = None
         if dialog.run() == Gtk.ResponseType.OK:
             font_name = dialog.get_font_name()
             parts = font_name.split()
@@ -458,10 +453,8 @@ class Application:
             weight = "normal"
             style = "normal"
             if len(parts) > 1:
-                try:
+                with contextlib.suppress(ValueError):
                     size = int(parts[-1])
-                except ValueError:
-                    pass
             result = {
                 "family": family,
                 "size": size,

@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from typing import Any
 
-from .themes import THEMES, resolve_theme
-
 BRIDGE_JS = """
 // ISKG Client Bridge for pywebview
 (function() {
@@ -184,9 +182,9 @@ def build_html(
         all_js += "\n" + extra_js
 
     # Embed theme data for runtime switching
-    from .themes import THEMES as _THEMES
-
     import json as _json
+
+    from .themes import THEMES as _THEMES
     theme_data = _json.dumps(_THEMES, indent=2)
 
     theme_init = f"iskg_register_themes({theme_data});\niskg_set_theme('{theme_name}');\n"

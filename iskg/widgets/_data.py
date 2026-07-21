@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any
 
 from ..base import Widget
 
@@ -11,9 +12,9 @@ class ListBox(Widget):
 
     def __init__(
         self,
-        parent: Optional[Widget] = None,
-        items: Optional[list[str]] = None,
-        command: Optional[Callable] = None,
+        parent: Widget | None = None,
+        items: list[str] | None = None,
+        command: Callable | None = None,
         **kwargs: Any,
     ) -> None:
         if command:
@@ -86,9 +87,9 @@ class DataGrid(Widget):
 
     def __init__(
         self,
-        parent: Optional[Widget] = None,
-        columns: Optional[list[str]] = None,
-        rows: Optional[list[list[str]]] = None,
+        parent: Widget | None = None,
+        columns: list[str] | None = None,
+        rows: list[list[str]] | None = None,
         width: int = 300,
         height: int = 200,
         **kwargs: Any,
@@ -180,8 +181,8 @@ class TreeView(Widget):
 
     def __init__(
         self,
-        parent: Optional[Widget] = None,
-        items: Optional[list] = None,
+        parent: Widget | None = None,
+        items: list | None = None,
         width: int = 200,
         height: int = 200,
         **kwargs: Any,
@@ -267,7 +268,7 @@ class DropTarget(Widget):
 
     def __init__(
         self,
-        parent: Optional[Widget] = None,
+        parent: Widget | None = None,
         text: str = "Drop files here",
         width: int = 200,
         height: int = 100,
