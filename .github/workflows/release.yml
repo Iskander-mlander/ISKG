@@ -6,6 +6,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write
 
 jobs:
   build:
@@ -21,3 +22,4 @@ jobs:
         with:
           files: dist/*
           generate_release_notes: true
+      - uses: pypa/gh-action-pypi-publish@release/v1
