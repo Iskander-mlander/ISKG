@@ -58,8 +58,9 @@ def on_click(data):
     label.config(text="Button clicked!")
 
 frame = Frame()
-Label(parent=frame, text="Welcome to ISKG")
+label = Label(parent=frame, text="Welcome to ISKG")
 Button(parent=frame, text="Click me", command=on_click)
+app.add(frame)
 
 app.run()
 ```
