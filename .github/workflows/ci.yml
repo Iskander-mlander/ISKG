@@ -103,8 +103,6 @@ jobs:
             debian*)
               apt-get update -qq
               DEBIAN_FRONTEND=noninteractive apt-get install -y -qq python3 python3-pip python3-venv python3-dev git
-              # Work around PEP 668 (externally-managed-environment)
-              rm -f /usr/lib/python3.11/EXTERNALLY-MANAGED
               ;;
             archlinux*)
               pacman -Syu --noconfirm python python-pip git
@@ -116,7 +114,7 @@ jobs:
           python3 -m pip --version
       - name: Install project
         run: |
-          python3 -m pip install -e ".[dev]"
+          python3 -m pip install --break-system-packages -e ".[dev]"
       - name: Run tests
         run: |
           python3 -m pytest -v
