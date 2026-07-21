@@ -6,7 +6,7 @@
   [![CI](https://img.shields.io/github/actions/workflow/status/Iskander-mlander/ISKG/ci.yml?branch=main&label=CI&logo=github)](https://github.com/Iskander-mlander/ISKG/actions)
   [![Python](https://img.shields.io/badge/python-3.10%20|%203.11%20|%203.12%20|%203.13%20|%203.14-blue?logo=python)](https://www.python.org)
   [![License](https://img.shields.io/github/license/Iskander-mlander/ISKG?color=green)](LICENSE)
-  [![PyPI](https://img.shields.io/badge/pypi-0.3.7-orange?logo=pypi)](https://pypi.org/project/iskg/)
+  [![Release](https://img.shields.io/github/v/release/Iskander-mlander/ISKG?logo=github)](https://github.com/Iskander-mlander/ISKG/releases)
   [![Platform](https://img.shields.io/badge/platform-linux%20|%20windows%20|%20macos-lightgrey)](#)
 </div>
 
@@ -47,7 +47,11 @@ No browser, no HTTP server — just a Python process and a lightweight WebView.
 ## Quick start
 
 ```bash
+# desde PyPI
 pip install iskg
+
+# desde GitHub Releases
+pip install https://github.com/Iskander-mlander/ISKG/releases/download/v0.3.7/iskg-0.3.7-py3-none-any.whl
 ```
 
 ```python
