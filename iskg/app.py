@@ -391,15 +391,26 @@ class Application:
         """Show a browser-style confirm dialog."""
         self._eval_js(f"confirm({json.dumps(message)})")
 
+    def _js_eval(self, js: str) -> Any | None:
+        """Evaluate JS and return the result, or None on error."""
+        if self._window and self._running:
+            try:
+                return self._window.evaluate_js(js)
+            except Exception:
+                pass
+        return None
+
     def color_dialog(
         self,
         title: str = "Choose Color",
         initial_color: str = "#000000",
     ) -> str | None:
-        """Open a native GTK color chooser dialog.
+        """Open a color picker dialog.
 
-        Returns a hex color string (e.g. ``"#ff8800"``) or ``None`` if cancelled.
-        Falls back to a JS prompt if GTK is unavailable.
+        Uses GTK on Linux, falls back to a browser ``<input type="color">``
+        on Windows/macOS.
+
+        Returns a hex string (e.g. ``"#ff8800"``) or ``None``.
         """
         try:
             import gi  # type: ignore[import-untyped]
@@ -407,7 +418,22 @@ class Application:
             gi.require_version("Gtk", "3.0")
             from gi.repository import Gdk, Gtk  # type: ignore[import-untyped]
         except (ImportError, ValueError):
-            return self._eval_js(f"prompt({json.dumps(title)},{json.dumps(initial_color)})")
+            js = (
+                f"(function(){{"
+                f"var i=document.createElement('input');i.type='color';"
+                f"i.value={json.dumps(initial_color)};"
+                f"i.style.position='fixed';i.style.left='-9999px';"
+                f"document.body.appendChild(i);"
+                f"var p=new Promise(function(r){{"
+                f"i.addEventListener('change',function(){{r(i.value);document.body.removeChild(i);}});"
+                f"i.addEventListener('blur',function(){{setTimeout(function(){{"
+                f"if(document.body.contains(i)){{r(null);document.body.removeChild(i);}}"
+                f"}},300);}});"
+                f"}});i.click();return p;"
+                f"}})()"
+            )
+            result = self._js_eval(js)
+            return result if result else None
 
         rgba = Gdk.RGBA()
         rgba.parse(initial_color)
@@ -427,10 +453,12 @@ class Application:
         title: str = "Choose Font",
         initial_font: str = "",
     ) -> dict[str, Any] | None:
-        """Open a native GTK font chooser dialog.
+        """Open a font picker dialog.
+
+        Uses GTK on Linux, falls back to a browser prompt on Windows/macOS.
 
         Returns a dict with keys ``family``, ``size``, ``weight``, ``style``,
-        or ``None`` if cancelled.
+        or ``None``.
         """
         try:
             import gi  # type: ignore[import-untyped]
@@ -438,6 +466,19 @@ class Application:
             gi.require_version("Gtk", "3.0")
             from gi.repository import Gtk  # type: ignore[import-untyped]
         except (ImportError, ValueError):
+            js = (
+                f"(function(){{"
+                f"var r=prompt({json.dumps(title)},{json.dumps(initial_font)});"
+                f"if(!r)return null;"
+                f"var parts=r.trim().split(/(\\d+)/);"
+                f"var family=parts[0].trim()||'Sans';"
+                f"var size=parseInt(parts[1],10)||12;"
+                f"return JSON.stringify({{family:family,size:size,weight:'normal',style:'normal',_full_name:r}});"
+                f"}})()"
+            )
+            raw = self._js_eval(js)
+            if raw:
+                return json.loads(raw)
             return None
 
         dialog = Gtk.FontChooserDialog(title=title, parent=None)
