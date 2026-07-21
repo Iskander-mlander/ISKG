@@ -40,9 +40,7 @@ html, body {
 #iskg-root {
   width:100vw; height:100vh;
   display:flex; flex-direction:column;
-  background:
-    radial-gradient(ellipse at 30% 40%, rgba(10,25,20,0.4) 0%, transparent 60%),
-    radial-gradient(ellipse at 70% 60%, rgba(5,15,25,0.3) 0%, transparent 60%);
+  background:var(--bg-primary);
   padding:6px; gap:4px;
 }
 
