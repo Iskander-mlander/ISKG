@@ -1,23 +1,24 @@
 [build-system]
 requires = ["setuptools>=68"]
-build-backend = "setuptools.backends._legacy:_Backend"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "iskg"
-version = "0.2.0"
+version = "0.3.7"
 description = "IFAZ Widget Toolkit — widgets Python con temática táctico-militar sobre pywebview"
 readme = "README.md"
-license = {text = "MIT"}
+license = "GPL-3.0-or-later"
 requires-python = ">=3.10"
 keywords = ["gui", "widgets", "pywebview", "tactical", "ifaz"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Software Development :: User Interfaces",
 ]
 dependencies = [
@@ -25,20 +26,42 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/tu-usuario/iskg"
-Repository = "https://github.com/tu-usuario/iskg"
-Documentation = "https://github.com/tu-usuario/iskg#readme"
+Homepage = "https://github.com/Iskander-mlander/iskg"
+Repository = "https://github.com/Iskander-mlander/iskg"
+Documentation = "https://github.com/Iskander-mlander/iskg#readme"
 
 [project.optional-dependencies]
 dev = [
-    "ruff",
+    "ruff>=0.4",
     "build",
     "twine",
+    "pytest>=7",
 ]
 docs = [
-    "sphinx",
+    "sphinx>=7",
+    "sphinx-rtd-theme>=2",
     "sphinx-autobuild",
 ]
 
 [tool.setuptools.packages.find]
 include = ["iskg*"]
+
+[tool.ruff]
+line-length = 99
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "UP", "N", "SIM"]
+ignore = ["E501", "N802", "N803", "N806", "N815", "N816", "SIM117"]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+"examples/*" = ["F821"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]

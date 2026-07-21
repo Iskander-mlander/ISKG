@@ -16,6 +16,9 @@ dist/
 build/
 *.egg
 
+# Docs build
+docs/_build/
+
 # Environment
 .env
 .venv
@@ -27,6 +30,7 @@ env/
 .idea/
 *.swp
 *.swo
+*.code-workspace
 
 # OS
 .DS_Store
@@ -35,8 +39,9 @@ Thumbs.db
 # Logs
 *.log
 
-# Legacy standalone interface (kept for reference, not part of ISKG)
-# index.html, js/, css/, img/ are legacy files
+# Session files (opencode etc.)
+session-*.md
 
 # Project specific
 /stderr.log
+/fix.md

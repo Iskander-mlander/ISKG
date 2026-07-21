@@ -1,3 +1,11 @@
+"""HTML page builder and JS bridge for ISKG widgets."""
+
+from __future__ import annotations
+
+from typing import Any
+
+from .themes import THEMES, resolve_theme
+
 BRIDGE_JS = """
 // ISKG Client Bridge for pywebview
 (function() {
@@ -80,6 +88,31 @@ BRIDGE_JS = """
         if (el) el.focus();
     };
 
+    window.iskg_bind_key = function(id, eventType, keyFilter, mods) {
+        var el = document.getElementById(id);
+        if (!el) { setTimeout(function(){iskg_bind_key(id,eventType,keyFilter,mods);},50); return; }
+        var fn = function(e) {
+            if (keyFilter && e.key !== keyFilter && e.code !== keyFilter && e.key.toLowerCase() !== keyFilter.toLowerCase()) return;
+            if (mods) {
+                if (mods.ctrl && !e.ctrlKey) return;
+                if (mods.alt && !e.altKey) return;
+                if (mods.shift && !e.shiftKey) return;
+            }
+            var data = JSON.stringify({key:e.key,code:e.code,ctrl:e.ctrlKey,alt:e.altKey,shift:e.shiftKey});
+            iskg_bridge_event(id, eventType, data);
+        };
+        el.addEventListener(eventType === 'keyrelease' ? 'keyup' : 'keydown', fn);
+        el._iskg_key_fn = fn;
+    };
+
+    window.iskg_unbind_key = function(id, eventType) {
+        var el = document.getElementById(id);
+        if (el && el._iskg_key_fn) {
+            el.removeEventListener(eventType === 'keyrelease' ? 'keyup' : 'keydown', el._iskg_key_fn);
+            delete el._iskg_key_fn;
+        }
+    };
+
     window.iskg_set_style = function(id, cssText) {
         var el = document.getElementById(id);
         if (!el) return;
@@ -95,25 +128,68 @@ BRIDGE_JS = """
             }
         }
     };
+
+    // Theme switching at runtime
+    window._ISKG_THEMES = {};
+
+    window.iskg_register_themes = function(themes) {
+        window._ISKG_THEMES = themes;
+    };
+
+    window.iskg_apply_theme = function(vars) {
+        var root = document.documentElement;
+        for (var key in vars) {
+            if (vars.hasOwnProperty(key)) {
+                root.style.setProperty(key, vars[key]);
+            }
+        }
+    };
+
+    window.iskg_set_theme = function(name) {
+        var theme = window._ISKG_THEMES[name];
+        if (theme) {
+            iskg_apply_theme(theme);
+            return true;
+        }
+        return false;
+    };
 })();
 """
 
 
-def build_html(root_widgets, ifaz_css, extra_js=""):
-    all_widgets = []
+def build_html(
+    root_widgets: list[Any],
+    ifaz_css: str,
+    extra_js: str = "",
+    theme_name: str = "ifaz",
+) -> str:
+    all_widgets: list[Any] = []
     for w in root_widgets:
         all_widgets.extend(w._collect_widgets())
 
     rendered_html = "".join(w._render() for w in root_widgets if not w._destroyed)
 
-    all_js_parts = []
+    all_js_parts: list[str] = []
     for w in root_widgets:
         if not w._destroyed:
             all_js_parts.append(w._render_js())
             all_js_parts.append(w._render_children_js())
+    # Include base JS (tooltips, key bindings) for every widget in the tree
+    for _, w in all_widgets:
+        if not w._destroyed:
+            all_js_parts.append(w._render_tooltip_js())
+            all_js_parts.append(w._render_key_bindings_js())
     all_js = "\n".join(p for p in all_js_parts if p)
     if extra_js:
         all_js += "\n" + extra_js
+
+    # Embed theme data for runtime switching
+    from .themes import THEMES as _THEMES
+
+    import json as _json
+    theme_data = _json.dumps(_THEMES, indent=2)
+
+    theme_init = f"iskg_register_themes({theme_data});\niskg_set_theme('{theme_name}');\n"
 
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -134,6 +210,8 @@ def build_html(root_widgets, ifaz_css, extra_js=""):
 {BRIDGE_JS}
 </script>
 <script>
+// Theme registration & init
+{theme_init}
 // Widget initialization
 {all_js}
 </script>

@@ -1,9 +1,11 @@
+#!/usr/bin/env python3
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import iskg
+from iskg.themes import available_themes
 
 app = iskg.Application(
     title="ISKG Demo - Widget Toolkit",
@@ -65,6 +67,15 @@ m_view.add_item(
         "document.documentElement.requestFullscreen?.()||document.documentElement.webkitRequestFullscreen?.()"
     ),
 )
+m_view.add_separator()
+
+# ── Theme menu ──
+m_theme = m_view.add_menu("Theme")
+for tname in available_themes():
+    m_theme.add_item(
+        tname.capitalize(),
+        command=lambda n=tname: app.set_theme(n),
+    )
 
 m_help = mb.add_menu("Help")
 m_help.add_item(
@@ -97,7 +108,7 @@ def tt(widget, text, delay=300):
 
 
 # ════════════════════════════════════════════
-# ROW 1
+# ROW 1 — Buttons, Inputs, Selection
 # ════════════════════════════════════════════
 row1 = hrow(main, [])
 frm_buttons = iskg.Frame(parent=row1, text="Buttons")
@@ -107,9 +118,7 @@ def on_btn_click(msg):
     print(f"[ISKG] Button clicked: {msg}")
 
 
-b1 = iskg.Button(
-    parent=frm_buttons, text="Primary", command=lambda: on_btn_click("Primary")
-)
+b1 = iskg.Button(parent=frm_buttons, text="Primary", command=lambda: on_btn_click("Primary"))
 tt(b1, "Primary action button")
 iskg.Button(
     parent=frm_buttons,
@@ -180,9 +189,7 @@ cb1.bind("change", lambda ev, d=cb1: on_check_change(d.checked))
 iskg.RadioButton(parent=frm_sel, text="Option A", value="a")
 iskg.RadioButton(parent=frm_sel, text="Option B", value="b")
 iskg.RadioButton(parent=frm_sel, text="Option C", value="c")
-combo = iskg.ComboBox(
-    parent=frm_sel, values=["Alpha", "Bravo", "Charlie", "Delta"], current=0
-)
+combo = iskg.ComboBox(parent=frm_sel, values=["Alpha", "Bravo", "Charlie", "Delta"], current=0)
 tt(combo, "Select from dropdown")
 
 
@@ -193,7 +200,7 @@ def on_combo_change(val):
 combo.bind("change", lambda ev, d=combo: on_combo_change(d.current))
 
 # ════════════════════════════════════════════
-# ROW 2
+# ROW 2 — Sliders, Progress, Knobs
 # ════════════════════════════════════════════
 row2 = hrow(main, [])
 
@@ -207,9 +214,7 @@ def on_slider_change(val):
 
 
 slider.bind("change", lambda ev, d=slider: on_slider_change(d.value))
-sv = iskg.Slider(
-    parent=frm_slider, from_=0, to=100, value=42, orient="vertical", height=60
-)
+sv = iskg.Slider(parent=frm_slider, from_=0, to=100, value=42, orient="vertical", height=60)
 tt(sv, "Vertical slider with scroll support")
 
 frm_prog = iskg.Frame(parent=row2, text="Progress")
@@ -244,7 +249,7 @@ iskg.Knob(parent=frm_knob, from_=0, to=10, value=3, size=50, color="green")
 iskg.Knob(parent=frm_knob, from_=0, to=100, value=80, size=50, color="amber")
 
 # ════════════════════════════════════════════
-# ROW 3
+# ROW 3 — LED, Indicators, Toggles
 # ════════════════════════════════════════════
 row3 = hrow(main, [])
 
@@ -256,13 +261,11 @@ led_alarms = iskg.LEDDisplay(
     parent=frm_led, value=1984, digits=4, color="red", label="ALARMS", height=30
 )
 led_volts = iskg.LEDDisplay(
-    parent=frm_led, value=3.14, digits=4, color="amber", label="VOLTS", height=28
+    parent=frm_led, value=314, digits=4, color="amber", label="VOLTS", height=28
 )
 
 frm_indi = iskg.Frame(parent=row3, text="Indicators")
-il1 = iskg.IndicatorLED(
-    parent=frm_indi, color="green", size=8, active=True, label="Online"
-)
+il1 = iskg.IndicatorLED(parent=frm_indi, color="green", size=8, active=True, label="Online")
 tt(il1, "Online indicator")
 iskg.IndicatorLED(parent=frm_indi, color="red", size=8, active=False, label="Alarm")
 iskg.IndicatorLED(parent=frm_indi, color="amber", size=8, active=True, label="Warning")
@@ -283,7 +286,7 @@ iskg.ToggleSwitch(parent=frm_toggle, text="NV Mode", checked=False)
 iskg.ToggleSwitch(parent=frm_toggle, text="Auto Track", checked=True)
 
 # ════════════════════════════════════════════
-# ROW 4
+# ROW 4 — Scale, Scrollbars, Text
 # ════════════════════════════════════════════
 row4 = hrow(main, [])
 
@@ -312,7 +315,7 @@ txt = iskg.Text(
 tt(txt, "Multi-line text area")
 
 # ════════════════════════════════════════════
-# ROW 5
+# ROW 5 — DataGrid, Canvas
 # ════════════════════════════════════════════
 row5 = hrow(main, [])
 
@@ -342,13 +345,11 @@ cv = iskg.Canvas(parent=iskg.Frame(parent=row5, text="Canvas"), width=240, heigh
 cv.create_rectangle(10, 10, 90, 50, fill="#0f2e1a", outline="#4ade80")
 cv.create_oval(110, 10, 180, 50, fill="#0a2030", outline="#22d3ee")
 cv.create_line(10, 70, 230, 90, color="#f59e0b", width=2)
-cv.create_text(
-    120, 65, text="ISKG Canvas", fill="#c8d6e5", font="11px Orbitron", anchor="center"
-)
+cv.create_text(120, 65, text="ISKG Canvas", fill="#c8d6e5", font="11px Orbitron", anchor="center")
 tt(cv, "Drawing canvas with shapes")
 
 # ════════════════════════════════════════════
-# ROW 6
+# ROW 6 — Gauges, Notebook
 # ════════════════════════════════════════════
 row6 = hrow(main, [])
 
@@ -382,7 +383,7 @@ nb.config(width=240, height=100)
 tt(nb, "Click tabs to switch")
 
 # ════════════════════════════════════════════
-# ROW 7
+# ROW 7 — Custom styles
 # ════════════════════════════════════════════
 row7 = hrow(main, [])
 
@@ -402,9 +403,7 @@ iskg.Label(
     bg="#111",
     padding=4,
 )
-iskg.Button(
-    parent=row7._children[-1], text="fg=cyan, bg=#0a2030", fg="#22d3ee", bg="#0a2030"
-)
+iskg.Button(parent=row7._children[-1], text="fg=cyan, bg=#0a2030", fg="#22d3ee", bg="#0a2030")
 iskg.Entry(
     parent=row7._children[-1],
     text="fg=green, bg=#040810",
@@ -414,7 +413,7 @@ iskg.Entry(
 )
 
 # ════════════════════════════════════════════
-# ROW 8: New widgets
+# ROW 8 — Image, Icons, RichText, Tree, Drop
 # ════════════════════════════════════════════
 row8 = hrow(main, [])
 

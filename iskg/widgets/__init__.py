@@ -1,60 +1,42 @@
-"""ISKG — IFAZ Widget Toolkit.
+"""All widget classes re-exported for convenient access via ``iskg.widgets``."""
 
-A Python widget framework with tactical IFAZ theme, rendering widgets
-as HTML/CSS/JS inside a native window via pywebview.
-"""
-
-from ._version import VERSION
-from .base import Widget
-from .widgets import (
-    Label,
+from ._controls import (
     Button,
     Entry,
     CheckBox,
     RadioButton,
     ComboBox,
     Slider,
-    ProgressBar,
-    Frame,
-    ScrolledFrame,
-    PanedWindow,
-    ListBox,
-    ScrollBar,
-    Text,
     SpinBox,
-    Separator,
-    Notebook,
-    Canvas,
     Scale,
-    MessageDialog,
-    Knob,
+    ToggleSwitch,
+)
+from ._display import (
+    Label,
+    ProgressBar,
     LEDDisplay,
-    DataGrid,
     IndicatorLED,
     RadialGauge,
-    ToggleSwitch,
     StatusBar,
-    Tooltip,
-    Spacer,
-    ImageBox,
     IconLabel,
-    RichText,
-    TreeView,
-    DropTarget,
-    Menu,
-    MenuBar,
+    ImageBox,
+)
+from ._containers import Frame, ScrolledFrame, PanedWindow, Notebook, Separator, Spacer, ScrollBar
+from ._text import Text, RichText
+from ._data import ListBox, DataGrid, TreeView, DropTarget
+from ._canvas import Canvas, Knob
+from ._menus import MenuItem, Menu, MenuBar
+from ._dialogs import (
+    MessageDialog,
     FileDialog,
     showinfo,
     showwarning,
     showerror,
     showquestion,
 )
-from .vars import Variable, StringVar, IntVar, DoubleVar, BooleanVar
-from .app import Application, Window
+from ._misc import Tooltip
 
 __all__ = [
-    "VERSION",
-    "Widget",
     "Label",
     "Button",
     "Entry",
@@ -64,13 +46,13 @@ __all__ = [
     "Slider",
     "ProgressBar",
     "Frame",
-    "ScrolledFrame",
-    "PanedWindow",
     "ListBox",
     "ScrollBar",
     "Text",
     "SpinBox",
     "Separator",
+    "ScrolledFrame",
+    "PanedWindow",
     "Notebook",
     "Canvas",
     "Scale",
@@ -89,18 +71,12 @@ __all__ = [
     "RichText",
     "TreeView",
     "DropTarget",
-    "Menu",
     "MenuBar",
     "FileDialog",
-    "Variable",
-    "StringVar",
-    "IntVar",
-    "DoubleVar",
-    "BooleanVar",
     "showinfo",
     "showwarning",
     "showerror",
     "showquestion",
-    "Application",
-    "Window",
+    "MenuItem",
+    "Menu",
 ]

@@ -4,54 +4,34 @@
     "pylsp": {
       "command": ["pylsp"],
       "extensions": ["py", "pyw"]
-    },
-    "bash": {
-      "command": ["bash-language-server", "start"],
-      "extensions": ["sh", "bash"]
-    },
-    "vscode-json": {
-      "command": ["vscode-json-languageserver", "--stdio"],
-      "extensions": ["json", "jsonc"]
     }
   },
   "formatter": {
     "python": {
       "command": ["ruff", "format", "-"],
       "extensions": ["py", "pyw"]
-    },
-    "bash": {
-      "command": ["shfmt"],
-      "extensions": ["sh", "bash"]
-    },
-    "json": {
-      "command": ["jq", "."],
-      "extensions": ["json", "jsonc"]
     }
   },
   "command": {
     "test": {
-      "template": "python -m pytest tests/test_parser.py tests/test_false_positive_filters.py tests/test_text_type_filtering.py tests/test_reliability_hardening.py tests/test_runtime_coverage.py tests/test_runtime_templates.py tests/test_runtime_hook_diagnostics.py -q --rootdir .",
-      "description": "Run core regression tests (matches CI)"
+      "template": "python -m pytest tests/ -q",
+      "description": "Run all tests"
     },
     "lint": {
-      "template": "ruff check src/ tests/",
+      "template": "python -m ruff check iskg/ tests/",
       "description": "Lint Python with ruff"
     },
     "format": {
-      "template": "ruff format src/ tests/",
+      "template": "python -m ruff format iskg/ tests/",
       "description": "Format Python with ruff"
     },
     "checkall": {
-      "template": "ruff check src/ tests/ && ruff format --check src/ tests/",
+      "template": "python -m ruff check iskg/ tests/ && python -m ruff format --check iskg/ tests/",
       "description": "Lint and format check"
     },
-    "cli": {
-      "template": "python run_cli.py --interactive",
-      "description": "Run CLI in interactive mode"
-    },
-    "run": {
-      "template": "python run_lite.py",
-      "description": "Run Lite (GUI) version"
+    "demo": {
+      "template": "python examples/widget_demo.py",
+      "description": "Run the ISKG demo application"
     }
   },
   "permission": {
