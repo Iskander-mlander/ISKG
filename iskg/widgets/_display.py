@@ -18,7 +18,9 @@ class Label(Widget):
         **kwargs: Any,
     ) -> None:
         super().__init__(parent, **kwargs)
-        self._config_dict["text"] = self._textvariable.get() if self._textvariable is not None else text
+        self._config_dict["text"] = (
+            self._textvariable.get() if self._textvariable is not None else text
+        )
         if wraplength is not None:
             self._config_dict["wraplength"] = wraplength
         if anchor:
@@ -129,8 +131,8 @@ class ProgressBar(Widget):
         text_html = ""
         if show_text:
             text_html = f'<span class="iskg-progress-text">{int(pct)}%</span>'
-        return f'''<div class="iskg-progress-wrap" id="{self._id}-wrap" style="{style}width:{width}px;">
-  <div class="iskg-progress-fill" id="{self._id}" style="width:{pct}%"></div>
+        return f'''<div class="iskg-progress-wrap" id="{self._id}" style="{style}width:{width}px;">
+  <div class="iskg-progress-fill" id="{self._id}-fill" style="width:{pct}%"></div>
   {text_html}
 </div>'''
 
@@ -138,9 +140,9 @@ class ProgressBar(Widget):
         val = self._config_dict.get("value", 0)
         mx = self._config_dict.get("max", 100)
         pct = min(100, max(0, (val / mx * 100))) if mx > 0 else 0
-        return f'''var el=document.getElementById("{self._id}");
+        return f'''var el=document.getElementById("{self._id}-fill");
 if(el)el.style.width="{pct}%";
-var t=document.getElementById("{self._id}-wrap").querySelector(".iskg-progress-text");
+var t=document.getElementById("{self._id}").querySelector(".iskg-progress-text");
 if(t)t.innerText="{int(pct)}%";'''
 
 
