@@ -24,9 +24,13 @@ body { background: var(--bg-primary); color: var(--text); }
 .wy-nav-content-wrap { background: var(--bg-primary); }
 .wy-nav-content { background: var(--bg-panel); }
 .wy-menu-vertical { background: var(--bg-panel); }
-.wy-menu-vertical li.current { background: var(--bg-panel-alt); }
-.wy-menu-vertical li.current a { color: var(--text); border-color: var(--border); }
+.wy-menu-vertical li.current { background: transparent; }
+.wy-menu-vertical li.current a { color: var(--text); border-right-color: var(--border); }
 .wy-menu-vertical li.current a:hover { background: var(--bg-panel-hi); }
+.wy-menu-vertical li.current > a,
+.wy-menu-vertical li.on a { background: var(--bg-panel-alt); color: var(--green); border: none; }
+.wy-menu-vertical li.current > a:hover,
+.wy-menu-vertical li.on a:hover { background: var(--bg-panel-hi); color: var(--green); }
 .wy-menu-vertical li a { color: var(--text-dim); }
 .wy-menu-vertical li a:hover { background: var(--bg-panel-hi); color: var(--green); }
 .wy-side-nav-search { background: var(--bg-panel-hi); }
