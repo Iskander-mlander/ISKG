@@ -1,0 +1,71 @@
+:root {
+  --bg-primary: #070b10;
+  --bg-panel: #0c111a;
+  --bg-panel-alt: #111822;
+  --bg-panel-hi: #16202e;
+  --border: #1a2636;
+  --border-light: #28364a;
+  --green: #4ade80;
+  --green-dim: #0f2e1a;
+  --amber: #f59e0b;
+  --amber-dim: #2e2008;
+  --red: #ef4444;
+  --red-dim: #2e0e0e;
+  --cyan: #22d3ee;
+  --cyan-dim: #0a2030;
+  --text: #c8d6e5;
+  --text-dim: #4a5a6a;
+  --text-green: #7ec850;
+}
+
+body { background: var(--bg-primary); color: var(--text); }
+.wy-body-for-nav { background: var(--bg-primary); }
+.wy-nav-side { background: var(--bg-panel); }
+.wy-nav-content-wrap { background: var(--bg-primary); }
+.wy-nav-content { background: var(--bg-panel); }
+.wy-menu-vertical { background: var(--bg-panel); }
+.wy-menu-vertical li.current { background: var(--bg-panel-alt); }
+.wy-menu-vertical li.current a { color: var(--text); border-color: var(--border); }
+.wy-menu-vertical li.current a:hover { background: var(--bg-panel-hi); }
+.wy-menu-vertical li a { color: var(--text-dim); }
+.wy-menu-vertical li a:hover { background: var(--bg-panel-hi); color: var(--green); }
+.wy-side-nav-search { background: var(--bg-panel-hi); }
+.wy-side-nav-search input[type=text] { border-color: var(--border); }
+.wy-side-nav-search > a { color: var(--green) !important; }
+.wy-side-nav-search > div.version { color: var(--text-dim); }
+.rst-content .toctree-wrapper > p.caption { color: var(--green); }
+.rst-content a { color: var(--cyan); }
+.rst-content a:visited { color: var(--amber); }
+.rst-content a:hover { color: var(--green); }
+.rst-content .section-title { color: var(--green); }
+.rst-content h1, .rst-content h2, .rst-content h3, .rst-content h4 { color: var(--green); }
+.rst-content h1 code, .rst-content h2 code, .rst-content h3 code, .rst-content h4 code { color: var(--green); }
+.rst-content code { color: var(--amber); background: var(--bg-panel-alt); border: 1px solid var(--border); }
+.rst-content code.literal { color: var(--amber); background: var(--bg-panel-alt); }
+.rst-content pre { background: var(--bg-primary); border: 1px solid var(--border); color: var(--text); }
+.rst-content .highlight { background: var(--bg-primary); }
+.rst-content table { border-color: var(--border); }
+.rst-content table th { background: var(--bg-panel-hi); color: var(--green); }
+.rst-content table td { background: var(--bg-panel); color: var(--text); }
+.rst-content table .line-block { border-color: var(--border); }
+.rst-content .admonition { background: var(--bg-panel-alt); border-color: var(--border-light); }
+.rst-content .admonition .admonition-title { background: var(--bg-panel-hi); color: var(--green); }
+.rst-content .note { border-color: var(--cyan-dim); }
+.rst-content .note .admonition-title { background: var(--cyan-dim); color: var(--cyan); }
+.rst-content .warning { border-color: var(--amber-dim); }
+.rst-content .warning .admonition-title { background: var(--amber-dim); color: var(--amber); }
+.rst-content .danger { border-color: var(--red-dim); }
+.rst-content .danger .admonition-title { background: var(--red-dim); color: var(--red); }
+.wy-table-responsive table td { background: var(--bg-panel); }
+.wy-table thead th { background: var(--bg-panel-hi); color: var(--green); }
+.wy-table-odd td { background: var(--bg-panel); }
+.wy-table-even td { background: var(--bg-panel-alt); }
+.ethical-rtd { display: none !important; }
+.rst-content .sidebar { background: var(--bg-panel-alt); border-color: var(--border); }
+.rst-content .sidebar .sidebar-title { background: var(--bg-panel-hi); color: var(--green); }
+.btn { background: var(--bg-panel-hi); color: var(--text); border-color: var(--border); }
+.btn:hover { background: var(--green-dim); color: var(--green); border-color: var(--green); }
+footer { color: var(--text-dim); }
+footer a { color: var(--cyan); }
+.rst-content .line-block { border-color: var(--border); }
+input[type="text"], input[type="search"] { background: var(--bg-primary); color: var(--text); border-color: var(--border); }
