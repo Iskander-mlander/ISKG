@@ -185,6 +185,7 @@ def build_html(
     import json as _json
 
     from .themes import THEMES as _THEMES
+
     theme_data = _json.dumps(_THEMES, indent=2)
 
     theme_init = f"iskg_register_themes({theme_data});\niskg_set_theme('{theme_name}');\n"
@@ -201,8 +202,6 @@ def build_html(
 <style>{ifaz_css}</style>
 </head>
 <body>
-<div id="iskg-scanlines"></div>
-<div id="iskg-vignette"></div>
 <div id="iskg-root">{rendered_html}</div>
 <script>
 {BRIDGE_JS}

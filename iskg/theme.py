@@ -46,30 +46,6 @@ html, body {
 
 #iskg-root > .iskg-frame { flex:1; }
 
-/* SCANLINES */
-#iskg-scanlines {
-  position:fixed; top:0; left:0;
-  width:100%; height:100%;
-  pointer-events:none; z-index:9999;
-  background:repeating-linear-gradient(
-    0deg, transparent, transparent 2px,
-    rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px
-  );
-  animation: iskg-scanMove 8s linear infinite;
-}
-@keyframes iskg-scanMove {
-  0% { background-position: 0 0; }
-  100% { background-position: 0 8px; }
-}
-
-/* VIGNETTE */
-#iskg-vignette {
-  position:fixed; top:0; left:0;
-  width:100%; height:100%;
-  pointer-events:none; z-index:9998;
-  background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.6) 100%);
-}
-
 /* ===== BUTTON ===== */
 .iskg-btn {
   font-family:var(--font-mono);
