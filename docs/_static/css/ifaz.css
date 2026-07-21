@@ -23,52 +23,43 @@ body { background: var(--bg-primary); color: var(--text); }
 .wy-nav-side { background: var(--bg-panel); }
 .wy-nav-content-wrap { background: var(--bg-primary); }
 .wy-nav-content { background: var(--bg-panel); }
-.wy-menu-vertical { background: var(--bg-panel); }
-.wy-menu-vertical li.current { background: transparent !important; }
-.wy-menu-vertical li.current a { color: var(--text) !important; border-right-color: var(--border) !important; }
-.wy-menu-vertical li.current a:hover { background: var(--bg-panel-hi) !important; }
-.wy-menu-vertical li.current > a,
-.wy-menu-vertical li.current > a.current,
-.wy-menu-vertical li.current > a.reference.internal,
-.wy-menu-vertical li.toctree-l1.current > a,
-.wy-menu-vertical li.toctree-l2.current > a,
-.wy-menu-vertical li.on a { background: var(--bg-panel-alt) !important; color: var(--green) !important; border: none !important; }
-.wy-menu-vertical li.current > a:hover,
-.wy-menu-vertical li.on a:hover { background: var(--bg-panel-hi) !important; color: var(--green) !important; }
-.wy-menu-vertical li.toctree-l1.current > a { border-top: none !important; border-bottom: none !important; }
-.wy-menu-vertical li a { color: var(--text-dim); }
-.wy-menu-vertical li a:hover { background: var(--bg-panel-hi); color: var(--green); }
+
 .wy-side-nav-search { background: var(--bg-panel-hi); }
 .wy-side-nav-search input[type=text] { border-color: var(--border); }
 .wy-side-nav-search > a { color: var(--green) !important; }
-.wy-side-nav-search > div.version { color: var(--text-dim); }
+
+.wy-menu-vertical { background: var(--bg-panel); }
+.wy-menu-vertical li { background: transparent; }
+.wy-menu-vertical li.current { background: transparent; }
+.wy-menu-vertical li a { color: var(--text-dim); }
+.wy-menu-vertical li a:hover { background: var(--bg-panel-hi); color: var(--green); }
+.wy-menu-vertical li.current a { color: var(--text-dim); border-right-color: var(--border); }
+.wy-menu-vertical li.current a:hover { background: var(--bg-panel-hi); }
+.wy-menu-vertical li.current > a { background: var(--bg-panel-alt); color: var(--green); }
+.wy-menu-vertical li.current > a:hover { background: var(--bg-panel-hi); color: var(--green); }
+.wy-menu-vertical li.toctree-l1.current > a { border-top: none; border-bottom: none; }
+
 .rst-content .toctree-wrapper > p.caption { color: var(--green); }
 .rst-content a { color: var(--cyan); }
 .rst-content a:visited { color: var(--amber); }
 .rst-content a:hover { color: var(--green); }
-.rst-content .section-title { color: var(--green); }
 .rst-content h1, .rst-content h2, .rst-content h3, .rst-content h4 { color: var(--green); }
-.rst-content h1 code, .rst-content h2 code, .rst-content h3 code, .rst-content h4 code { color: var(--green); }
 .rst-content code { color: var(--amber); background: var(--bg-panel-alt); border: 1px solid var(--border); }
 .rst-content code.literal { color: var(--amber); background: var(--bg-panel-alt); }
 .rst-content pre { background: var(--bg-primary); border: 1px solid var(--border); color: var(--text); }
 .rst-content .highlight { background: var(--bg-primary); }
-.rst-content table { border-color: var(--border); }
 .rst-content table th { background: var(--bg-panel-hi); color: var(--green); }
 .rst-content table td { background: var(--bg-panel); color: var(--text); }
-.rst-content table .line-block { border-color: var(--border); }
 .rst-content .admonition { background: var(--bg-panel-alt); border-color: var(--border-light); }
-.rst-content .admonition .admonition-title { background: var(--bg-panel-hi); color: var(--green); }
+.rst-content .admonition-title { background: var(--bg-panel-hi); color: var(--green); }
 .rst-content .note { border-color: var(--cyan-dim); }
 .rst-content .note .admonition-title { background: var(--cyan-dim); color: var(--cyan); }
 .rst-content .warning { border-color: var(--amber-dim); }
 .rst-content .warning .admonition-title { background: var(--amber-dim); color: var(--amber); }
 .rst-content .danger { border-color: var(--red-dim); }
 .rst-content .danger .admonition-title { background: var(--red-dim); color: var(--red); }
-.wy-table-responsive table td { background: var(--bg-panel); }
+
 .wy-table thead th { background: var(--bg-panel-hi); color: var(--green); }
-.wy-table-odd td { background: var(--bg-panel); }
-.wy-table-even td { background: var(--bg-panel-alt); }
 .ethical-rtd { display: none !important; }
 .rst-content .sidebar { background: var(--bg-panel-alt); border-color: var(--border); }
 .rst-content .sidebar .sidebar-title { background: var(--bg-panel-hi); color: var(--green); }
@@ -76,5 +67,4 @@ body { background: var(--bg-primary); color: var(--text); }
 .btn:hover { background: var(--green-dim); color: var(--green); border-color: var(--green); }
 footer { color: var(--text-dim); }
 footer a { color: var(--cyan); }
-.rst-content .line-block { border-color: var(--border); }
 input[type="text"], input[type="search"] { background: var(--bg-primary); color: var(--text); border-color: var(--border); }
