@@ -28,7 +28,7 @@ jobs:
       - run: pip install -e .
       - run: pyright iskg/
 
-  test:
+  test-linux:
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -47,6 +47,36 @@ jobs:
           apt-cache show gir1.2-webkit2-4.1 >/dev/null 2>&1 && \
             sudo apt-get install -y -qq gir1.2-webkit2-4.1 || \
             sudo apt-get install -y -qq gir1.2-webkit2-4.0
+      - run: pip install -e ".[dev]"
+      - run: pytest
+
+  test-win:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2022, windows-2025]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install -e ".[dev]"
+      - run: pytest
+
+  test-mac:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-13, macos-14, macos-15]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
       - run: pip install -e ".[dev]"
       - run: pytest
 
