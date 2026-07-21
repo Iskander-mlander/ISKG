@@ -1,0 +1,42 @@
+# Bytecode
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Cache
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+.hypothesis/
+*.egg-info/
+
+# Build
+dist/
+build/
+*.egg
+
+# Environment
+.env
+.venv
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Legacy standalone interface (kept for reference, not part of ISKG)
+# index.html, js/, css/, img/ are legacy files
+
+# Project specific
+/stderr.log

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <circle cx="32" cy="32" r="30" fill="none" stroke="#22d3ee" stroke-width="1" opacity="0.6"/>
+  <circle cx="32" cy="32" r="20" fill="none" stroke="#22d3ee" stroke-width="0.5" opacity="0.4"/>
+  <circle cx="32" cy="32" r="10" fill="none" stroke="#22d3ee" stroke-width="0.5" opacity="0.3"/>
+  <line x1="32" y1="2" x2="32" y2="62" stroke="#0a2030" stroke-width="0.5"/>
+  <line x1="2" y1="32" x2="62" y2="32" stroke="#0a2030" stroke-width="0.5"/>
+  <line x1="32" y1="32" x2="56" y2="8" stroke="#4ade80" stroke-width="2"/>
+  <circle cx="32" cy="32" r="4" fill="#4ade80"/>
+  <circle cx="48" cy="18" r="3" fill="#f59e0b" opacity="0.8"/>
+  <text x="32" y="56" text-anchor="middle" fill="#22d3ee" font-size="7" font-family="monospace">RADAR</text>
+</svg>

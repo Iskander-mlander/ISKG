@@ -1,0 +1,66 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "lsp": {
+    "pylsp": {
+      "command": ["pylsp"],
+      "extensions": ["py", "pyw"]
+    },
+    "bash": {
+      "command": ["bash-language-server", "start"],
+      "extensions": ["sh", "bash"]
+    },
+    "vscode-json": {
+      "command": ["vscode-json-languageserver", "--stdio"],
+      "extensions": ["json", "jsonc"]
+    }
+  },
+  "formatter": {
+    "python": {
+      "command": ["ruff", "format", "-"],
+      "extensions": ["py", "pyw"]
+    },
+    "bash": {
+      "command": ["shfmt"],
+      "extensions": ["sh", "bash"]
+    },
+    "json": {
+      "command": ["jq", "."],
+      "extensions": ["json", "jsonc"]
+    }
+  },
+  "command": {
+    "test": {
+      "template": "python -m pytest tests/test_parser.py tests/test_false_positive_filters.py tests/test_text_type_filtering.py tests/test_reliability_hardening.py tests/test_runtime_coverage.py tests/test_runtime_templates.py tests/test_runtime_hook_diagnostics.py -q --rootdir .",
+      "description": "Run core regression tests (matches CI)"
+    },
+    "lint": {
+      "template": "ruff check src/ tests/",
+      "description": "Lint Python with ruff"
+    },
+    "format": {
+      "template": "ruff format src/ tests/",
+      "description": "Format Python with ruff"
+    },
+    "checkall": {
+      "template": "ruff check src/ tests/ && ruff format --check src/ tests/",
+      "description": "Lint and format check"
+    },
+    "cli": {
+      "template": "python run_cli.py --interactive",
+      "description": "Run CLI in interactive mode"
+    },
+    "run": {
+      "template": "python run_lite.py",
+      "description": "Run Lite (GUI) version"
+    }
+  },
+  "permission": {
+    "bash": "ask",
+    "read": "allow",
+    "edit": "allow",
+    "glob": "allow",
+    "grep": "allow",
+    "list": "allow",
+    "lsp": "allow"
+  }
+}
