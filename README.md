@@ -131,7 +131,7 @@ app.run()
 
 ## Documentation
 
-Full API reference: [docs/_build/html/index.html](docs/_build/html/index.html)
+Full API reference: [github-pages](https://iskander-mlander.github.io/ISKG/) _(requires GitHub Pages enabled in repo settings → `gh-pages` branch)_
 
 ## License
 
