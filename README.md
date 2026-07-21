@@ -33,7 +33,7 @@ No browser, no HTTP server — just a Python process and a lightweight WebView.
 |-----------|-------------|----------------|----------|-------|
 | **Tkinter** | 0 (stdlib) | ~1 MB | — | No modern widgets, dated look |
 | **Remi** | 1 (bottle/werkzeug) | ~2 MB | ~15 KLoC | Browser-based, needs a tab |
-| **<h4 style="color: #f59e0b;">ISKG</h4>** | 1 (pywebview) | ~2 MB | ~6 KLoC | Native window, modern widgets |
+| <b style="color:#4ade80;">ISKG</b> | <b style="color:#4ade80;">1 (pywebview)</b> | <b style="color:#4ade80;">~2 MB</b> | <b style="color:#4ade80;">~6 KLoC</b> | <b style="color:#4ade80;">Native window, modern widgets</b> |
 | **PySimpleGUI** | 1 (tkinter/Qt) | ~5 MB | ~100 KLoC | Wrapper, not a framework |
 | **Dear PyGui** | 0 (bundled) | ~10 MB | ~80 KLoC | GPU-accelerated, no native look |
 | **Kivy** | SDL2, GLEW, etc | ~15 MB | ~200 KLoC | Own UI language, heavy |
