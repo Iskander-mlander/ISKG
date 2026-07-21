@@ -41,6 +41,7 @@ Thumbs.db
 
 # Session files (opencode etc.)
 session-*.md
+opencode.jsonc
 
 # Project specific
 /stderr.log
