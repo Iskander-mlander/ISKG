@@ -64,28 +64,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install system deps
+        id: distro
         run: |
           case "${{ matrix.container }}" in
             fedora*)
               dnf install -y python3 python3-pip python3-devel git
-              echo "PIP_EXTRA=" >> $GITHUB_ENV
+              echo "pip_extra=" >> $GITHUB_OUTPUT
               ;;
             debian*)
               apt-get update -qq
               apt-get install -y -qq python3 python3-pip python3-venv python3-dev git
-              echo "PIP_EXTRA=--break-system-packages" >> $GITHUB_ENV
+              echo "pip_extra=--break-system-packages" >> $GITHUB_OUTPUT
               ;;
             archlinux*)
               pacman -Syu --noconfirm python python-pip git
-              echo "PIP_EXTRA=--break-system-packages" >> $GITHUB_ENV
+              echo "pip_extra=--break-system-packages" >> $GITHUB_OUTPUT
               ;;
           esac
       - name: Debug info
         run: |
           python3 --version
           python3 -m pip --version
-          python3 -c "import sys; print(sys.path)"
       - name: Install project
+        env:
+          PIP_EXTRA: ${{ steps.distro.outputs.pip_extra }}
         run: |
           python3 -m pip install $PIP_EXTRA -e ".[dev]"
       - name: Run tests
