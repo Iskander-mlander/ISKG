@@ -24,7 +24,6 @@
 - **JS bridge**: Bidirectional Python ↔ JavaScript calls for real-time UI updates.
 - **`.tooltip` on every widget**: Set a tooltip via property or `config()`.
 - **`after()` timers**: Cancelable timer objects with `.cancel()` and `.running`.
-- **Sphinx docs**: Full API reference [available](docs/_build/html/).
 
 ## Comparison — lightness & footprint
 
@@ -131,7 +130,7 @@ app.run()
 
 ## Documentation
 
-Full API reference: [github-pages](https://iskander-mlander.github.io/ISKG/) _(requires GitHub Pages enabled in repo settings → `gh-pages` branch)_
+Full API reference: [github-pages](https://iskander-mlander.github.io/ISKG/)
 
 ## License
 
