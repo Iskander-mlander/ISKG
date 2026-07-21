@@ -24,13 +24,18 @@ body { background: var(--bg-primary); color: var(--text); }
 .wy-nav-content-wrap { background: var(--bg-primary); }
 .wy-nav-content { background: var(--bg-panel); }
 .wy-menu-vertical { background: var(--bg-panel); }
-.wy-menu-vertical li.current { background: transparent; }
-.wy-menu-vertical li.current a { color: var(--text); border-right-color: var(--border); }
-.wy-menu-vertical li.current a:hover { background: var(--bg-panel-hi); }
+.wy-menu-vertical li.current { background: transparent !important; }
+.wy-menu-vertical li.current a { color: var(--text) !important; border-right-color: var(--border) !important; }
+.wy-menu-vertical li.current a:hover { background: var(--bg-panel-hi) !important; }
 .wy-menu-vertical li.current > a,
-.wy-menu-vertical li.on a { background: var(--bg-panel-alt); color: var(--green); border: none; }
+.wy-menu-vertical li.current > a.current,
+.wy-menu-vertical li.current > a.reference.internal,
+.wy-menu-vertical li.toctree-l1.current > a,
+.wy-menu-vertical li.toctree-l2.current > a,
+.wy-menu-vertical li.on a { background: var(--bg-panel-alt) !important; color: var(--green) !important; border: none !important; }
 .wy-menu-vertical li.current > a:hover,
-.wy-menu-vertical li.on a:hover { background: var(--bg-panel-hi); color: var(--green); }
+.wy-menu-vertical li.on a:hover { background: var(--bg-panel-hi) !important; color: var(--green) !important; }
+.wy-menu-vertical li.toctree-l1.current > a { border-top: none !important; border-bottom: none !important; }
 .wy-menu-vertical li a { color: var(--text-dim); }
 .wy-menu-vertical li a:hover { background: var(--bg-panel-hi); color: var(--green); }
 .wy-side-nav-search { background: var(--bg-panel-hi); }
