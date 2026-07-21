@@ -73,7 +73,7 @@ jobs:
             debian*)
               apt-get update -qq
               apt-get install -y -qq python3 python3-pip python3-venv python3-dev git
-              echo "PIP_EXTRA=" >> $GITHUB_ENV
+              echo "PIP_EXTRA=--break-system-packages" >> $GITHUB_ENV
               ;;
             archlinux*)
               pacman -Syu --noconfirm python python-pip git
