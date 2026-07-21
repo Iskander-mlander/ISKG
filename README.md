@@ -31,7 +31,7 @@
 |-----------|-------------|----------------|----------|-------|
 | **Tkinter** | 0 (stdlib) | ~1 MB | — | No modern widgets, dated look |
 | **Remi** | 1 (bottle/werkzeug) | ~2 MB | ~15 KLoC | Browser-based, needs a tab |
-| **ISKG** | 3 (pywebview, bottle, proxy_tools) | ~2 MB | ~6 KLoC | Native window, modern widgets |
+| **ISKG** | 1 (pywebview) | ~2 MB | ~6 KLoC | Native window, modern widgets |
 | **PySimpleGUI** | 1 (tkinter/Qt) | ~5 MB | ~100 KLoC | Wrapper, not a framework |
 | **Dear PyGui** | 0 (bundled) | ~10 MB | ~80 KLoC | GPU-accelerated, no native look |
 | **Kivy** | SDL2, GLEW, etc | ~15 MB | ~200 KLoC | Own UI language, heavy |
