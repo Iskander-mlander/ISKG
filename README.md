@@ -51,7 +51,7 @@ No browser, no HTTP server — just a Python process and a lightweight WebView.
 pip install iskg
 
 # desde GitHub Releases
-pip install https://github.com/Iskander-mlander/ISKG/releases/download/v0.3.7/iskg-0.3.7-py3-none-any.whl
+pip install https://github.com/Iskander-mlander/ISKG/releases/download/v0.3.8/iskg-0.3.8-py3-none-any.whl
 ```
 
 ```python
