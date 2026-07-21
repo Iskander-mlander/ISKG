@@ -6,13 +6,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 project = "ISKG"
 copyright = "2026, Iskander-mlander"
 author = "Iskander-mlander"
-release = "0.2.0"
+release = "0.3.7"
 
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
+    "sphinx_rtd_dark_mode",
 ]
+
+default_dark_mode = True
 
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
