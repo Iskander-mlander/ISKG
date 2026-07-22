@@ -22,7 +22,7 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.14"
-      - run: pip install sphinx sphinx-rtd-theme
+      - run: pip install sphinx sphinx-rtd-theme sphinx-rtd-dark-mode
       - run: pip install -e .
       - run: sphinx-build -b html docs docs/_build/html
       - uses: actions/upload-pages-artifact@v3
