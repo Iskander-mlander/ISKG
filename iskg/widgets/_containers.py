@@ -130,7 +130,7 @@ class Frame(Widget):
             rows = _grid_template(self._grid_row_weights, nrows, "auto", "auto")
             children_html = f'<div class="iskg-grid" style="display:grid;gap:3px;grid-template-columns:{cols};grid-template-rows:{rows};min-height:0;min-width:0;">{children_html}</div>'
         else:
-            children_html = f'<div style="display:flex;flex-wrap:wrap;gap:3px;min-height:0;min-width:0;">{children_html}</div>'
+            children_html = f'<div style="display:flex;flex-direction:column;gap:3px;min-height:0;min-width:0;">{children_html}</div>'
 
         return f'''<div id="{self._id}" class="iskg-frame" style="{style}">
 {header}{children_html}</div>'''

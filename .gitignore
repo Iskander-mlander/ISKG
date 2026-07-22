@@ -50,3 +50,6 @@ opencode.jsonc
 
 # pytest-benchmark
 .benchmarks/
+
+# Local examples (not for upload)
+/examples/rss_reader.py

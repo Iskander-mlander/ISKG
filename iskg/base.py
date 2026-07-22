@@ -733,7 +733,7 @@ el.onmouseleave=function(){{clearTimeout(timer);tip.style.display="none";}};
                 style += "flex:1;min-height:0;min-width:0;"
             if li.get("fill") in ("x", "both"):
                 style += "width:100%;"
-            if li.get("fill") in ("y", "both"):
+            if li.get("fill") in ("y", "both") and not li.get("expand"):
                 style += "height:100%;"
             if li.get("padx"):
                 style += f"padding-left:{li['padx']}px;padding-right:{li['padx']}px;"
