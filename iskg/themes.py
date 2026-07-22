@@ -36,6 +36,8 @@ THEMES: dict[str, dict[str, str]] = {
         "--text": "#c8d6e5",
         "--text-dim": "#4a5a6a",
         "--text-green": "#7ec850",
+        "--progress-from": "#0f2e1a",
+        "--progress-to": "#2e2008",
     },
     "cold": {
         "--bg-primary": "#060d14",
@@ -55,6 +57,8 @@ THEMES: dict[str, dict[str, str]] = {
         "--text": "#c8d6e5",
         "--text-dim": "#4a6078",
         "--text-green": "#60a5fa",
+        "--progress-from": "#0a2035",
+        "--progress-to": "#1a1a3a",
     },
     "warm": {
         "--bg-primary": "#100a06",
@@ -74,6 +78,8 @@ THEMES: dict[str, dict[str, str]] = {
         "--text": "#e5d0c8",
         "--text-dim": "#6a5a4a",
         "--text-green": "#fb923c",
+        "--progress-from": "#2e1a0a",
+        "--progress-to": "#2e2208",
     },
     "night": {
         "--bg-primary": "#030507",
@@ -93,6 +99,8 @@ THEMES: dict[str, dict[str, str]] = {
         "--text": "#8a9aa8",
         "--text-dim": "#3a4a58",
         "--text-green": "#4ade80",
+        "--progress-from": "#081a0e",
+        "--progress-to": "#1a1a06",
     },
     "light": {
         "--bg-primary": "#e8eaed",
@@ -112,6 +120,8 @@ THEMES: dict[str, dict[str, str]] = {
         "--text": "#202124",
         "--text-dim": "#5f6368",
         "--text-green": "#2e7d32",
+        "--progress-from": "#e8f5e9",
+        "--progress-to": "#fff3e0",
     },
     "desert": {
         "--bg-primary": "#1a1410",
@@ -131,6 +141,8 @@ THEMES: dict[str, dict[str, str]] = {
         "--text": "#d4c9b8",
         "--text-dim": "#6a5f52",
         "--text-green": "#a3b18a",
+        "--progress-from": "#1a2214",
+        "--progress-to": "#2a2016",
     },
     "ocean": {
         "--bg-primary": "#0a0e14",
@@ -150,6 +162,8 @@ THEMES: dict[str, dict[str, str]] = {
         "--text": "#c4d4e0",
         "--text-dim": "#4a6070",
         "--text-green": "#34d399",
+        "--progress-from": "#0a1e18",
+        "--progress-to": "#1e1a08",
     },
 }
 
@@ -201,6 +215,8 @@ THEME_VARS: list[str] = [
     "--text",
     "--text-dim",
     "--text-green",
+    "--progress-from",
+    "--progress-to",
 ]
 
 # Re-exported for backwards compatibility; applications can also access

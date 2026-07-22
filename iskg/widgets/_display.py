@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 from typing import Any
 
 from ..base import Widget
@@ -99,7 +100,15 @@ class Label(Widget):
 
 
 class ProgressBar(Widget):
-    """A progress bar widget."""
+    """A clickable progress bar widget.
+
+    Supports click-to-set-value, ``command`` callbacks, ``bind("change", cb)``,
+    and variable binding. Use ``max_`` to set the range maximum.
+
+    Usage::
+
+        pb = ProgressBar(value=50, max_=100, command=lambda: print("clicked"))
+    """
 
     def __init__(
         self,
@@ -144,6 +153,24 @@ class ProgressBar(Widget):
 if(el)el.style.width="{pct}%";
 var t=document.getElementById("{self._id}").querySelector(".iskg-progress-text");
 if(t)t.innerText="{int(pct)}%";'''
+
+    def _handle_bridge_event(self, event_name: str, event_data: Any) -> str | None:
+        if event_name == "change":
+            with contextlib.suppress(ValueError, TypeError):
+                self._config_dict["value"] = float(event_data)
+        return super()._handle_bridge_event(event_name, event_data)
+
+    def _render_js(self) -> str:
+        mx = self._config_dict.get("max", 100)
+        return f'''document.getElementById("{self._id}").onclick=function(e){{
+  var r=this.getBoundingClientRect();
+  var pct=Math.max(0,Math.min(100,(e.clientX-r.left)/r.width*100));
+  var val=pct/100*{mx};
+  this.querySelector(".iskg-progress-fill").style.width=pct+"%";
+  var t=this.querySelector(".iskg-progress-text");
+  if(t)t.innerText=Math.round(pct)+"%";
+  iskg_bridge_event("{self._id}","change",val.toString());
+}};'''
 
 
 class LEDDisplay(Widget):

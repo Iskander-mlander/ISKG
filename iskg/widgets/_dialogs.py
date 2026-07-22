@@ -46,7 +46,12 @@ class MessageDialog(Widget):
 
     @staticmethod
     def _escape(text: str) -> str:
-        return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
+        return (
+            text.replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace('"', "&quot;")
+        )
 
     def _render(self) -> str:
         title = self._escape(self._config_dict.get("_dialog_title", ""))
@@ -54,7 +59,7 @@ class MessageDialog(Widget):
         buttons = self._config_dict.get("_dialog_buttons", ["OK"])
         bid = self._id
         btns_html = "".join(
-            f'<button class="iskg-btn" onclick="iskg_bridge_event(\'{bid}\',\'result\',{json.dumps(b)})">{self._escape(b)}</button>'
+            f"<button class=\"iskg-btn\" onclick=\"iskg_bridge_event('{bid}','result',{json.dumps(b)})\">{self._escape(b)}</button>"
             for b in buttons
         )
         return f'''<div id="{self._id}-ov" class="iskg-msgbox-overlay">
@@ -112,7 +117,9 @@ def showquestion(
     callback: Callable[[str], None] | None = None,
 ) -> MessageDialog:
     """Show a question dialog with Yes/No buttons (HTML overlay)."""
-    md = MessageDialog(parent=parent, title=title, text=text, buttons=["Yes", "No"], callback=callback)
+    md = MessageDialog(
+        parent=parent, title=title, text=text, buttons=["Yes", "No"], callback=callback
+    )
     return md
 
 

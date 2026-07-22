@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.9] — 2026-07-22
+
+### Fixed
+- P1 — ProgressBar ahora es interactivo (click, command, bind("change"), variables)
+- P2 — Dedup de eventos cambiado de clave-exacta a debounce temporal (50ms)
+- P3 — `_eval_js` logea errores JS en stderr cuando `debug=True`
+- P4 — `_sync()` protegido contra widgets destruidos o app no iniciada
+- P5 — Variables `--progress-from`/`--progress-to` agregadas a los 7 temas
+
+### Changed
+- `Application(debug=True)` expone errores JS sin afectar producción
+
 ## [0.2.0] — 2026-07-21
 
 ### Added

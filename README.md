@@ -18,14 +18,15 @@ No browser, no HTTP server — just a Python process and a lightweight WebView.
 
 ## Features
 
-- **30+ widgets**: Button, Entry, ComboBox, Slider, ProgressBar, Canvas, TreeView, DataGrid, Knob, Gauge, Notebook, MenuBar, and more.
+- **38 widgets**: Button, Entry, ComboBox, Slider, ProgressBar, Canvas, TreeView, DataGrid, Knob, Gauge, Notebook, MenuBar, and more.
 - **Layout engines**: `pack`, `grid` (with sticky + weights), `place`.
-- **Theming**: 5 built-in themes (ifaz, amber, green, blue, light), CSS variable system.
+- **Theming**: 7 built-in themes (ifaz, cold, warm, night, light, desert, ocean), CSS variable system.
 - **Cross-platform**: Linux, Windows, macOS (same codebase).
 - **Zero HTTP**: No server, no ports, no browser tabs — just a window.
 - **JS bridge**: Bidirectional Python ↔ JavaScript calls for real-time UI updates.
 - **`.tooltip` on every widget**: Set a tooltip via property or `config()`.
 - **`after()` timers**: Cancelable timer objects with `.cancel()` and `.running`.
+- **Debug mode**: Pass `debug=True` to `Application()` to log JS errors to stderr.
 
 ## Comparison — lightness & footprint
 

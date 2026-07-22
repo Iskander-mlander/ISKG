@@ -6,6 +6,7 @@ import contextlib
 import json
 import os
 import threading
+import time
 from collections.abc import Callable
 from typing import Any
 
@@ -18,7 +19,8 @@ _LOCK = threading.Lock()
 
 
 class _JSAPI:
-    _in_progress: set[tuple[str, str, str | None]] = set()
+    _DEBOUNCE_MS = 50
+    _last_event: dict[tuple[str, str], float] = {}
 
     def on_event(
         self,
@@ -26,22 +28,20 @@ class _JSAPI:
         event_name: str,
         event_data_json: str | None,
     ) -> None:
-        key = (widget_id, event_name, event_data_json)
+        key = (widget_id, event_name)
+        now = time.time()
         with _LOCK:
-            if key in self._in_progress:
+            last = self._last_event.get(key, 0)
+            if (now - last) * 1000 < self._DEBOUNCE_MS:
                 return
-            self._in_progress.add(key)
-        try:
-            handler = _HANDLERS.get(widget_id)
-            if handler:
-                try:
-                    data: Any = json.loads(event_data_json) if event_data_json else None
-                except json.JSONDecodeError:
-                    data = event_data_json
-                handler(event_name, data)
-        finally:
-            with _LOCK:
-                self._in_progress.discard(key)
+            self._last_event[key] = now
+        handler = _HANDLERS.get(widget_id)
+        if handler:
+            try:
+                data: Any = json.loads(event_data_json) if event_data_json else None
+            except json.JSONDecodeError:
+                data = event_data_json
+            handler(event_name, data)
 
 
 _JSAPI_INSTANCE = _JSAPI()
@@ -59,6 +59,10 @@ class Application:
         label = Label(text="Hello")
         app.add(label)
         app.run()
+
+    Pass ``debug=True`` to log JavaScript errors to stderr::
+
+        app = Application(debug=True)
     """
 
     def __init__(
@@ -69,6 +73,7 @@ class Application:
         scanlines: bool = True,
         vignette: bool = True,
         theme: str = "ifaz",
+        debug: bool = False,
     ) -> None:
         self._title = title
         self._width = width
@@ -76,6 +81,7 @@ class Application:
         self._scanlines = scanlines
         self._vignette = vignette
         self._theme_name = theme
+        self._debug = debug
 
         self._root_widgets: list[Widget] = []
         self._running = False
@@ -194,8 +200,21 @@ class Application:
 
     def _eval_js(self, js: str) -> None:
         if self._window and self._running:
-            with contextlib.suppress(Exception):
+            try:
                 self._window.evaluate_js(js)
+            except Exception as exc:
+                if self._debug:
+                    import sys
+
+                    print(f"[ISKG:js] {exc}", file=sys.stderr)
+
+    @property
+    def debug(self) -> bool:
+        return self._debug
+
+    @debug.setter
+    def debug(self, value: bool) -> None:
+        self._debug = bool(value)
 
     def _widget_destroyed(self, widget_id: str) -> None:
         _HANDLERS.pop(widget_id, None)

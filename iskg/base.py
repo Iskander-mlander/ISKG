@@ -259,7 +259,7 @@ class Widget:
         text = self._config_dict.get("tooltip", "")
         if not text:
             return ""
-        escaped = text.replace("\\", "\\\\").replace("'", "\\'").replace('"', '&quot;')
+        escaped = text.replace("\\", "\\\\").replace("'", "\\'").replace('"', "&quot;")
         return f'''(function(){{
 var el=document.getElementById("{self._id}");
 if(!el)return;
@@ -431,7 +431,7 @@ el.onmouseleave=function(){{clearTimeout(timer);tip.style.display="none";}};
 
     @staticmethod
     def _tabindex_attr(takefocus: bool) -> str:
-        return ' tabindex="0"' if takefocus else ''
+        return ' tabindex="0"' if takefocus else ""
 
     def _collect_focusable(self) -> list[Widget]:
         result: list[Widget] = []
@@ -613,7 +613,17 @@ el.onmouseleave=function(){{clearTimeout(timer);tip.style.display="none";}};
         parsed = self._parse_key_event(event)
         if parsed is not None:
             et = parsed["event_type"]
-            self._key_bindings[:] = [e for e in self._key_bindings if not (e["event_type"] == et and e["key"] == parsed["key"] and e["ctrl"] == parsed["ctrl"] and e["alt"] == parsed["alt"] and e["shift"] == parsed["shift"])]
+            self._key_bindings[:] = [
+                e
+                for e in self._key_bindings
+                if not (
+                    e["event_type"] == et
+                    and e["key"] == parsed["key"]
+                    and e["ctrl"] == parsed["ctrl"]
+                    and e["alt"] == parsed["alt"]
+                    and e["shift"] == parsed["shift"]
+                )
+            ]
             self._bindings.pop(et, None)
             if self._app and self._app._running:
                 self._eval_js(f'iskg_unbind_key("{self._id}",{json.dumps(et)});')
@@ -663,16 +673,17 @@ el.onmouseleave=function(){{clearTimeout(timer);tip.style.display="none";}};
             self._app._widget_destroyed(self._id)
 
     def _sync(self) -> None:
-        if self._app and self._app._running:
-            parts: list[str] = []
-            js = self._render_update_js()
-            if js:
-                parts.append(js)
-            style_js = self._render_style_update_js()
-            if style_js:
-                parts.append(style_js)
-            if parts:
-                self._app._eval_js(";".join(parts))
+        if self._destroyed or not (self._app and self._app._running):
+            return
+        parts: list[str] = []
+        js = self._render_update_js()
+        if js:
+            parts.append(js)
+        style_js = self._render_style_update_js()
+        if style_js:
+            parts.append(style_js)
+        if parts:
+            self._app._eval_js(";".join(parts))
 
     def _render(self) -> str:
         """Return the HTML string for this widget. Override in subclasses."""
@@ -709,7 +720,7 @@ el.onmouseleave=function(){{clearTimeout(timer);tip.style.display="none";}};
         """Return common HTML attributes (tabindex, disabled)."""
         attrs = ""
         if self._config_dict.get("disabled"):
-            attrs += ' disabled'
+            attrs += " disabled"
         if self._config_dict.get("takefocus", self._default_takefocus()):
             attrs += ' tabindex="0"'
         return attrs

@@ -310,7 +310,7 @@ html, body {
 }
 .iskg-progress-fill {
   height:100%;
-  background:linear-gradient(90deg, var(--green-dim), var(--amber-dim));
+  background:linear-gradient(90deg, var(--progress-from, var(--green-dim)), var(--progress-to, var(--amber-dim)));
   transition:width 0.3s;
 }
 .iskg-progress-text {

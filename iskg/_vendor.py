@@ -55,9 +55,7 @@ def try_import(module: str, package: str = "") -> None:
         )
     except subprocess.CalledProcessError as exc:
         print(
-            f"ISKG: Failed to install {pkg}. "
-            f"Try: pip install {pkg}\n"
-            f"Error: {exc}",
+            f"ISKG: Failed to install {pkg}. Try: pip install {pkg}\nError: {exc}",
             file=sys.stderr,
         )
         sys.exit(1)

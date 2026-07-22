@@ -41,8 +41,12 @@ Thumbs.db
 
 # Session files (opencode etc.)
 session-*.md
+ACTUAL.md
 opencode.jsonc
 
 # Project specific
 /stderr.log
 /fix.md
+
+# pytest-benchmark
+.benchmarks/
