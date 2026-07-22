@@ -1,25 +1,20 @@
 # Changelog
 
-## [0.3.9] — 2026-07-22
+## [0.3.10] — 2026-07-22
 
 ### Added
 - 8 nuevos temas: infinity (neón), cyberdusk (azul), dracula, nord, gruvbox, monokai, catppuccin, light
 - 7 fuentes SIL OFL embebidas (Inter, JetBrains Mono, Nunito, Manrope, Space Grotesk, Fira Sans, Playfair Display) — sin CDN
 - `AGENTS.md` con workflow checklist para sesiones futuras
-- `Application(debug=True)` expone errores JS sin afectar producción
-
-### Fixed
-- P1 — ProgressBar ahora es interactivo (click, command, bind("change"), variables)
-- P2 — Dedup de eventos cambiado de clave-exacta a debounce temporal (50ms)
-- P3 — `_eval_js` logea errores JS en stderr cuando `debug=True`
-- P4 — `_sync()` protegido contra widgets destruidos o app no iniciada
-- P5 — Variables `--progress-from`/`--progress-to` agregadas a los temas
+- Nuevas variables CSS: `--font-sans`, `--font-rounded`, `--font-geometric`, `--font-display-alt`, `--font-humanist`, `--font-serif`
 
 ### Changed
 - Reemplazados 5 temas antiguos (cold, warm, night, ocean) por 8 nuevos
 - Descripción del proyecto: eliminada mención "táctico-militar"
 - Fuentes CDN (Share Tech Mono, Orbitron) reemplazadas por fuentes embebidas
-- Nuevas variables CSS: `--font-sans`, `--font-rounded`, `--font-geometric`, `--font-display-alt`, `--font-humanist`, `--font-serif`
+- Documentación de API actualizada con módulo fonts y lista de temas
+
+## [0.3.9] — 2026-07-22
 
 ## [0.2.0] — 2026-07-21
 
