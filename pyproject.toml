@@ -8,6 +8,7 @@ version = "0.3.9"
 description = "IFAZ Widget Toolkit — widgets Python con temática táctico-militar sobre pywebview"
 readme = "README.md"
 license = "GPL-3.0-or-later"
+authors = [{name = "Iskander-mlander"}]
 requires-python = ">=3.10"
 keywords = ["gui", "widgets", "pywebview", "tactical", "ifaz"]
 classifiers = [
