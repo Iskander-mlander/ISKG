@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "iskg"
 version = "0.3.9"
-description = "IFAZ Widget Toolkit — widgets Python con temática táctico-militar sobre pywebview"
+description = "IFAZ Widget Toolkit — widgets Python livianos sobre pywebview"
 readme = "README.md"
 license = "GPL-3.0-or-later"
 authors = [{name = "Iskander-mlander"}]

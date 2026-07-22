@@ -1,7 +1,7 @@
 <div align="center">
   <img src="iskg/examples/icon.png" width="80" alt="ISKG logo"/>
   <h1>ISKG</h1>
-  <p><b>IFAZ Widget Toolkit</b> — Python GUI framework with IFAZ theme</p>
+  <p><b>IFAZ Widget Toolkit</b> — Python GUI framework ligero</p>
 
   [![CI](https://img.shields.io/github/actions/workflow/status/Iskander-mlander/ISKG/ci.yml?branch=main&label=CI&logo=github)](https://github.com/Iskander-mlander/ISKG/actions)
   [![Python](https://img.shields.io/badge/python-3.10%20|%203.11%20|%203.12%20|%203.13%20|%203.14-blue?logo=python)](https://www.python.org)

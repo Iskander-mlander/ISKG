@@ -2,7 +2,7 @@
 
    <div align="center">
      <h1 style="color: var(--text-green); margin-bottom: 0;">ISKG</h1>
-     <p style="color: var(--text-dim); font-size: 1.1em;"><b>IFAZ Widget Toolkit</b> — Python GUI framework with a tactical/IFAZ theme</p>
+     <p style="color: var(--text-dim); font-size: 1.1em;"><b>IFAZ Widget Toolkit</b> — Python GUI framework ligero</p>
      <p>
        <a href="https://github.com/Iskander-mlander/ISKG/actions"><img src="https://img.shields.io/github/actions/workflow/status/Iskander-mlander/ISKG/ci.yml?branch=main&label=CI&logo=github" /></a>
        <a href="https://www.python.org"><img src="https://img.shields.io/badge/python-3.10%20|%203.11%20|%203.12%20|%203.13%20|%203.14-blue?logo=python" /></a>
