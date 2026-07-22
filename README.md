@@ -20,7 +20,7 @@ No browser, no HTTP server — just a Python process and a lightweight WebView.
 
 - **38 widgets**: Button, Entry, ComboBox, Slider, ProgressBar, Canvas, TreeView, DataGrid, Knob, Gauge, Notebook, MenuBar, and more.
 - **Layout engines**: `pack`, `grid` (with sticky + weights), `place`.
-- **Theming**: 7 built-in themes (ifaz, cold, warm, night, light, desert, ocean), CSS variable system.
+- **Theming**: 10 built-in themes (ifaz, desert, infinity, cyberdusk, light, dracula, nord, gruvbox, monokai, catppuccin), CSS variable system.
 - **Cross-platform**: Linux, Windows, macOS (same codebase).
 - **Zero HTTP**: No server, no ports, no browser tabs — just a window.
 - **JS bridge**: Bidirectional Python ↔ JavaScript calls for real-time UI updates.
@@ -123,7 +123,7 @@ Button(parent=bottom, text="ARM", command=on_arm).grid(padx=4)
 Button(parent=bottom, text="DISARM", command=on_disarm).grid(padx=4)
 Label(parent=bottom, text="Theme:").grid(padx=(12, 2))
 combo = ComboBox(parent=bottom,
-    values=["ifaz", "cold", "warm", "night"],
+    values=["ifaz", "desert", "infinity", "cyberdusk", "light", "dracula", "nord", "gruvbox", "monokai", "catppuccin"],
     command=on_theme).grid(padx=4)
 ToggleSwitch(parent=bottom).grid(padx=4)
 status = Label(parent=bottom, text="Standing By")
