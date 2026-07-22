@@ -27,6 +27,7 @@ No browser, no HTTP server — just a Python process and a lightweight WebView.
 - **`.tooltip` on every widget**: Set a tooltip via property or `config()`.
 - **`after()` timers**: Cancelable timer objects with `.cancel()` and `.running`.
 - **Debug mode**: Pass `debug=True` to `Application()` to log JS errors to stderr.
+- **7 embedded fonts** (SIL OFL): [Inter](https://rsms.me/inter/), [JetBrains Mono](https://www.jetbrains.com/lp/mono/), [Nunito](https://fonts.google.com/specimen/Nunito), [Manrope](https://manropefont.com/), [Space Grotesk](https://fonts.google.com/specimen/Space+Grotesk), [Fira Sans](https://fonts.google.com/specimen/Fira+Sans), [Playfair Display](https://fonts.google.com/specimen/Playfair+Display) — no CDN, todo embebido.
 
 ## Comparison — lightness & footprint
 
