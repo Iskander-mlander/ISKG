@@ -458,8 +458,8 @@ class ImageBox(Widget):
         self,
         parent: Widget | None = None,
         src: str = "",
-        width: int = 100,
-        height: int = 100,
+        width: int | str = 100,
+        height: int | str = 100,
         fit: str = "contain",
         **kwargs: Any,
     ) -> None:
@@ -475,6 +475,24 @@ class ImageBox(Widget):
         height = self._config_dict.get("height", 100)
         fit = self._config_dict.get("fit", "contain")
         style = self._render_style()
-        return f'''<div id="{self._id}" class="iskg-imagebox" style="{style}width:{width}px;height:{height}px;">
+        if self._config_dict.get("command"):
+            style += "cursor:pointer;"
+        w = f"{width}px" if isinstance(width, int) else width
+        h = f"{height}px" if isinstance(height, int) else height
+        return f'''<div id="{self._id}" class="iskg-imagebox" style="{style}width:{w};height:{h};">
   <img src="{src}" style="object-fit:{fit};"/>
 </div>'''
+
+    def _handle_bridge_event(self, event_name: str, event_data: Any) -> str | None:
+        return super()._handle_bridge_event(event_name, event_data)
+
+    def _render_js(self) -> str:
+        cmd = self._config_dict.get("command")
+        if cmd:
+            return (
+                super()._render_js()
+                + f'''document.getElementById("{self._id}").onclick=function(){{
+  iskg_bridge_event("{self._id}","click","");
+}};'''
+            )
+        return super()._render_js()

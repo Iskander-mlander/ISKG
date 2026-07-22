@@ -101,34 +101,40 @@ class TestIconLabel:
 class TestTooltipOnWidgets:
     def test_property_default(self):
         from iskg import Widget
+
         w = Widget()
         assert w.tooltip == ""
 
     def test_property_set(self):
         from iskg import Widget
+
         w = Widget()
         w.tooltip = "Hello"
         assert w.tooltip == "Hello"
 
     def test_config_keyword(self):
         from iskg import Widget
+
         w = Widget(tooltip="Init tip")
         assert w.tooltip == "Init tip"
 
     def test_config_method(self):
         from iskg import Widget
+
         w = Widget()
         w.config(tooltip="Config tip")
         assert w.tooltip == "Config tip"
 
     def test_js_generated(self):
         from iskg.widgets._controls import Button
+
         w = Button(text="OK", tooltip="Click me")
         assert "mouseenter" in w._render_tooltip_js()
         assert "Click me" in w._render_tooltip_js()
 
     def test_js_empty_when_no_tooltip(self):
         from iskg.widgets._controls import Button
+
         w = Button(text="OK")
         assert w._render_tooltip_js() == ""
 
@@ -137,6 +143,7 @@ class TestTooltipOnWidgets:
         from iskg.widgets._controls import Button
         from iskg.template import build_html
         from iskg.theme import IFAZ_CSS
+
         btn = Widget()
         btn.tooltip = "Global tip"
         html = build_html([btn], IFAZ_CSS)
@@ -146,6 +153,7 @@ class TestTooltipOnWidgets:
 class TestTimerAfter:
     def test_after_cancel(self):
         from iskg import Widget
+
         w = Widget()
         called = []
         t = w.after(10000, lambda: called.append(1))
@@ -155,16 +163,19 @@ class TestTimerAfter:
 
     def test_after_immediate(self):
         from iskg import Widget
+
         w = Widget()
         called = []
         t = w.after(1, lambda: called.append(1))
         import time
+
         time.sleep(0.05)
         t.cancel()
         # Timer already fired, .running stays True (timer can't stop once fired)
 
     def test_after_cancel_legacy(self):
         from iskg import Widget
+
         w = Widget()
         called = []
         t = w.after(10000, lambda: called.append(1))
@@ -175,6 +186,7 @@ class TestTimerAfter:
 class TestGridImprovements:
     def test_center_sticky(self):
         from iskg import Widget
+
         w = Widget()
         w.grid(row=0, column=0, sticky="c")
         style = w._render_style()
@@ -183,14 +195,16 @@ class TestGridImprovements:
 
     def test_center_horizontal_only(self):
         from iskg import Widget
+
         w = Widget()
         w.grid(row=0, column=0, sticky="cw")
         style = w._render_style()
         assert "justify-self:start" in style  # 'w' wins over 'c'
-        assert "align-self:center" in style   # 'c' used for vertical
+        assert "align-self:center" in style  # 'c' used for vertical
 
     def test_minsize_in_grid_template(self):
         from iskg.widgets._containers import _grid_template
+
         d = {0: (2, 100), 2: (1, 50)}
         result = _grid_template(d, 3)
         assert "minmax(100px,2fr)" in result
@@ -198,6 +212,7 @@ class TestGridImprovements:
 
     def test_grid_columnconfigure_minsize(self):
         from iskg.widgets._containers import Frame
+
         f = Frame()
         f.grid_columnconfigure(0, weight=2, minsize=100)
         assert f._grid_column_weights[0] == (2, 100)

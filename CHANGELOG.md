@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.3.11] — 2026-07-22
+
+### Added
+- ImageBox: soporte para `command` callback y click (cursor:pointer, `iskg_bridge_event`)
+- ImageBox: `width` y `height` aceptan `str` (ej. `"100%"`) además de `int`
+
+### Changed
+- ImageBox: ancho/alto renderizado con unidad `px` solo si es `int`
+
 ## [0.3.10] — 2026-07-22
 
 ### Added
