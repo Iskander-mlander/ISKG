@@ -112,3 +112,11 @@ Themes
    :members:
    :undoc-members:
    :show-inheritance:
+
+Fonts
+-----
+
+.. automodule:: iskg.fonts
+   :members:
+   :undoc-members:
+   :show-inheritance:

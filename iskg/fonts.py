@@ -1,4 +1,34 @@
-"""Embedded CC0/SIL-OFL fonts as base64 woff2 data."""
+"""Embedded fonts (SIL OFL) as base64 woff2 data.
+
+No external CDN required — all fonts are compiled directly into the
+package as base64-encoded ``@font-face`` CSS.
+
+Available fonts and their CSS variables:
+
++------------------+----------------------------------+------------------+
+| Font             | CSS variable                     | Style            |
++------------------+----------------------------------+------------------+
+| Inter            | ``--font-sans``, ``--font-display`` | UI sans-serif    |
+| JetBrains Mono   | ``--font-mono``                  | Monospace        |
+| Nunito           | ``--font-rounded``               | Rounded sans     |
+| Manrope          | ``--font-geometric``             | Geometric sans   |
+| Space Grotesk    | ``--font-display-alt``           | Display sans     |
+| Fira Sans        | ``--font-humanist``              | Humanist sans    |
+| Playfair Display | ``--font-serif``                 | Serif            |
++------------------+----------------------------------+------------------+
+
+Usage::
+
+    # Font CSS is automatically included in the page. Use CSS variables:
+    # var(--font-sans), var(--font-mono), var(--font-rounded), etc.
+    # Or fall back to system fonts by not setting a custom font:
+
+    widget.config(font="bold 14px var(--font-display)")
+
+To use system fonts instead, override the CSS variable::
+
+    app._eval_js("document.documentElement.style.setProperty('--font-sans', 'Arial, sans-serif')")
+"""
 
 
 def font_css() -> str:

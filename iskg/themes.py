@@ -3,16 +3,22 @@
 Each theme is a dict of CSS custom property overrides applied on top of
 the default IFAZ style sheet (``iskg.theme.IFAZ_CSS``).
 
+Available themes: ifaz, desert, infinity, cyberdusk, light, dracula, nord,
+gruvbox, monokai, catppuccin.
+
 Usage::
 
-    from iskg.themes import THEMES, apply_theme_js
+    from iskg.themes import THEMES, available_themes, theme_js
 
-    # Get JS to switch to a named theme
-    js = apply_theme_js("cold")
+    # List available themes
+    available_themes()  # -> ["ifaz", "desert", ...]
+
+    # Apply theme at runtime
+    app.set_theme("dracula")
+
+    # Or get JS to apply manually
+    js = theme_js("nord")
     app.execute_js(js)
-
-    # Or via Application convenience method
-    app.set_theme("warm")
 """
 
 from __future__ import annotations
