@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from .fonts import font_css
+
 BRIDGE_JS = """
 // ISKG Client Bridge for pywebview
 (function() {
@@ -196,9 +198,7 @@ def build_html(
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ISKG App</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<style>{font_css()}</style>
 <style>{ifaz_css}</style>
 </head>
 <body>

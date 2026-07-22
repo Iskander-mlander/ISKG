@@ -21,8 +21,14 @@ IFAZ_CSS = r"""
   --glow-amber: 0 0 6px rgba(245, 158, 11, 0.25);
   --glow-red: 0 0 6px rgba(239, 68, 68, 0.25);
   --glow-cyan: 0 0 6px rgba(34, 211, 238, 0.2);
-  --font-mono: 'Share Tech Mono', monospace;
-  --font-display: 'Orbitron', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+  --font-display: 'Inter', 'Segoe UI', Tahoma, sans-serif;
+  --font-sans: 'Inter', 'Segoe UI', Tahoma, sans-serif;
+  --font-rounded: 'Nunito', sans-serif;
+  --font-geometric: 'Manrope', sans-serif;
+  --font-display-alt: 'Space Grotesk', sans-serif;
+  --font-humanist: 'Fira Sans', sans-serif;
+  --font-serif: 'Playfair Display', serif;
   --radius: 2px;
   --transition-speed: 0.12s;
 }
