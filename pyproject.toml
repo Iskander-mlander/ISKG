@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "iskg"
-version = "0.3.27"
+dynamic = ["version"]
 description = "IFAZ Widget Toolkit — widgets Python livianos sobre pywebview"
 readme = "README.md"
 license = "GPL-3.0-or-later"
@@ -46,6 +46,9 @@ docs = [
     "sphinx-rtd-dark-mode>=1.3",
     "sphinx-autobuild",
 ]
+
+[tool.setuptools.dynamic]
+version = {attr = "iskg._version.VERSION"}
 
 [tool.setuptools.packages.find]
 include = ["iskg*"]

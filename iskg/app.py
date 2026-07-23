@@ -108,6 +108,7 @@ class Application:
         """Unregister a root-level widget."""
         if widget in self._root_widgets:
             self._root_widgets.remove(widget)
+            _HANDLERS.pop(widget._id, None)
 
     def on_close(self, callback: Callable) -> None:
         """Register a callback to call when the window is closed."""
@@ -184,7 +185,10 @@ class Application:
 
         self._running = False
         for cb in self._on_close_callbacks:
-            cb()
+            try:
+                cb()
+            except Exception:
+                pass
         if self._saved_stderr is not None:
             os.dup2(self._saved_stderr, 2)
             os.close(self._saved_stderr)
@@ -227,17 +231,17 @@ class Application:
 
     def winfo_screenwidth(self) -> int:
         """Return the screen width in pixels (requires a running window)."""
-        val = self._eval_js("window.screen.width;") if self._window else None
+        val = self._js_eval("window.screen.width;")
         return int(val) if val is not None else 0
 
     def winfo_screenheight(self) -> int:
         """Return the screen height in pixels (requires a running window)."""
-        val = self._eval_js("window.screen.height;") if self._window else None
+        val = self._js_eval("window.screen.height;")
         return int(val) if val is not None else 0
 
     def winfo_screendpi(self) -> int:
         """Return the screen DPI (approximate, requires a running window)."""
-        val = self._eval_js("window.devicePixelRatio*96;") if self._window else None
+        val = self._js_eval("window.devicePixelRatio*96;")
         return int(val) if val is not None else 96
 
     def set_theme(self, name: str) -> Application:
@@ -282,7 +286,10 @@ class Application:
     def quit(self) -> None:
         """Close the application window and exit the main loop."""
         if self._window:
-            self._window.destroy()
+            try:
+                self._window.destroy()
+            except Exception:
+                pass
         self._running = False
 
     def set_clipboard(self, text: str) -> None:
@@ -412,9 +419,9 @@ class Application:
         """Show a browser-style alert dialog."""
         self._eval_js(f"alert({json.dumps(message)})")
 
-    def confirm(self, message: str) -> None:
-        """Show a browser-style confirm dialog."""
-        self._eval_js(f"confirm({json.dumps(message)})")
+    def confirm(self, message: str) -> bool:
+        """Show a browser-style confirm dialog. Returns True if OK was clicked."""
+        return bool(self._js_eval(f"confirm({json.dumps(message)})"))
 
     def _js_eval(self, js: str) -> Any | None:
         """Evaluate JS and return the result, or None on error."""

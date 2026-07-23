@@ -5,6 +5,8 @@ as HTML/CSS/JS inside a native window via pywebview.
 """
 
 from ._version import VERSION
+
+__version__ = VERSION
 from .app import Application, Window
 from .base import Widget
 from .vars import BooleanVar, DoubleVar, IntVar, StringVar, Variable
