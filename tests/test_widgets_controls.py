@@ -1,12 +1,12 @@
 from iskg import (
     Button,
-    Entry,
     CheckBox,
-    RadioButton,
     ComboBox,
+    Entry,
+    RadioButton,
+    Scale,
     Slider,
     SpinBox,
-    Scale,
     ToggleSwitch,
 )
 

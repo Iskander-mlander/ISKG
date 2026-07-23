@@ -9,7 +9,12 @@ from ..base import Widget
 
 
 class Button(Widget):
-    """A clickable push button with IFAZ tactical styling."""
+    """A clickable push button with IFAZ tactical styling.
+
+    Config options: ``text``, ``command``, ``variant`` (``"primary"``,
+    ``"success"``, ``"danger"``, ``"warning"``, ``"info"``), ``size``
+    (``"sm"``, ``"lg"``), plus all CSS properties from ``_CONFIG_TO_CSS``.
+    """
 
     def __init__(
         self,
@@ -64,7 +69,12 @@ class Button(Widget):
 
 
 class Entry(Widget):
-    """A single-line text input field."""
+    """A single-line text input field.
+
+    Config options: ``text``, ``placeholder``, ``justify``, ``width``,
+    ``password`` (bool), ``maxlength``, plus all CSS properties from
+    ``_CONFIG_TO_CSS``.
+    """
 
     def __init__(
         self,
@@ -254,6 +264,7 @@ class RadioButton(Widget):
         command: Callable | None = None,
         value: str = "",
         variable: Any = None,
+        selected: bool = False,
         **kwargs: Any,
     ) -> None:
         if command:
@@ -261,6 +272,11 @@ class RadioButton(Widget):
         super().__init__(parent, variable=variable, **kwargs)
         self._config_dict["text"] = text
         self._config_dict["value"] = value
+        self._config_dict["group"] = group
+        if selected:
+            self._config_dict["selected"] = True
+            if self._variable:
+                self._variable.set(value)
 
     @property
     def text(self) -> str:
@@ -508,14 +524,19 @@ items.forEach(function(x,i){{x.classList.toggle("iskg-cb-sel",i=={cur});}});'''
 
 
 class Slider(Widget):
-    """A horizontal range slider."""
+    """A horizontal range slider.
+
+    Config options: ``from``, ``to``, ``value``, ``orient``
+    (``"horizontal"`` / ``"vertical"``), ``show_value`` (bool),
+    plus all CSS properties.
+    """
 
     def __init__(
         self,
         parent: Widget | None = None,
         value: float = 50,
-        min_value: float = 0,
-        max_value: float = 100,
+        min_value: float | None = None,
+        max_value: float | None = None,
         command: Callable | None = None,
         from_: float = 0,
         to: float = 100,
@@ -527,6 +548,10 @@ class Slider(Widget):
         super().__init__(parent, **kwargs)
         self._config_dict["from"] = from_
         self._config_dict["to"] = to
+        if min_value is not None:
+            self._config_dict["from"] = min_value
+        if max_value is not None:
+            self._config_dict["to"] = max_value
         self._config_dict["value"] = self._variable.get() if self._variable is not None else value
         self._config_dict["orient"] = orient
 
@@ -544,7 +569,7 @@ class Slider(Widget):
         hi = self._config_dict.get("to", 100)
         val = self._config_dict.get("value", 0)
         orient = self._config_dict.get("orient", "horizontal")
-        show_val = self._config_dict.get("show_value", True)
+        show_val = self._get_cfg("show-value", True)
         style = self._render_style()
         width = self._config_dict.get("width", 150)
 
@@ -623,8 +648,8 @@ class SpinBox(Widget):
         self,
         parent: Widget | None = None,
         value: int = 0,
-        min_value: int = 0,
-        max_value: int = 100,
+        min_value: int | None = None,
+        max_value: int | None = None,
         step: int = 1,
         command: Callable | None = None,
         from_: int = 0,
@@ -636,6 +661,11 @@ class SpinBox(Widget):
         super().__init__(parent, **kwargs)
         self._config_dict["from"] = from_
         self._config_dict["to"] = to
+        if min_value is not None:
+            self._config_dict["from"] = min_value
+        if max_value is not None:
+            self._config_dict["to"] = max_value
+        self._config_dict["step"] = step
         self._config_dict["value"] = self._variable.get() if self._variable is not None else value
 
     @property
@@ -659,15 +689,16 @@ class SpinBox(Widget):
 </div>'''
 
     def _render_js(self) -> str:
+        step = self._config_dict.get("step", 1)
         return f'''document.getElementById("{self._id}-up").onclick=function(){{
   var inp=document.getElementById("{self._id}");
   var v=parseInt(inp.value)||0;
-  if(v<{self._config_dict["to"]}){{v++;inp.value=v;iskg_bridge_event("{self._id}","change",v.toString());}}
+  if(v<{self._config_dict["to"]}){{v+={step};inp.value=v;iskg_bridge_event("{self._id}","change",v.toString());}}
 }};
 document.getElementById("{self._id}-dn").onclick=function(){{
   var inp=document.getElementById("{self._id}");
   var v=parseInt(inp.value)||0;
-  if(v>{self._config_dict["from"]}){{v--;inp.value=v;iskg_bridge_event("{self._id}","change",v.toString());}}
+  if(v>{self._config_dict["from"]}){{v-={step};inp.value=v;iskg_bridge_event("{self._id}","change",v.toString());}}
 }};'''
 
     def _var_updated(self, var: Any) -> None:
@@ -737,7 +768,7 @@ class ToggleSwitch(Widget):
         self,
         parent: Widget | None = None,
         text: str = "",
-        active: bool = False,
+        active: bool | None = None,
         command: Callable | None = None,
         checked: bool = False,
         **kwargs: Any,
@@ -746,7 +777,7 @@ class ToggleSwitch(Widget):
             kwargs["command"] = command
         super().__init__(parent, **kwargs)
         self._config_dict["text"] = text
-        self._config_dict["checked"] = checked
+        self._config_dict["checked"] = checked if active is None else active
 
     @property
     def checked(self) -> bool:

@@ -1,4 +1,4 @@
-from iskg import Label, ProgressBar, LEDDisplay, IndicatorLED, RadialGauge, StatusBar
+from iskg import IndicatorLED, Label, LEDDisplay, ProgressBar, RadialGauge, StatusBar
 
 
 class TestLabel:

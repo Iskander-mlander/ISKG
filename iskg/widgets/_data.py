@@ -173,7 +173,12 @@ class DataGrid(Widget):
             trs += f'<tr class="{cls}" data-row="{ri}">{tds}</tr>'
         escaped = json.dumps(trs)
         return f'''var el=document.getElementById("{self._id}");
-if(el){{el.querySelector("tbody").innerHTML={escaped};}}'''
+if(el){{var tb=el.querySelector("tbody");tb.innerHTML={escaped};
+tb.querySelectorAll("tr").forEach(function(r){{r.onclick=function(){{
+tb.querySelectorAll("tr.selected").forEach(function(s){{s.classList.remove("selected");}});
+this.classList.add("selected");
+iskg_bridge_event("{self._id}","select",this.dataset.row);
+}};}});}}'''
 
 
 class TreeView(Widget):

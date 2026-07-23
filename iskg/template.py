@@ -161,6 +161,7 @@ def build_html(
     root_widgets: list[Any],
     ifaz_css: str,
     extra_js: str = "",
+    extra_css: str = "",
     theme_name: str = "ifaz",
 ) -> str:
     all_widgets: list[Any] = []
@@ -192,6 +193,8 @@ def build_html(
 
     theme_init = f"iskg_register_themes({theme_data});\niskg_set_theme('{theme_name}');\n"
 
+    extra_css_block = f"<style>{extra_css}</style>" if extra_css else ""
+
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -199,7 +202,12 @@ def build_html(
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ISKG App</title>
 <style>{font_css()}</style>
+<style>
+body {{ margin:0; padding:0; overflow:auto; width:100vw; height:100vh; background:var(--bg-primary); }}
+#iskg-root {{ min-height:100vh; display:flex; flex-direction:column; }}
+</style>
 <style>{ifaz_css}</style>
+{extra_css_block}
 </head>
 <body>
 <div id="iskg-root">{rendered_html}</div>

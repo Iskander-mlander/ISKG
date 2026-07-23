@@ -48,6 +48,9 @@ opencode.jsonc
 /stderr.log
 /fix.md
 
+# Coverage
+.coverage
+
 # pytest-benchmark
 .benchmarks/
 

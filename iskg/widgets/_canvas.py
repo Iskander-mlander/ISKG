@@ -17,14 +17,16 @@ class Canvas(Widget):
         **kwargs: Any,
     ) -> None:
         super().__init__(parent, **kwargs)
-        self._config_dict["canvas_width"] = width
-        self._config_dict["canvas_height"] = height
+        self._config_dict["width"] = width
+        self._config_dict["height"] = height
+        self._canvas_w = width
+        self._canvas_h = height
         self._draw_commands: list[tuple] = []
         self._needs_redraw = False
 
     def _render(self) -> str:
-        w = self._config_dict.get("canvas_width", 300)
-        h = self._config_dict.get("canvas_height", 200)
+        w = self._canvas_w
+        h = self._canvas_h
         style = self._render_style()
         return f'<canvas id="{self._id}" class="iskg-canvas" width="{w}" height="{h}" style="{style}"></canvas>'
 
@@ -68,8 +70,8 @@ class Canvas(Widget):
         self._sync()
 
     def _render_rebuild_js(self) -> str:
-        w = self._config_dict.get("canvas_width", 300)
-        h = self._config_dict.get("canvas_height", 200)
+        w = self._canvas_w
+        h = self._canvas_h
         cmds = json.dumps(self._draw_commands)
         return f'''(function(){{
 var c=document.getElementById("{self._id}");
@@ -129,7 +131,11 @@ for(var i=0;i<cmds.length;i++){{
 
 
 class Knob(Widget):
-    """A rotary knob control for adjusting values."""
+    """A rotary knob control for adjusting values.
+
+    Config options: ``from``, ``to``, ``value``, ``size`` (pixels),
+    ``color``, ``show_value`` (bool), plus all CSS properties.
+    """
 
     def __init__(
         self,
@@ -160,9 +166,9 @@ class Knob(Widget):
         self._sync()
 
     def _render(self) -> str:
-        size = self._config_dict.get("size", 60)
-        show_val = self._config_dict.get("show_value", True)
-        val = self._config_dict.get("value", 0)
+        size = self._get_cfg("size", 60)
+        show_val = self._get_cfg("show-value", True)
+        val = self._get_cfg("value", 0)
         style = self._render_style()
         val_html = f'<span class="iskg-knob-val">{val}</span>' if show_val else ""
         return f'''<div id="{self._id}" class="iskg-knob-wrap" style="{style}width:{size}px;">

@@ -74,6 +74,7 @@ class Application:
         vignette: bool = True,
         theme: str = "ifaz",
         debug: bool = False,
+        extra_css: str = "",
     ) -> None:
         self._title = title
         self._width = width
@@ -82,6 +83,7 @@ class Application:
         self._vignette = vignette
         self._theme_name = theme
         self._debug = debug
+        self._extra_css = extra_css
 
         self._root_widgets: list[Widget] = []
         self._running = False
@@ -190,7 +192,11 @@ class Application:
 
     def _build_html(self, extra_js: str = "") -> str:
         html = build_html(
-            self._root_widgets, IFAZ_CSS, extra_js=extra_js, theme_name=self._theme_name
+            self._root_widgets,
+            IFAZ_CSS,
+            extra_js=extra_js,
+            extra_css=self._extra_css,
+            theme_name=self._theme_name,
         )
         if not self._scanlines:
             html = html.replace('<div id="iskg-scanlines"></div>', "")

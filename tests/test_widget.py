@@ -1,4 +1,5 @@
 import pytest
+
 from iskg import Widget
 
 
@@ -83,3 +84,60 @@ def test_widget_render_default():
     assert w._render() == ""
     assert w._render_js() == ""
     assert w._render_update_js() == ""
+
+
+def test_get_cfg_hyphen_vs_underscore():
+    w = Widget()
+    w._config_dict["foo-bar"] = "hyphen"
+    w._config_dict["baz_qux"] = "underscore"
+
+    # hyphen key found directly
+    assert w._get_cfg("foo-bar") == "hyphen"
+    # underscore key found via fallback
+    assert w._get_cfg("baz-qux") == "underscore"
+    # missing key returns default
+    assert w._get_cfg("missing", 42) == 42
+
+
+def test_render_attr_update_js():
+    w = Widget()
+    # no disabled set → no JS
+    assert w._render_attr_update_js() == ""
+
+    # disabled=True produces JS
+    w._config_dict["disabled"] = True
+    js = w._render_attr_update_js()
+    assert "iskg_set_enabled" in js
+    assert "false" in js
+
+    w._config_dict["disabled"] = False
+    js = w._render_attr_update_js()
+    assert "iskg_set_enabled" in js
+    assert "true" in js
+
+
+def test_layout_mix_warning():
+    w = Widget()
+    w.pack(side="top")
+    with pytest.warns(UserWarning, match="grid.*pack"):
+        w.grid(row=0, column=0)
+    with pytest.warns(UserWarning, match="place.*grid"):
+        w.place(x=0, y=0)
+
+
+def test_unknown_config_key_warning():
+    w = Widget()
+    with pytest.warns(UserWarning, match="Unknown config key"):
+        w.config(**{"unknown-prop": "val"})
+
+    # known keys should NOT warn
+    import warnings as _warnings
+
+    with _warnings.catch_warnings(record=True) as record:
+        _warnings.simplefilter("always")
+        w2 = Widget()
+        w2.config(fg="red")
+        w2.config(font_size=14)
+        w2.config(margin=5)
+    unknown = [r for r in record if "Unknown config key" in str(r.message)]
+    assert len(unknown) == 0

@@ -50,10 +50,14 @@ class Text(Widget):
         val = self._config_dict.get("text", "")
         escaped = val.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
         style = self._render_style()
-        width = self._config_dict.get("width", 200)
-        height = self._config_dict.get("height", 100)
+        width = self._config_dict.get("width")
+        height = self._config_dict.get("height")
+        if width is not None:
+            style += f"width:{width}px;"
+        if height is not None:
+            style += f"height:{height}px;"
         attrs = self._render_attrs()
-        return f'<textarea id="{self._id}" class="iskg-text" style="{style}width:{width}px;height:{height}px;" {attrs}>{escaped}</textarea>'
+        return f'<textarea id="{self._id}" class="iskg-text" style="{style}" {attrs}>{escaped}</textarea>'
 
     def _render_js(self) -> str:
         return f'''document.getElementById("{self._id}").onchange=function(){{
@@ -88,7 +92,7 @@ class RichText(Widget):
     def _render(self) -> str:
         text = self._config_dict.get("text", "")
         height = self._config_dict.get("height", 150)
-        show_tb = self._config_dict.get("show_toolbar", True)
+        show_tb = self._get_cfg("show-toolbar", True)
         style = self._render_style()
         tb_html = ""
         if show_tb:

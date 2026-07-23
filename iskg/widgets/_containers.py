@@ -28,7 +28,22 @@ def _grid_template(
 
 
 class Frame(Widget):
-    """A rectangular container widget for grouping children."""
+    """A rectangular container widget for grouping children.
+
+    Config options (via kwargs or .config()):
+
+        text (str): Header text shown above children.
+        container (bool): If True the outer div becomes ``display:flex;flex-direction:column``
+            so the inner wrapper can fill it via ``flex:1``.  Default ``True``.
+        direction (str): ``"auto"`` (detect from children's ``side``),
+            ``"row"``, or ``"column"``.  Default ``"auto"``.
+        gap (int): Gap between children in pixels.  Default ``3``.
+        skip_hidden (bool): If True, hidden children are omitted from the HTML.
+            If False, they are rendered with ``display:none``. Default ``True``.
+        height_mode (str): ``"flex"`` (wrapper uses ``flex:1``, needs ``container=True``),
+            ``"percent"`` (wrapper uses ``height:100%``), or ``"auto"``.
+            Default ``"flex"``.
+    """
 
     def __init__(
         self,
@@ -44,16 +59,6 @@ class Frame(Widget):
         self._grid_row_weights: dict[int, tuple[float, int]] = {}
 
     def grid_columnconfigure(self, column: int, weight: float = 0, minsize: int = 0) -> None:
-        """Configure a grid column's weight and minimum size.
-
-        Args:
-            column: column index (0-based).
-            weight: relative weight for distributing extra space (0 = auto).
-            minsize: minimum column width in pixels (0 = none).
-
-        When both *weight* and *minsize* are 0 the column is removed
-        from the explicit config and treated as ``auto``.
-        """
         if weight == 0 and minsize == 0:
             self._grid_column_weights.pop(column, None)
         else:
@@ -61,13 +66,6 @@ class Frame(Widget):
         self._sync()
 
     def grid_rowconfigure(self, row: int, weight: float = 0, minsize: int = 0) -> None:
-        """Configure a grid row's weight and minimum size.
-
-        Args:
-            row: row index (0-based).
-            weight: relative weight for distributing extra space (0 = auto).
-            minsize: minimum row height in pixels (0 = none).
-        """
         if weight == 0 and minsize == 0:
             self._grid_row_weights.pop(row, None)
         else:
@@ -94,19 +92,38 @@ class Frame(Widget):
             return "grid"
         return "pack"
 
+    def _pack_direction(self) -> str:
+        direction = self._get_cfg("direction", "auto")
+        if direction == "row":
+            return "row"
+        if direction == "column":
+            return "column"
+        for child in self._children:
+            if child._destroyed:
+                continue
+            side = child._layout_info.get("side", "top") if child._layout_mode == "pack" else "top"
+            if side in ("left", "right"):
+                return "row"
+        return "column"
+
+    def _wrapper_height_style(self) -> str:
+        mode = self._get_cfg("height-mode", "flex")
+        if mode == "percent":
+            return "height:100%;"
+        if mode == "flex":
+            return "flex:1;"
+        return ""
+
     def _render(self) -> str:
         text = self._config_dict.get("text", "")
         style = self._render_style()
-        flex = self._config_dict.get("flex", "")
-        if flex:
-            style += f"flex:{flex};"
-        min_h = self._config_dict.get("min_height", "")
-        if min_h:
-            style += f"min-height:{min_h}px;overflow:auto;"
-
-        propagate = self._config_dict.get("propagate", True)
-        if not propagate:
+        propagate = self._get_cfg("propagate", True)
+        if isinstance(propagate, str):
+            style += f"overflow:{propagate};"
+        elif not propagate:
             style += "overflow:hidden;"
+        else:
+            style += "overflow:auto;"
 
         header = ""
         if text:
@@ -115,11 +132,13 @@ class Frame(Widget):
         has_grid = any(c._layout_mode == "grid" for c in self._children if not c._destroyed)
 
         children_html = ""
+        skip_hidden = self._get_cfg("skip-hidden", True)
         for child in self._children:
-            if not child._destroyed:
-                if child._config_dict.get("hidden"):
-                    continue
-                children_html += child._render()
+            if child._destroyed:
+                continue
+            if skip_hidden and child._config_dict.get("hidden"):
+                continue
+            children_html += child._render()
 
         if not children_html:
             children_html = ""
@@ -128,21 +147,21 @@ class Frame(Widget):
             nrows = max(1, self._max_grid_span("row"))
             cols = _grid_template(self._grid_column_weights, ncols, "1fr", "auto")
             rows = _grid_template(self._grid_row_weights, nrows, "auto", "auto")
-            children_html = f'<div class="iskg-grid" style="display:grid;gap:3px;grid-template-columns:{cols};grid-template-rows:{rows};min-height:0;min-width:0;">{children_html}</div>'
+            gap = self._get_cfg("gap", 3)
+            children_html = f'<div class="iskg-grid" style="display:grid;gap:{gap}px;grid-template-columns:{cols};grid-template-rows:{rows};min-height:0;min-width:0;">{children_html}</div>'
         else:
-            children_html = f'<div style="display:flex;flex-direction:column;gap:3px;min-height:0;min-width:0;height:100%;">{children_html}</div>'
+            gap = self._get_cfg("gap", 3)
+            hstyle = self._wrapper_height_style()
+            children_html = f'<div style="display:flex;flex-direction:{self._pack_direction()};gap:{gap}px;min-height:0;min-width:0;{hstyle}">{children_html}</div>'
+
+        container = self._get_cfg("container", True)
+        if container:
+            h_mode = self._get_cfg("height-mode", "flex")
+            h_fill = "flex:1;" if h_mode == "flex" and "flex" not in self._config_dict else ""
+            style += f"display:flex;flex-direction:column;min-height:0;{h_fill}"
 
         return f'''<div id="{self._id}" class="iskg-frame" style="{style}">
 {header}{children_html}</div>'''
-
-    def _render_update_js(self) -> str:
-        js = []
-        propagate = self._config_dict.get("propagate", True)
-        if not propagate:
-            js.append(
-                f'var e=document.getElementById("{self._id}");if(e)e.style.overflow="hidden";'
-            )
-        return ";".join(js) if js else ""
 
 
 class ScrolledFrame(Frame):
@@ -155,6 +174,7 @@ class ScrolledFrame(Frame):
         scroll: ``"vertical"`` (default), ``"horizontal"``, or ``"both"``.
         autoscroll: if True, auto-scrolls to bottom on content change
                     (useful for log viewers).
+        scrollbar_overflow: custom overflow CSS override (e.g. ``"overflow-y:auto;scrollbar-gutter:stable;"``).
     """
 
     def __init__(
@@ -164,17 +184,22 @@ class ScrolledFrame(Frame):
         height: int | None = None,
         scroll: str = "vertical",
         autoscroll: bool = False,
+        scrollbar_overflow: str | None = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(parent, **kwargs)
         self._config_dict["_scroll"] = scroll
         self._config_dict["_autoscroll"] = autoscroll
+        self._config_dict["_scrollbar_overflow"] = scrollbar_overflow
         if width is not None:
             self._config_dict["width"] = width
         if height is not None:
             self._config_dict["height"] = height
 
     def _overflow_css(self) -> str:
+        custom = self._config_dict.get("_scrollbar_overflow")
+        if custom:
+            return custom
         s = self._config_dict.get("_scroll", "vertical")
         m: dict[str, str] = {
             "vertical": "overflow-y:auto;overflow-x:hidden;",
@@ -190,27 +215,29 @@ class ScrolledFrame(Frame):
         if text:
             header = f'<div class="iskg-frame-header"><span class="hdr-dot"></span> {text}</div>'
         children_html = "".join(
-            child._render()
-            for child in self._children
-            if not child._destroyed and not child._config_dict.get("hidden")
+            child._render() for child in self._children if not child._destroyed
         )
         return f'<div id="{self._id}" class="iskg-scrollframe" style="{style}">{header}{children_html}</div>'
 
     def _render_js(self) -> str:
         if self._config_dict.get("_autoscroll"):
-            return f'''var el=document.getElementById("{self._id}");
-if(el){{new ResizeObserver(function(){{el.scrollTop=el.scrollHeight;}}).observe(el);}}'''
+            return f'var el=document.getElementById("{self._id}");if(el){{new ResizeObserver(function(){{el.scrollTop=el.scrollHeight;}}).observe(el);}}'
         return super()._render_js()
 
 
 class PanedWindow(Widget):
-    """A container with two resizable panes separated by a draggable divider.
+    """A container with resizable panes separated by draggable dividers.
+
+    Supports any number of child panes. Each pane gets equal space initially;
+    drag the sashes to resize adjacent panes.
 
     Args:
         parent: parent widget.
         orient: ``"horizontal"`` (left/right panes) or ``"vertical"`` (top/bottom).
         sash_pos: initial divider position as fraction (0.0–1.0, default 0.5).
+            Only used when there are exactly 2 panes.
         minsize: minimum pane size in pixels (default 30).
+        sash_width: sash thickness in pixels (default 5).
     """
 
     def __init__(
@@ -219,12 +246,14 @@ class PanedWindow(Widget):
         orient: str = "horizontal",
         sash_pos: float = 0.5,
         minsize: int = 30,
+        sash_width: int = 5,
         **kwargs: Any,
     ) -> None:
         super().__init__(parent, **kwargs)
         self._config_dict["_orient"] = orient
         self._config_dict["_sash_pos"] = sash_pos
         self._config_dict["_minsize"] = minsize
+        self._config_dict["_sash_width"] = sash_width
 
     def sash_pos(self, pos: float) -> None:
         self._config_dict["_sash_pos"] = max(0.0, min(1.0, pos))
@@ -232,59 +261,74 @@ class PanedWindow(Widget):
 
     def _render(self) -> str:
         orient = self._config_dict.get("_orient", "horizontal")
-        pos = self._config_dict.get("_sash_pos", 0.5)
         minsize = self._config_dict.get("_minsize", 30)
+        sash_width = self._config_dict.get("_sash_width", 5)
         style = self._render_style()
 
         if orient == "horizontal":
             flex_dir = "flex-direction:row;"
             sash_cursor = "cursor:col-resize;"
-            sash_style = "width:5px;"
+            size_prop = "width"
+            sash_style = f"width:{sash_width}px;"
         else:
             flex_dir = "flex-direction:column;"
             sash_cursor = "cursor:row-resize;"
-            sash_style = "height:5px;"
-
-        children_html = ""
-        pane1_style = f"flex:{pos};min-{'width' if orient == 'horizontal' else 'height'}:{minsize}px;overflow:hidden;"
-        pane2_style = f"flex:{1 - pos};min-{'width' if orient == 'horizontal' else 'height'}:{minsize}px;overflow:hidden;"
+            size_prop = "height"
+            sash_style = f"height:{sash_width}px;"
 
         panes: list[Widget] = []
         for child in self._children:
             if not child._destroyed and not child._config_dict.get("hidden"):
                 panes.append(child)
 
-        if len(panes) >= 1:
-            children_html += f'<div style="{pane1_style}">{panes[0]._render()}</div>'
-        if len(panes) >= 2:
-            children_html += f'<div id="{self._id}-sash" class="iskg-sash" style="{sash_cursor}{sash_style}background:var(--border);flex-shrink:0;"></div>'
-            children_html += f'<div style="{pane2_style}">{panes[1]._render()}</div>'
+        n = len(panes)
+        if n == 0:
+            return f'<div id="{self._id}" class="iskg-panedwindow" style="{style}{flex_dir}display:flex;flex:1;min-height:0;min-width:0;"></div>'
 
-        return f'<div id="{self._id}" class="iskg-panedwindow" style="{style}{flex_dir}display:flex;min-height:0;min-width:0;">{children_html}</div>'
+        children_html = ""
+        for idx, pane in enumerate(panes):
+            children_html += f'<div style="display:flex;flex-direction:column;flex:1;min-{size_prop}:{minsize}px;">{pane._render()}</div>'
+            if idx < n - 1:
+                children_html += f'<div id="{self._id}-sash-{idx}" class="iskg-sash" style="{sash_cursor}{sash_style}background:var(--border);flex-shrink:0;"></div>'
+
+        return f'<div id="{self._id}" class="iskg-panedwindow" style="{style}{flex_dir}display:flex;flex:1;min-height:0;min-width:0;">{children_html}</div>'
 
     def _render_js(self) -> str:
         orient = self._config_dict.get("_orient", "horizontal")
-        is_horiz = "true" if orient == "horizontal" else "false"
-        return f'''(function(){{
-var pw=document.getElementById("{self._id}");
-var sash=document.getElementById("{self._id}-sash");
-if(!sash||!pw)return;
-var isHoriz={is_horiz};
+        pw_id = self._id
+        panes: list[Widget] = []
+        for child in self._children:
+            if not child._destroyed and not child._config_dict.get("hidden"):
+                panes.append(child)
+        n = len(panes)
+        if n < 2:
+            return ""
+        is_h = "true" if orient == "horizontal" else "false"
+        js = f"(function(){{var pw=document.getElementById('{pw_id}');if(!pw)return;var isHoriz={is_h};"
+        for i in range(n - 1):
+            left_idx = i * 2
+            right_idx = (i + 1) * 2
+            js += f"""
+(function(){{
+var sash=document.getElementById('{pw_id}-sash-{i}');
+if(!sash)return;
 var down=false;
-sash.onmousedown=function(e){{down=true;e.preventDefault();document.body.style.userSelect="none";}};
-document.addEventListener("mousemove",function(e){{
-  if(!down)return;
-  var rect=pw.getBoundingClientRect();
-  var p=isHoriz?(e.clientX-rect.left)/rect.width:(e.clientY-rect.top)/rect.height;
-  p=Math.max(0.05,Math.min(0.95,p));
-  var panes=pw.children;
-  if(panes.length>=2){{
-    panes[0].style.flex=p;
-    panes[2].style.flex=1-p;
-  }}
+sash.onmousedown=function(e){{down=true;e.preventDefault();document.body.style.userSelect='none';}};
+document.addEventListener('mousemove',function(e){{
+if(!down)return;
+var rect=pw.getBoundingClientRect();
+var p=isHoriz?(e.clientX-rect.left)/rect.width:(e.clientY-rect.top)/rect.height;
+p=Math.max(0.05,Math.min(0.95,p));
+var c=pw.children;
+if(c.length>{right_idx}){{
+c[{left_idx}].style.flex=p;
+c[{right_idx}].style.flex=1-p;
+}}
 }});
-document.addEventListener("mouseup",function(){{down=false;document.body.style.userSelect="";}});
-}})();'''
+document.addEventListener('mouseup',function(){{down=false;document.body.style.userSelect='';}});
+}})();"""
+        js += "})();"
+        return js
 
 
 class Notebook(Widget):
@@ -300,8 +344,7 @@ class Notebook(Widget):
 
     def add_tab(self, title: str, widget: Widget) -> Widget:
         self._tabs.append({"title": title, "widget": widget})
-        widget._parent = self
-        self._children.append(widget)
+        self.add(widget)
         return widget
 
     def _render(self) -> str:
@@ -311,7 +354,9 @@ class Notebook(Widget):
         for i, tab in enumerate(self._tabs):
             active = " active" if i == 0 else ""
             tabs_html += f'<div class="iskg-tab{active}" data-idx="{i}">{tab["title"]}</div>'
-            page_style = "display:block;" if i == 0 else "display:none;"
+            page_style = (
+                "display:block;overflow:auto;" if i == 0 else "display:none;overflow:auto;"
+            )
             pages_html += f'<div class="iskg-tabpage" id="{self._id}-page-{i}" style="{page_style}">{tab["widget"]._render()}</div>'
         return f'''<div id="{self._id}" class="iskg-notebook" style="{style}">
   <div class="iskg-tabbar">{tabs_html}</div>
@@ -344,6 +389,7 @@ class Separator(Widget):
         orient: str = "horizontal",
         **kwargs: Any,
     ) -> None:
+        kwargs.setdefault("width" if orient == "horizontal" else "height", "95%")
         super().__init__(parent, **kwargs)
         self._config_dict["orient"] = orient
 
@@ -351,11 +397,7 @@ class Separator(Widget):
         orient = self._config_dict.get("orient", "horizontal")
         cls = "iskg-vsep" if orient == "vertical" else "iskg-hsep"
         style = self._render_style()
-        if orient == "vertical":
-            height = self._config_dict.get("height", 50)
-            return f'<hr class="{cls}" id="{self._id}" style="{style}height:{height}px;"/>'
-        width = self._config_dict.get("width", "100%")
-        return f'<hr class="{cls}" id="{self._id}" style="{style}width:{width}px;"/>'
+        return f'<hr class="{cls}" id="{self._id}" style="{style}"/>'
 
 
 class Spacer(Widget):
@@ -386,7 +428,14 @@ class Spacer(Widget):
 
 
 class ScrollBar(Widget):
-    """A scrollbar widget for scrolling content."""
+    """A scrollbar widget for scrolling content.
+
+    Config options (via kwargs or .config()):
+        orient (str): ``"vertical"`` or ``"horizontal"``.
+        value (float): Scroll position as percentage (0-100).
+        thumb_size (int): Thumb size in pixels. Default 20.
+        step (int): Scroll step in percentage points. Default 5.
+    """
 
     def __init__(
         self,
@@ -403,17 +452,18 @@ class ScrollBar(Widget):
         orient = self._config_dict.get("orient", "vertical")
         val = self._config_dict.get("value", 0)
         style = self._render_style()
+        thumb_size = self._get_cfg("thumb-size", 20)
         if orient == "vertical":
             height = self._config_dict.get("height", 100)
             cls = "iskg-scrollbar iskg-scrollbar-vert"
             return f'''<div id="{self._id}" class="{cls}" style="{style}height:{height}px;">
-  <div class="iskg-scrollbar-thumb" style="top:{val}%;height:20px;"></div>
+  <div class="iskg-scrollbar-thumb" style="top:{val}%;height:{thumb_size}px;"></div>
 </div>'''
         else:
             width = self._config_dict.get("width", 100)
             cls = "iskg-scrollbar iskg-scrollbar-horiz"
             return f'''<div id="{self._id}" class="{cls}" style="{style}width:{width}px;">
-  <div class="iskg-scrollbar-thumb" style="left:{val}%;width:20px;"></div>
+  <div class="iskg-scrollbar-thumb" style="left:{val}%;width:{thumb_size}px;"></div>
 </div>'''
 
     def _render_js(self) -> str:
@@ -421,14 +471,16 @@ class ScrollBar(Widget):
         is_vert = orient == "vertical"
         pos_prop = "top" if is_vert else "left"
         size_prop = "height" if is_vert else "width"
+        thumb_size = self._get_cfg("thumb-size", 20)
+        step = self._get_cfg("step", 5)
         return f'''var el=document.getElementById("{self._id}");
 var thumb=el.querySelector(".iskg-scrollbar-thumb");
 el.onwheel=function(e){{
   e.preventDefault();
   var v=parseFloat(thumb.style.{pos_prop})||0;
-  var step=5;
+  var step={step};
   v+=(e.deltaY>0?step:-step);
-  var maxV=100-(20/el.{size_prop}*100);
+  var maxV=100-({thumb_size}/el.{size_prop}*100);
   v=Math.max(0,Math.min(maxV,v));
   thumb.style.{pos_prop}=v+"%";
   iskg_bridge_event("{self._id}","change",v.toString());

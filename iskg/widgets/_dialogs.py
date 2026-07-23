@@ -33,14 +33,24 @@ class MessageDialog(Widget):
         a = app or self.app
         if not a:
             return
+        from ..app import _HANDLERS
+        _HANDLERS[self._id] = self._handle_bridge_event
+        self._msg_app = a
         html = json.dumps(self._render())
         a._eval_js(
             f"(function(){{"
             f'var e=document.getElementById("{self._id}-ov");'
             f"if(!e){{"
             f'document.body.insertAdjacentHTML("beforeend",{html});'
+            f"var escFn=function(ev){{"
+            f"if(ev.key==='Escape'){{"
+            f"var ov=document.getElementById('{self._id}-ov');"
+            f"if(ov){{ov.remove();iskg_bridge_event('{self._id}','result','__esc__');}}"
+            f"document.removeEventListener('keydown',escFn);"
             f"}}"
-            f'window.location.hash="{self._id}-ov";'
+            f"}};"
+            f"document.addEventListener('keydown',escFn);"
+            f"}}"
             f"}})()"
         )
 
@@ -59,7 +69,7 @@ class MessageDialog(Widget):
         buttons = self._config_dict.get("_dialog_buttons", ["OK"])
         bid = self._id
         btns_html = "".join(
-            f"<button class=\"iskg-btn\" onclick=\"iskg_bridge_event('{bid}','result',{json.dumps(b)})\">{self._escape(b)}</button>"
+            f"<button class=\"iskg-btn\" onclick=\"(function(btn){{var el=document.getElementById('{bid}-ov');if(el)el.remove();iskg_bridge_event('{bid}','result',btn.textContent);}})(this)\">{self._escape(b)}</button>"
             for b in buttons
         )
         return f'''<div id="{self._id}-ov" class="iskg-msgbox-overlay">
@@ -71,9 +81,12 @@ class MessageDialog(Widget):
 </div>'''
 
     def _handle_bridge_event(self, event_name: str, event_data: Any) -> None:
-        if event_name == "result" and self._dialog_callback:
-            self._dialog_callback(str(event_data))
-            self._dialog_callback = None
+        if event_name == "result":
+            if self._dialog_callback:
+                self._dialog_callback(str(event_data))
+                self._dialog_callback = None
+            from ..app import _HANDLERS
+            _HANDLERS.pop(self._id, None)
         super()._handle_bridge_event(event_name, event_data)
 
 

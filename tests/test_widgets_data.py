@@ -1,4 +1,4 @@
-from iskg import ListBox, DataGrid, TreeView, DropTarget, MenuBar, FileDialog
+from iskg import DataGrid, DropTarget, FileDialog, ListBox, MenuBar, TreeView
 
 
 class TestListBox:
@@ -70,7 +70,7 @@ class TestDropTarget:
 class TestMenuBar:
     def test_create(self):
         mb = MenuBar()
-        m = mb.add_menu("File")
+        mb.add_menu("File")
         assert len(mb._menus) == 1
         assert mb._menus[0].text == "File"
 
@@ -86,6 +86,7 @@ class TestMenuBar:
         sub = m.add_menu("Recent")
         sub.add_item("Project A")
         assert len(m.items) == 1
+        assert m.items[0] is not None
         assert m.items[0].submenu is not None
 
     def test_add_separator(self):

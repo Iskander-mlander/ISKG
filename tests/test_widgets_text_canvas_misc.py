@@ -1,4 +1,6 @@
-from iskg import Text, RichText, Canvas, Knob, Tooltip, ImageBox, IconLabel
+from typing import cast
+
+from iskg import Canvas, IconLabel, ImageBox, Knob, RichText, Text, Tooltip
 
 
 class TestText:
@@ -140,7 +142,6 @@ class TestTooltipOnWidgets:
 
     def test_build_html_includes_tooltip(self):
         from iskg import Widget
-        from iskg.widgets._controls import Button
         from iskg.template import build_html
         from iskg.theme import IFAZ_CSS
 
@@ -205,7 +206,7 @@ class TestGridImprovements:
     def test_minsize_in_grid_template(self):
         from iskg.widgets._containers import _grid_template
 
-        d = {0: (2, 100), 2: (1, 50)}
+        d = cast("dict[int, tuple[float, int]]", {0: (2, 100), 2: (1, 50)})
         result = _grid_template(d, 3)
         assert "minmax(100px,2fr)" in result
         assert "minmax(50px,1fr)" in result

@@ -1,4 +1,4 @@
-from iskg import Frame, Notebook, Separator, Spacer, ScrollBar
+from iskg import Frame, Label, Notebook, ScrollBar, Separator, Spacer
 
 
 class TestFrame:
@@ -14,10 +14,67 @@ class TestFrame:
 
     def test_add_child(self):
         f = Frame()
-        from iskg import Label
-
         lbl = Label(parent=f, text="inside")
         assert lbl in f._children
+
+    def test_container_disabled(self):
+        f = Frame(container=False)
+        Label(f, text="a").pack()
+        html = f._render()
+        assert "display:flex" not in html.split("iskg-frame")[1].split(">")[0]
+
+    def test_direction_explicit(self):
+        f = Frame(direction="row")
+        Label(f, text="a").pack(side="left")
+        Label(f, text="b").pack(side="left")
+        html = f._render()
+        assert "flex-direction:row" in html
+
+    def test_direction_auto(self):
+        f = Frame(direction="auto")
+        Label(f, text="a").pack(side="left")
+        html = f._render()
+        assert "flex-direction:row" in html
+
+    def test_gap_custom(self):
+        f = Frame(gap=12)
+        Label(f, text="a").pack()
+        html = f._render()
+        assert "gap:12px" in html
+
+    def test_skip_hidden_true_default(self):
+        f = Frame()
+        Label(f, text="v").pack()
+        l2 = Label(f, text="h").pack()
+        l2.config(hidden=True)
+        html = f._render()
+        assert "display:none" not in html
+
+    def test_skip_hidden_false(self):
+        f = Frame(skip_hidden=False)
+        Label(f, text="v").pack()
+        l2 = Label(f, text="h").pack()
+        l2.config(hidden=True)
+        html = f._render()
+        assert "display:none" in html
+
+    def test_height_mode_percent(self):
+        f = Frame(height_mode="percent")
+        Label(f, text="a").pack()
+        html = f._render()
+        assert "height:100%" in html
+
+    def test_height_mode_flex(self):
+        f = Frame(height_mode="flex")
+        Label(f, text="a").pack()
+        html = f._render()
+        assert "flex:1" in html
+
+    def test_propagate_string(self):
+        f = Frame(propagate="auto")
+        Label(f, text="a").pack()
+        html = f._render()
+        assert "overflow:auto" in html
 
 
 class TestNotebook:
@@ -78,3 +135,29 @@ class TestScrollBar:
         sb = ScrollBar(orient="horizontal", value=50, width=100)
         html = sb._render()
         assert "iskg-scrollbar-horiz" in html
+
+
+class TestIntegration:
+    def test_scrolledframe_panedwindow_grid_mixed(self):
+        from iskg import Frame, Label, PanedWindow, ScrolledFrame
+
+        root = Frame()
+        sf = ScrolledFrame(root, width=400, height=300)
+        pw = PanedWindow(sf, orient="horizontal")
+        left = Frame(pw)
+        right = Frame(pw)
+        l1 = Label(left, text="left-top")
+        l1.grid(row=0, column=0)
+        l2 = Label(left, text="left-bottom")
+        l2.grid(row=1, column=0)
+        Label(right, text="right-pane").pack()
+
+        html = root._render()
+        assert "iskg-scrollframe" in html
+        assert "iskg-panedwindow" in html
+        assert "iskg-grid" in html
+        assert "display:grid" in html
+        assert "left-top" in html
+        assert "left-bottom" in html
+        assert "right-pane" in html
+        assert "iskg-sash" in html

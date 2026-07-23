@@ -123,6 +123,7 @@ html, body {
   outline:none;
   transition:border-color var(--transition-speed);
   caret-color:var(--cyan);
+  width:150px;
 }
 .iskg-entry:focus {
   border-color:var(--cyan);
@@ -183,6 +184,7 @@ html, body {
   position:relative; display:inline-block;
   font-size:11px; font-family:var(--font-mono);
   vertical-align:top;
+  width:140px;
 }
 .iskg-cb-display {
   display:flex; align-items:center; justify-content:space-between;
@@ -410,6 +412,7 @@ html, body {
   outline:none; resize:none;
   caret-color:var(--cyan);
   line-height:1.5;
+  min-height:150px;
 }
 .iskg-text:focus {
   border-color:var(--cyan);

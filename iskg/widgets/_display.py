@@ -1,13 +1,19 @@
 from __future__ import annotations
 
 import contextlib
+import json
 from typing import Any
 
 from ..base import Widget
 
 
 class Label(Widget):
-    """A static text label."""
+    """A static text label.
+
+    Config options: ``text``, ``wraplength``, ``anchor``, ``justify``,
+    plus all CSS properties from ``_CONFIG_TO_CSS`` (``fg``, ``bg``,
+    ``font_size``, ``padding``, etc.).
+    """
 
     def __init__(
         self,
@@ -86,6 +92,10 @@ class Label(Widget):
             style += "text-align:right;"
         elif anc == "w" or anc == "left":
             style += "text-align:left;"
+        has_click = "click" in self._bindings or self._config_dict.get("command")
+        if has_click:
+            style += "cursor:pointer;"
+            return f'<span id="{self._id}" class="{cls}" style="{style}" onclick="iskg_bridge_event(\'{self._id}\',\'click\',\'\')">{escaped}</span>'
         return f'<span id="{self._id}" class="{cls}" style="{style}">{escaped}</span>'
 
     def _var_updated(self, var: Any) -> None:
@@ -103,11 +113,10 @@ class ProgressBar(Widget):
     """A clickable progress bar widget.
 
     Supports click-to-set-value, ``command`` callbacks, ``bind("change", cb)``,
-    and variable binding. Use ``max_`` to set the range maximum.
+    and variable binding.
 
-    Usage::
-
-        pb = ProgressBar(value=50, max_=100, command=lambda: print("clicked"))
+    Config options: ``value``, ``max``, ``show_text`` (bool, show percentage),
+    ``width``, plus all CSS properties.
     """
 
     def __init__(
@@ -134,13 +143,14 @@ class ProgressBar(Widget):
         val = self._config_dict.get("value", 0)
         mx = self._config_dict.get("max", 100)
         pct = min(100, max(0, (val / mx * 100))) if mx > 0 else 0
-        show_text = self._config_dict.get("show_text", False)
+        show_text = self._get_cfg("show-text", False)
         style = self._render_style()
-        width = self._config_dict.get("width", 200)
+        width = self._config_dict.get("width")
+        w = f"width:{width}px;" if width is not None else ""
         text_html = ""
         if show_text:
             text_html = f'<span class="iskg-progress-text">{int(pct)}%</span>'
-        return f'''<div class="iskg-progress-wrap" id="{self._id}" style="{style}width:{width}px;">
+        return f'''<div class="iskg-progress-wrap" id="{self._id}" style="{style}{w}">
   <div class="iskg-progress-fill" id="{self._id}-fill" style="width:{pct}%"></div>
   {text_html}
 </div>'''
@@ -395,6 +405,20 @@ class StatusBar(Widget):
         super().__init__(parent, **kwargs)
         self._config_dict["sections"] = sections or []
 
+    @property
+    def text(self) -> str:
+        sections = self._config_dict.get("sections", [])
+        return sections[0].get("text", "") if sections else ""
+
+    @text.setter
+    def text(self, value: str) -> None:
+        sections = self._config_dict.get("sections", [])
+        if sections:
+            sections[0]["text"] = str(value)
+        else:
+            self._config_dict["sections"] = [{"text": str(value)}]
+        self._sync()
+
     def _render(self) -> str:
         sections = self._config_dict.get("sections", [])
         style = self._render_style()
@@ -415,7 +439,12 @@ class StatusBar(Widget):
 </div>'''
 
     def _render_update_js(self) -> str:
-        return ""
+        sections = self._config_dict.get("sections", [])
+        inner = "".join(
+            f'<span class="iskg-statusbar-section">{s.get("text", "") if isinstance(s, dict) else s}</span>'
+            for s in sections
+        )
+        return f'document.getElementById("{self._id}").innerHTML={json.dumps(inner)};'
 
 
 class IconLabel(Widget):
@@ -437,7 +466,7 @@ class IconLabel(Widget):
     def _render(self) -> str:
         text = self._config_dict.get("text", "")
         icon = self._config_dict.get("icon", "")
-        icon_size = self._config_dict.get("icon_size", 14)
+        icon_size = self._get_cfg("icon-size", 14)
         style = self._render_style()
         icon_html = ""
         if icon:

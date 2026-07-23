@@ -4,6 +4,7 @@ style rendering, and widget tree management."""
 from __future__ import annotations
 
 import json
+import warnings
 from collections.abc import Callable
 from typing import Any
 
@@ -37,7 +38,43 @@ _CONFIG_TO_CSS: list[tuple[str, str, bool]] = [
     ("min-height", "min-height", True),
     ("max-width", "max-width", True),
     ("max-height", "max-height", True),
+    ("flex", "flex", False),
+    ("overflow", "overflow", False),
+    ("overflow-x", "overflow-x", False),
+    ("overflow-y", "overflow-y", False),
+    ("gap", "gap", True),
+    ("order", "order", False),
+    ("align-self", "align-self", False),
+    ("justify-self", "justify-self", False),
+    ("align-items", "align-items", False),
+    ("justify-content", "justify-content", False),
+    ("inset", "inset", True),
+    ("top", "top", True),
+    ("right", "right", True),
+    ("bottom", "bottom", True),
+    ("left", "left", True),
+    ("object-fit", "object-fit", False),
+    ("aspect-ratio", "aspect-ratio", False),
+    ("z-index", "z-index", False),
+    ("transform", "transform", False),
+    ("transition", "transition", False),
+    ("white-space", "white-space", False),
+    ("text-overflow", "text-overflow", False),
+    ("line-height", "line-height", False),
 ]
+
+_PX_KEYS: set[str] = {k for k, _, px in _CONFIG_TO_CSS if px}
+
+
+def _validate_css_value(key: str, val: Any) -> None:
+    if key in _PX_KEYS and val is not None and val != "" and isinstance(val, str):
+        cleaned = val.strip()
+        if cleaned and not any(c.isdigit() for c in cleaned):
+            warnings.warn(
+                f"Numeric CSS key '{key}' received non-numeric string {val!r}. "
+                f"Expected a number (e.g. 10) or mixed string (e.g. '10px 5px').",
+                stacklevel=3,
+            )
 
 
 class Widget:
@@ -48,6 +85,12 @@ class Widget:
     JavaScript frontend.
 
     Every concrete widget (Button, Label, Frame, etc.) inherits from this class.
+
+    Configuration kwargs and ``.config()`` accept any key. Underscores in keys
+    are converted to hyphens. Common CSS keys (``fg``, ``bg``, ``font_size``,
+    ``padding``, ``margin``, ``flex``, ``overflow``, etc.) from
+    ``_CONFIG_TO_CSS`` are automatically mapped to inline styles. Keys starting
+    with ``--`` are treated as CSS custom properties.
     """
 
     def __init__(self, parent: Widget | None = None, **kwargs: Any) -> None:
@@ -63,6 +106,7 @@ class Widget:
         self._app: Any = None
         self._textvariable: Any = None
         self._variable: Any = None
+        self._last_sync_js: str = ""
 
         for k, v in kwargs.items():
             key = k.replace("_", "-")
@@ -109,7 +153,12 @@ class Widget:
         return None
 
     def add(self, child: Widget) -> None:
-        """Add a child widget to this widget's children list."""
+        """Add a child widget to this widget's children list.
+
+        If the child is already present, this is a no-op.
+        """
+        if child in self._children:
+            return
         child._parent = self
         self._children.append(child)
         app = self.app
@@ -136,6 +185,7 @@ class Widget:
         padx: int = 0,
         pady: int = 0,
         anchor: str = "nw",
+        in_: Widget | None = None,
     ) -> Widget:
         """Arrange this widget using pack layout.
 
@@ -146,7 +196,19 @@ class Widget:
             padx: horizontal padding in pixels.
             pady: vertical padding in pixels.
             anchor: ``"nw"``, ``"n"``, ``"ne"``, ``"w"``, ``"e"``, ``"sw"``, ``"s"``, ``"se"``.
+            in_: parent widget to pack into. If different from current parent,
+                the widget is reparented automatically.
         """
+        if in_ is not None and in_ is not self._parent:
+            if self._parent is not None:
+                self._parent.remove(self)
+            in_.add(self)
+        if self._layout_mode and self._layout_mode != "pack":
+            warnings.warn(
+                f"Widget {self._id}: pack() called after {self._layout_mode}(). "
+                f"Previous layout will be overwritten.",
+                stacklevel=2,
+            )
         self._layout_mode = "pack"
         self._config_dict.pop("hidden", None)
         self._layout_info = {
@@ -186,6 +248,12 @@ class Widget:
         and :meth:`~iskg.widgets._containers.Frame.grid_rowconfigure`
         on the parent *Frame*.
         """
+        if self._layout_mode and self._layout_mode != "grid":
+            warnings.warn(
+                f"Widget {self._id}: grid() called after {self._layout_mode}(). "
+                f"Previous layout will be overwritten.",
+                stacklevel=2,
+            )
         self._layout_mode = "grid"
         self._config_dict.pop("hidden", None)
         self._config_dict.pop("_grid_saved", None)
@@ -217,6 +285,12 @@ class Widget:
             height: explicit height in pixels, or None for auto.
             anchor: ``"nw"``, ``"n"``, ``"ne"``, ``"w"``, ``"e"``, ``"sw"``, ``"s"``, ``"se"``.
         """
+        if self._layout_mode and self._layout_mode != "place":
+            warnings.warn(
+                f"Widget {self._id}: place() called after {self._layout_mode}(). "
+                f"Previous layout will be overwritten.",
+                stacklevel=2,
+            )
         self._layout_mode = "place"
         self._config_dict.pop("hidden", None)
         self._layout_info = {
@@ -316,9 +390,27 @@ el.onmouseleave=function(){{clearTimeout(timer);tip.style.display="none";}};
                 self._config_dict["tooltip"] = str(v) if v else ""
                 self._eval_js(self._render_tooltip_js())
             else:
+                if "-" in key and not key.startswith("--"):
+                    known = {css_k for css_k, _, _ in _CONFIG_TO_CSS}
+                    if key not in known:
+                        warnings.warn(
+                            f"Unknown config key '{key}' on {type(self).__name__} "
+                            f"(set via config({k}=...)). If this is a custom CSS property, "
+                            f"prefix it with '--'.",
+                            stacklevel=2,
+                        )
+                    else:
+                        _validate_css_value(key, v)
                 self._config_dict[key] = v
         self._sync()
         return self
+
+    def _get_cfg(self, key: str, default: Any = None) -> Any:
+        """Read config key, trying hyphen first, then underscore."""
+        if key in self._config_dict:
+            return self._config_dict[key]
+        alt = key.replace("-", "_")
+        return self._config_dict.get(alt, default)
 
     def _var_updated(self, var: Any) -> None:
         """Called when a bound variable changes value.
@@ -682,8 +774,13 @@ el.onmouseleave=function(){{clearTimeout(timer);tip.style.display="none";}};
         style_js = self._render_style_update_js()
         if style_js:
             parts.append(style_js)
-        if parts:
-            self._app._eval_js(";".join(parts))
+        attr_js = self._render_attr_update_js()
+        if attr_js:
+            parts.append(attr_js)
+        combined = ";".join(parts) if parts else ""
+        if combined and combined != self._last_sync_js:
+            self._last_sync_js = combined
+            self._app._eval_js(combined)
 
     def _render(self) -> str:
         """Return the HTML string for this widget. Override in subclasses."""
@@ -699,15 +796,28 @@ el.onmouseleave=function(){{clearTimeout(timer);tip.style.display="none";}};
         """Return JavaScript to update this widget's DOM. Override in subclasses."""
         return ""
 
+    @staticmethod
+    def _css_value(val: Any, is_px: bool) -> str:
+        if isinstance(val, (int, float)):
+            return f"{val}px" if is_px else str(val)
+        s = str(val).strip()
+        if is_px and s:
+            from re import split as _re_split
+
+            parts = _re_split(r"\s+", s)
+            parts = [f"{p}px" if p and p[-1].isdigit() else p for p in parts]
+            return " ".join(parts)
+        return s
+
     def _render_style_css(self) -> str:
         css = ""
         for cfg_key, css_prop, is_px in _CONFIG_TO_CSS:
             val = self._config_dict.get(cfg_key)
             if val is not None and val != "":
-                if isinstance(val, (int, float)) and is_px:
-                    css += f"{css_prop}:{val}px;"
-                else:
-                    css += f"{css_prop}:{val};"
+                css += f"{css_prop}:{self._css_value(val, is_px)};"
+        for k, v in self._config_dict.items():
+            if k.startswith("--"):
+                css += f"{k}:{v};"
         return css
 
     def _render_style_update_js(self) -> str:
@@ -715,6 +825,13 @@ el.onmouseleave=function(){{clearTimeout(timer);tip.style.display="none";}};
         if css:
             return f'iskg_set_style("{self._id}",{json.dumps(css)});'
         return ""
+
+    def _render_attr_update_js(self) -> str:
+        parts = []
+        disabled = self._config_dict.get("disabled")
+        if disabled is not None:
+            parts.append(f'iskg_set_enabled("{self._id}",{"false" if disabled else "true"});')
+        return "".join(parts) if parts else ""
 
     def _render_attrs(self) -> str:
         """Return common HTML attributes (tabindex, disabled)."""
@@ -728,13 +845,34 @@ el.onmouseleave=function(){{clearTimeout(timer);tip.style.display="none";}};
     def _render_style(self) -> str:
         li = self._layout_info
         style = ""
+        if self._config_dict.get("hidden"):
+            style += "display:none;"
         if self._layout_mode == "pack":
-            if li.get("expand"):
-                style += "flex:1;min-height:0;min-width:0;"
-            if li.get("fill") in ("x", "both"):
-                style += "width:100%;"
-            if li.get("fill") in ("y", "both") and not li.get("expand"):
-                style += "height:100%;"
+            side = li.get("side", "top")
+            expand = li.get("expand", False)
+            fill = li.get("fill", "none")
+            if side in ("left", "right"):
+                # row: main-axis = horizontal, cross-axis = vertical
+                if expand:
+                    style += "flex:1;min-height:0;min-width:0;"
+                else:
+                    style += "flex-shrink:0;"
+                if fill in ("y", "both"):
+                    style += "align-self:stretch;"
+                if fill in ("x", "both") and expand:
+                    style += "width:100%;"
+                if side == "right" and not expand:
+                    style += "margin-left:auto;"
+            else:
+                # column: main-axis = vertical, cross-axis = horizontal
+                if expand:
+                    style += "flex:1;min-height:0;min-width:0;"
+                if fill in ("x", "both"):
+                    style += "align-self:stretch;"
+                if fill in ("y", "both") and not expand:
+                    style += "height:100%;"
+                if side == "bottom":
+                    style += "margin-top:auto;"
             if li.get("padx"):
                 style += f"padding-left:{li['padx']}px;padding-right:{li['padx']}px;"
             if li.get("pady"):
