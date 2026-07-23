@@ -1,4 +1,13 @@
-from iskg import IndicatorLED, Label, LEDDisplay, ProgressBar, RadialGauge, StatusBar
+from iskg import (
+    IconLabel,
+    ImageBox,
+    IndicatorLED,
+    Label,
+    LEDDisplay,
+    ProgressBar,
+    RadialGauge,
+    StatusBar,
+)
 
 
 class TestLabel:
@@ -16,6 +25,45 @@ class TestLabel:
         html = lbl._render()
         assert "iskg-label" in html
         assert "Test" in html
+
+    def test_wraplength(self):
+        lbl = Label(text="X", wraplength=100)
+        assert lbl.wraplength == 100
+        html = lbl._render()
+        assert "max-width:100px" in html
+
+    def test_wraplength_none(self):
+        lbl = Label(text="X")
+        lbl.wraplength = None
+        assert lbl.wraplength is None
+
+    def test_anchor_center(self):
+        lbl = Label(text="X", anchor="center")
+        assert lbl.anchor == "center"
+        html = lbl._render()
+        assert "text-align:center" in html
+
+    def test_anchor_right(self):
+        lbl = Label(text="X", anchor="e")
+        html = lbl._render()
+        assert "text-align:right" in html
+
+    def test_justify_init(self):
+        lbl = Label(text="X", justify="center")
+        assert lbl.justify == "center"
+        html = lbl._render()
+        assert "text-align:center" in html
+
+    def test_color_class(self):
+        lbl = Label(text="X", color="red")
+        html = lbl._render()
+        assert "red" in html
+
+    def test_click_binding(self):
+        lbl = Label(text="X")
+        lbl.bind("click", lambda d: None)
+        html = lbl._render()
+        assert "onclick" in html
 
 
 class TestProgressBar:
@@ -45,6 +93,11 @@ class TestLEDDisplay:
         html = led._render()
         assert "iskg-led-wrap" in html
         assert "0123" in html
+
+    def test_value_setter(self):
+        led = LEDDisplay(value=10)
+        led.value = 99
+        assert led.value == 99
 
 
 class TestIndicatorLED:
@@ -85,3 +138,42 @@ class TestStatusBar:
         html = sb._render()
         assert "iskg-statusbar" in html
         assert "READY" in html
+
+    def test_text_getter_first_section(self):
+        sb = StatusBar(sections=[{"text": "ONE"}, {"text": "TWO"}])
+        assert sb.text == "ONE"
+
+    def test_text_setter_updates_first_section(self):
+        sb = StatusBar(sections=[{"text": "OLD"}])
+        sb.text = "NEW"
+        assert sb._config_dict["sections"][0]["text"] == "NEW"
+
+    def test_text_setter_empty_sections(self):
+        sb = StatusBar(sections=[])
+        sb.text = "NEW"
+        assert sb._config_dict["sections"][0]["text"] == "NEW"
+
+    def test_section_as_string(self):
+        sb = StatusBar(sections=["plain"])
+        html = sb._render()
+        assert "plain" in html
+
+
+class TestIconLabel:
+    def test_create(self):
+        il = IconLabel(text="Test", icon="🔥", color="red")
+        html = il._render()
+        assert "iskg-iconlabel" in html
+        assert "🔥" in html
+
+    def test_svg_icon(self):
+        il = IconLabel(text="X", icon="<svg></svg>")
+        html = il._render()
+        assert "svg" in html
+
+
+class TestImageBox:
+    def test_command_cursor(self):
+        img = ImageBox(src="data:,", command=lambda: None)
+        html = img._render()
+        assert "cursor:pointer" in html

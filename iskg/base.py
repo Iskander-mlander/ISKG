@@ -826,6 +826,19 @@ el.onmouseleave=function(){{clearTimeout(timer);tip.style.display="none";}};
             return f'iskg_set_style("{self._id}",{json.dumps(css)});'
         return ""
 
+    _ARIA_ROLE: str = ""
+
+    def _render_aria_attrs(self) -> str:
+        parts = []
+        role = self._ARIA_ROLE
+        if role:
+            parts.append(f'role="{role}"')
+        if self._config_dict.get("disabled"):
+            parts.append('aria-disabled="true"')
+        if parts:
+            return " " + " ".join(parts)
+        return ""
+
     def _render_attr_update_js(self) -> str:
         parts = []
         disabled = self._config_dict.get("disabled")
@@ -834,12 +847,13 @@ el.onmouseleave=function(){{clearTimeout(timer);tip.style.display="none";}};
         return "".join(parts) if parts else ""
 
     def _render_attrs(self) -> str:
-        """Return common HTML attributes (tabindex, disabled)."""
+        """Return common HTML attributes (tabindex, disabled, ARIA)."""
         attrs = ""
         if self._config_dict.get("disabled"):
             attrs += " disabled"
         if self._config_dict.get("takefocus", self._default_takefocus()):
             attrs += ' tabindex="0"'
+        attrs += self._render_aria_attrs()
         return attrs
 
     def _render_style(self) -> str:

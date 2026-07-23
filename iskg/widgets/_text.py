@@ -8,6 +8,8 @@ from ..base import Widget
 class Text(Widget):
     """A multi-line text input area."""
 
+    _ARIA_ROLE = "textbox"
+
     def __init__(
         self,
         parent: Widget | None = None,
@@ -76,6 +78,8 @@ class Text(Widget):
 class RichText(Widget):
     """A rich text editor with formatting toolbar."""
 
+    _ARIA_ROLE = "textbox"
+
     def __init__(
         self,
         parent: Widget | None = None,
@@ -94,6 +98,7 @@ class RichText(Widget):
         height = self._config_dict.get("height", 150)
         show_tb = self._get_cfg("show-toolbar", True)
         style = self._render_style()
+        attrs = self._render_attrs()
         tb_html = ""
         if show_tb:
             cmds: list[tuple[str, str, str]] = [
@@ -131,7 +136,7 @@ class RichText(Widget):
                         f' title="{tip}" style="{color_style}">{label}</button>'
                     )
             tb_html = f'<div class="iskg-richtext-toolbar">{btns}</div>'
-        return f'''<div id="{self._id}" class="iskg-richtext-wrap" style="{style}height:{height}px;">
+        return f'''<div id="{self._id}" class="iskg-richtext-wrap" style="{style}height:{height}px;" {attrs}>
   {tb_html}
   <div id="{self._id}-editor" class="iskg-richtext-editor" contenteditable="true">{text}</div>
 </div>'''

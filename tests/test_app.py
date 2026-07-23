@@ -1,14 +1,13 @@
 """Tests for Application, _JSAPI, and window management."""
 
+import contextlib
 import json
-import time
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from iskg import Button, Label, Widget
-from iskg.app import Application, Window, _HANDLERS, _LOCK, _JSAPI, _JSAPI_INSTANCE
-
+from iskg import Label, Widget
+from iskg.app import _HANDLERS, _JSAPI, _JSAPI_INSTANCE, Application, Window
 
 # ── _JSAPI ─────────────────────────────────────────────────────────────
 
@@ -28,7 +27,10 @@ class TestJSAPI:
         api = _JSAPI()
         api._last_event.clear()
         calls = []
-        handler = lambda name, data: calls.append((name, data))
+
+        def handler(name, data):
+            return calls.append((name, data))
+
         _HANDLERS["test_widget"] = handler
         api.on_event("test_widget", "change", '"hello"')
         assert len(calls) == 1
@@ -266,6 +268,24 @@ class TestEvalJs:
         app._eval_js("alert(1)")
         app._window.evaluate_js.assert_called_once_with("alert(1)")
 
+    def test_eval_js_exception_with_debug(self):
+        app = Application()
+        app._window = MagicMock()
+        app._window.evaluate_js.side_effect = RuntimeError("js error")
+        app._running = True
+        app._debug = True
+        import io
+        import sys
+
+        stderr = io.StringIO()
+        old = sys.stderr
+        sys.stderr = stderr
+        try:
+            app._eval_js("bad()")
+        finally:
+            sys.stderr = old
+        assert "js error" in stderr.getvalue()
+
     def test_js_eval_no_window_returns_none(self):
         app = Application()
         app._window = None
@@ -392,7 +412,10 @@ class TestTheme:
         result = app.register_theme("custom1", overrides)
         assert result is app
         from iskg.themes import THEMES
+
         assert THEMES.get("custom1") == overrides
+        # clean up to not affect other tests
+        THEMES.pop("custom1", None)
 
 
 # ── quit / on_close ────────────────────────────────────────────────────
@@ -413,9 +436,20 @@ class TestLifecycle:
         app._window.destroy.assert_called_once()
         assert app._running is False
 
+    def test_quit_destroy_raises(self):
+        app = Application()
+        app._window = MagicMock()
+        app._window.destroy.side_effect = RuntimeError("destroy failed")
+        app._running = True
+        app.quit()  # should not raise
+        assert app._running is False
+
     def test_on_close_registers(self):
         app = Application()
-        cb = lambda: None
+
+        def cb():
+            return None
+
         app.on_close(cb)
         assert cb in app._on_close_callbacks
 
@@ -426,10 +460,8 @@ class TestLifecycle:
         app.on_close(lambda: calls.append(2))
         # simulate what run() does after webview.start() returns
         for cb in app._on_close_callbacks:
-            try:
+            with contextlib.suppress(Exception):
                 cb()
-            except Exception:
-                pass
         assert calls == [1, 2]
 
     def test_on_close_exception_does_not_block(self):
@@ -438,10 +470,8 @@ class TestLifecycle:
         app.on_close(lambda: (_ for _ in ()).throw(RuntimeError("boom")))
         app.on_close(lambda: calls.append(1))
         for cb in app._on_close_callbacks:
-            try:
+            with contextlib.suppress(Exception):
                 cb()
-            except Exception:
-                pass
         assert calls == [1]
 
 
@@ -499,6 +529,7 @@ class TestClipboard:
         # will raise ImportError -> return ""
         # But the import is cached, so we need to mock
         import importlib
+
         with patch.object(importlib, "import_module", side_effect=ImportError):
             result = app.get_clipboard()
             assert result == ""
@@ -508,12 +539,24 @@ class TestClipboard:
         mock_pyperclip = MagicMock()
         with patch.dict("sys.modules", {"pyperclip": mock_pyperclip}):
             import importlib
+
             importlib.invalidate_caches()
             app.set_clipboard("test")
         # pyperclip was patched
         app.set_clipboard("test123")
         # The import is already cached, so we can't easily mock it in a unit test
         # This test just verifies no crash
+
+    def test_get_clipboard_with_mock(self):
+        app = Application()
+        mock_pyperclip = MagicMock()
+        mock_pyperclip.paste.return_value = "clipboard text"
+        with patch.dict("sys.modules", {"pyperclip": mock_pyperclip}):
+            import importlib
+
+            importlib.invalidate_caches()
+            result = app.get_clipboard()
+            assert result == "clipboard text"
 
 
 # ── file_dialog ────────────────────────────────────────────────────────
@@ -533,6 +576,14 @@ class TestFileDialog:
             result = app.file_dialog("open")
         assert result is None
 
+    def test_file_dialog_webview_import_fails(self):
+        app = Application()
+        app._window = None
+        with patch("iskg.app.Application._gtk_file_dialog", return_value=None):
+            with patch("builtins.__import__", side_effect=ImportError("no webview")):
+                result = app.file_dialog("open")
+        assert result is None
+
 
 # ── color_dialog ───────────────────────────────────────────────────────
 
@@ -543,13 +594,20 @@ class TestColorDialog:
         app._window = MagicMock()
         app._window.evaluate_js.return_value = "OK"
         app._running = True
-        result = app.color_dialog(initial_color="#000")
-        assert result is not None
+        try:
+            with patch("gi.require_version", side_effect=ValueError("no gtk")):
+                result = app.color_dialog(initial_color="#000")
+                assert result is not None
+        except ImportError:
+            pytest.skip("gi not available")
 
     def test_color_dialog_no_window_returns_none(self):
         app = Application()
-        # Without window, GTK exception -> JS fallback -> _js_eval returns None
-        assert app.color_dialog() is None
+        try:
+            with patch("gi.require_version", side_effect=ValueError("no gtk")):
+                assert app.color_dialog() is None
+        except ImportError:
+            pytest.skip("gi not available")
 
     def test_color_dialog_js_fallback_success(self):
         app = Application()
@@ -582,12 +640,24 @@ class TestColorDialog:
 class TestFontDialog:
     def test_font_dialog_no_window_returns_none(self):
         app = Application()
-        assert app.font_dialog() is None
+        try:
+            with patch("gi.require_version", side_effect=ValueError("no gtk")):
+                assert app.font_dialog() is None
+        except ImportError:
+            pytest.skip("gi not available")
 
     def test_font_dialog_js_fallback(self):
         app = Application()
         app._window = MagicMock()
-        result_json = json.dumps({"family": "Arial", "size": 14, "weight": "normal", "style": "normal", "_full_name": "Arial 14"})
+        result_json = json.dumps(
+            {
+                "family": "Arial",
+                "size": 14,
+                "weight": "normal",
+                "style": "normal",
+                "_full_name": "Arial 14",
+            }
+        )
         app._window.evaluate_js.return_value = result_json
         app._running = True
         try:

@@ -119,6 +119,17 @@ class ProgressBar(Widget):
     ``width``, plus all CSS properties.
     """
 
+    _ARIA_ROLE = "progressbar"
+
+    def _render_aria_attrs(self) -> str:
+        val = self._config_dict.get("value", 0)
+        mx = self._config_dict.get("max", 100)
+        pct = min(100, max(0, (val / mx * 100))) if mx > 0 else 0
+        result = f' role="progressbar" aria-valuenow="{val}" aria-valuemin="0" aria-valuemax="{mx}" aria-valuetext="{int(pct)}%"'
+        if self._config_dict.get("disabled"):
+            result += ' aria-disabled="true"'
+        return result
+
     def __init__(
         self,
         parent: Widget | None = None,
@@ -145,12 +156,13 @@ class ProgressBar(Widget):
         pct = min(100, max(0, (val / mx * 100))) if mx > 0 else 0
         show_text = self._get_cfg("show-text", False)
         style = self._render_style()
+        attrs = self._render_attrs()
         width = self._config_dict.get("width")
         w = f"width:{width}px;" if width is not None else ""
         text_html = ""
         if show_text:
             text_html = f'<span class="iskg-progress-text">{int(pct)}%</span>'
-        return f'''<div class="iskg-progress-wrap" id="{self._id}" style="{style}{w}">
+        return f'''<div class="iskg-progress-wrap" id="{self._id}" style="{style}{w}" {attrs}>
   <div class="iskg-progress-fill" id="{self._id}-fill" style="width:{pct}%"></div>
   {text_html}
 </div>'''
@@ -396,6 +408,8 @@ class RadialGauge(Widget):
 class StatusBar(Widget):
     """A status bar with multiple sections."""
 
+    _ARIA_ROLE = "status"
+
     def __init__(
         self,
         parent: Widget | None = None,
@@ -422,6 +436,7 @@ class StatusBar(Widget):
     def _render(self) -> str:
         sections = self._config_dict.get("sections", [])
         style = self._render_style()
+        attrs = self._render_attrs()
         parts = []
         for sec in sections:
             if isinstance(sec, dict):
@@ -434,7 +449,7 @@ class StatusBar(Widget):
             else:
                 parts.append(f'<span class="iskg-statusbar-section">{sec}</span>')
         inner = "".join(parts)
-        return f'''<div id="{self._id}" class="iskg-statusbar" style="{style}">
+        return f'''<div id="{self._id}" class="iskg-statusbar" style="{style}" {attrs}>
   {inner}
 </div>'''
 

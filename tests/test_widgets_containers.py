@@ -1,4 +1,4 @@
-from iskg import Frame, Label, Notebook, ScrollBar, Separator, Spacer
+from iskg import Frame, Label, Notebook, PanedWindow, ScrollBar, ScrolledFrame, Separator, Spacer
 
 
 class TestFrame:
@@ -161,3 +161,99 @@ class TestIntegration:
         assert "left-bottom" in html
         assert "right-pane" in html
         assert "iskg-sash" in html
+
+
+# ── ScrolledFrame ─────────────────────────────────────────────────────
+
+
+class TestScrolledFrame:
+    def test_create(self):
+        sf = ScrolledFrame()
+        assert sf is not None
+        assert hasattr(sf, "_id")
+        assert "iskg-scrollframe" in sf._render()
+
+    def test_render_js_empty_by_default(self):
+        sf = ScrolledFrame()
+        assert sf._render_js() == ""
+
+    def test_render_js_autoscroll(self):
+        sf = ScrolledFrame(autoscroll=True)
+        js = sf._render_js()
+        assert "ResizeObserver" in js
+
+    def test_with_child(self):
+        sf = ScrolledFrame()
+        child = Label(text="scrollable content")
+        sf.add(child)
+        html = sf._render()
+        assert "scrollable content" in html
+
+    def test_render_style_includes_overflow(self):
+        sf = ScrolledFrame()
+        html = sf._render()
+        assert "overflow" in html or "scroll" in html
+
+
+# ── PanedWindow ───────────────────────────────────────────────────────
+
+
+class TestPanedWindow:
+    def test_create(self):
+        pw = PanedWindow()
+        assert pw is not None
+        assert pw._config_dict.get("_orient") == "horizontal"
+
+    def test_create_horizontal(self):
+        pw = PanedWindow(orient="horizontal")
+        assert pw._config_dict.get("_orient") == "horizontal"
+
+    def test_create_vertical(self):
+        pw = PanedWindow(orient="vertical")
+        assert pw._config_dict.get("_orient") == "vertical"
+
+    def test_add_pane(self):
+        pw = PanedWindow()
+        f = Frame()
+        pw.add(f)
+        assert f in pw._children
+
+    def test_sash_pos(self):
+        pw = PanedWindow()
+        pw.sash_pos(0.75)
+        assert pw._config_dict.get("_sash_pos") == 0.75
+
+    def test_sash_pos_clamped(self):
+        pw = PanedWindow()
+        pw.sash_pos(1.5)
+        assert pw._config_dict.get("_sash_pos") == 1.0
+
+    def test_render_html(self):
+        pw = PanedWindow()
+        left = Label(text="left pane")
+        right = Label(text="right pane")
+        pw.add(left)
+        pw.add(right)
+        html = pw._render()
+        assert "iskg-panedwindow" in html
+        assert "iskg-sash" in html
+        assert "left pane" in html
+        assert "right pane" in html
+
+    def test_render_js(self):
+        pw = PanedWindow()
+        pw.add(Frame())
+        pw.add(Frame())
+        js = pw._render_js()
+        assert len(js) > 0
+
+    def test_render_js_single_pane_empty(self):
+        pw = PanedWindow()
+        pw.add(Frame())
+        js = pw._render_js()
+        assert js == ""
+
+    def test_render_html_no_panes(self):
+        pw = PanedWindow()
+        html = pw._render()
+        assert 'class="iskg-panedwindow"' in html

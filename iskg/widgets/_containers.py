@@ -334,6 +334,8 @@ document.addEventListener('mouseup',function(){{down=false;document.body.style.u
 class Notebook(Widget):
     """A tabbed container widget."""
 
+    _ARIA_ROLE = "tablist"
+
     def __init__(
         self,
         parent: Widget | None = None,
@@ -349,6 +351,7 @@ class Notebook(Widget):
 
     def _render(self) -> str:
         style = self._render_style()
+        attrs = self._render_attrs()
         tabs_html = ""
         pages_html = ""
         for i, tab in enumerate(self._tabs):
@@ -358,7 +361,7 @@ class Notebook(Widget):
                 "display:block;overflow:auto;" if i == 0 else "display:none;overflow:auto;"
             )
             pages_html += f'<div class="iskg-tabpage" id="{self._id}-page-{i}" style="{page_style}">{tab["widget"]._render()}</div>'
-        return f'''<div id="{self._id}" class="iskg-notebook" style="{style}">
+        return f'''<div id="{self._id}" class="iskg-notebook" style="{style}" {attrs}>
   <div class="iskg-tabbar">{tabs_html}</div>
   {pages_html}
 </div>'''
@@ -382,6 +385,8 @@ if(tb){{
 
 class Separator(Widget):
     """A horizontal or vertical visual separator line."""
+
+    _ARIA_ROLE = "separator"
 
     def __init__(
         self,
@@ -437,6 +442,8 @@ class ScrollBar(Widget):
         step (int): Scroll step in percentage points. Default 5.
     """
 
+    _ARIA_ROLE = "scrollbar"
+
     def __init__(
         self,
         parent: Widget | None = None,
@@ -452,17 +459,18 @@ class ScrollBar(Widget):
         orient = self._config_dict.get("orient", "vertical")
         val = self._config_dict.get("value", 0)
         style = self._render_style()
+        attrs = self._render_attrs()
         thumb_size = self._get_cfg("thumb-size", 20)
         if orient == "vertical":
             height = self._config_dict.get("height", 100)
             cls = "iskg-scrollbar iskg-scrollbar-vert"
-            return f'''<div id="{self._id}" class="{cls}" style="{style}height:{height}px;">
+            return f'''<div id="{self._id}" class="{cls}" style="{style}height:{height}px;" {attrs}>
   <div class="iskg-scrollbar-thumb" style="top:{val}%;height:{thumb_size}px;"></div>
 </div>'''
         else:
             width = self._config_dict.get("width", 100)
             cls = "iskg-scrollbar iskg-scrollbar-horiz"
-            return f'''<div id="{self._id}" class="{cls}" style="{style}width:{width}px;">
+            return f'''<div id="{self._id}" class="{cls}" style="{style}width:{width}px;" {attrs}>
   <div class="iskg-scrollbar-thumb" style="left:{val}%;width:{thumb_size}px;"></div>
 </div>'''
 

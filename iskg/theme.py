@@ -69,6 +69,10 @@ html, body {
   border-color:var(--green); color:var(--green);
   box-shadow:var(--glow-green);
 }
+.iskg-btn:focus-visible {
+  border-color:var(--cyan);
+  box-shadow:var(--glow-cyan);
+}
 .iskg-btn:active { transform:scale(0.95); }
 .iskg-btn:disabled {
   opacity:0.35; cursor:default; pointer-events:none;
@@ -125,6 +129,7 @@ html, body {
   caret-color:var(--cyan);
   width:150px;
 }
+.iskg-entry:hover { border-color:var(--border-light); }
 .iskg-entry:focus {
   border-color:var(--cyan);
   box-shadow:var(--glow-cyan);
@@ -271,6 +276,7 @@ html, body {
   background:var(--cyan); border:none; border-radius:50%;
   cursor:pointer;
 }
+.iskg-slider:focus { border-color:var(--cyan); }
 .iskg-slider:hover { border-color:var(--green); }
 .iskg-slider:hover::-webkit-slider-thumb { box-shadow:0 0 10px rgba(34,211,238,0.4); }
 .iskg-slider:disabled { opacity:0.35; }
@@ -414,6 +420,7 @@ html, body {
   line-height:1.5;
   min-height:150px;
 }
+.iskg-text:hover { border-color:var(--border-light); }
 .iskg-text:focus {
   border-color:var(--cyan);
   box-shadow:var(--glow-cyan);
@@ -435,6 +442,7 @@ html, body {
   outline:none;
 }
 .iskg-spinbox:focus { border-color:var(--cyan); }
+.iskg-spinbox:disabled { opacity:0.35; }
 .iskg-spinbox-btns {
   display:flex; flex-direction:column;
 }
@@ -514,6 +522,7 @@ html, body {
   transition:all var(--transition-speed);
 }
 .iskg-tab:hover { color:var(--text); background:var(--bg-panel-alt); }
+.iskg-tab:focus-visible { outline:1px solid var(--cyan); outline-offset:-1px; }
 .iskg-tab.active {
   background:var(--bg-panel-alt);
   color:var(--green);
@@ -552,6 +561,7 @@ html, body {
   transition:background var(--transition-speed);
 }
 .iskg-scrollbar-thumb:hover { background:var(--text-dim); }
+.iskg-scrollbar:disabled { opacity:0.35; }
 .iskg-scrollbar-vert .iskg-scrollbar-thumb { left:1px; right:1px; }
 .iskg-scrollbar-horiz .iskg-scrollbar-thumb { top:1px; bottom:1px; }
 
@@ -578,7 +588,7 @@ html, body {
   display:none; align-items:center; justify-content:center;
   z-index:10000;
 }
-.iskg-msgbox-overlay:target {
+.iskg-msgbox-overlay.active {
   display:flex;
 }
 .iskg-msgbox {
@@ -599,6 +609,7 @@ html, body {
 .iskg-msgbox-text {
   font-size:11px; color:var(--text);
   margin-bottom:12px; line-height:1.5;
+  white-space:pre-wrap;
 }
 .iskg-msgbox-btns {
   display:flex; gap:6px; justify-content:flex-end;

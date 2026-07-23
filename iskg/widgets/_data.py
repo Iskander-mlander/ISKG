@@ -10,6 +10,8 @@ from ..base import Widget
 class ListBox(Widget):
     """A selectable list of items."""
 
+    _ARIA_ROLE = "listbox"
+
     def __init__(
         self,
         parent: Widget | None = None,
@@ -53,12 +55,13 @@ class ListBox(Widget):
     def _render(self) -> str:
         items = self._config_dict.get("items", [])
         style = self._render_style()
+        attrs = self._render_attrs()
         width = self._config_dict.get("width", 150)
         height = self._config_dict.get("height", 120)
         item_html = ""
         for i, item in enumerate(items):
             item_html += f'<div class="iskg-listbox-item" data-idx="{i}">{item}</div>'
-        return f'<div id="{self._id}" class="iskg-listbox" style="{style}width:{width}px;height:{height}px;">{item_html}</div>'
+        return f'<div id="{self._id}" class="iskg-listbox" style="{style}width:{width}px;height:{height}px;" {attrs}>{item_html}</div>'
 
     def _render_js(self) -> str:
         return f'''document.getElementById("{self._id}").addEventListener("click",function(e){{
@@ -84,6 +87,8 @@ if(el){{el.innerHTML={escaped}.map(function(x,i){{
 
 class DataGrid(Widget):
     """A sortable data table with columns and rows."""
+
+    _ARIA_ROLE = "grid"
 
     def __init__(
         self,
@@ -115,6 +120,7 @@ class DataGrid(Widget):
         width = self._config_dict.get("width", 300)
         height = self._config_dict.get("height", 200)
         style = self._render_style()
+        attrs = self._render_attrs()
         ths = "".join(
             f'<th data-col="{i}">{c} <span class="arrow"></span></th>' for i, c in enumerate(cols)
         )
@@ -123,7 +129,7 @@ class DataGrid(Widget):
             cls = "even" if ri % 2 == 0 else "odd"
             tds = "".join(f"<td>{v}</td>" for v in row)
             trs += f'<tr class="{cls}" data-row="{ri}">{tds}</tr>'
-        return f'''<div id="{self._id}" class="iskg-datagrid" style="{style}width:{width}px;height:{height}px;">
+        return f'''<div id="{self._id}" class="iskg-datagrid" style="{style}width:{width}px;height:{height}px;" {attrs}>
   <table>
     <thead><tr>{ths}</tr></thead>
     <tbody>{trs}</tbody>
@@ -184,6 +190,8 @@ iskg_bridge_event("{self._id}","select",this.dataset.row);
 class TreeView(Widget):
     """A hierarchical tree view widget."""
 
+    _ARIA_ROLE = "tree"
+
     def __init__(
         self,
         parent: Widget | None = None,
@@ -229,8 +237,9 @@ class TreeView(Widget):
 </li>""")
             return "".join(parts)
 
+        attrs = self._render_attrs()
         inner = render_items(items)
-        return f'''<div id="{self._id}" class="iskg-tree" style="{style}width:{width}px;height:{height}px;">
+        return f'''<div id="{self._id}" class="iskg-tree" style="{style}width:{width}px;height:{height}px;" {attrs}>
   <ul>{inner}</ul>
 </div>'''
 
@@ -271,6 +280,8 @@ class TreeView(Widget):
 class DropTarget(Widget):
     """A drag-and-drop target area."""
 
+    _ARIA_ROLE = "button"
+
     def __init__(
         self,
         parent: Widget | None = None,
@@ -289,7 +300,8 @@ class DropTarget(Widget):
         width = self._config_dict.get("width", 200)
         height = self._config_dict.get("height", 100)
         style = self._render_style()
-        return f'''<div id="{self._id}" class="iskg-droptarget" style="{style}width:{width}px;height:{height}px;">
+        attrs = self._render_attrs()
+        return f'''<div id="{self._id}" class="iskg-droptarget" style="{style}width:{width}px;height:{height}px;" {attrs}>
   <div class="iskg-droptarget-icon">⬇</div>
   <div class="iskg-droptarget-text">{text}</div>
 </div>'''

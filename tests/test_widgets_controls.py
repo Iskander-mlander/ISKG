@@ -34,6 +34,21 @@ class TestButton:
         b._handle_bridge_event("click", None)
         assert calls == [1]
 
+    def test_variant_css_class(self):
+        b = Button(text="Danger", variant="danger")
+        html = b._render()
+        assert "danger" in html
+
+    def test_size_css_class(self):
+        b = Button(text="Small", size="sm")
+        html = b._render()
+        assert "sm" in html
+
+    def test_width_in_style(self):
+        b = Button(text="Wide", width=200)
+        html = b._render()
+        assert "width:200px" in html
+
 
 class TestEntry:
     def test_create(self):
@@ -56,6 +71,36 @@ class TestEntry:
         html = e._render()
         assert 'type="password"' in html
 
+    def test_justify_init(self):
+        e = Entry(text="a", justify="center")
+        assert e.justify == "center"
+
+    def test_justify_setter(self):
+        e = Entry(text="a")
+        e.justify = "right"
+        assert e.justify == "right"
+
+    def test_maxlength_init(self):
+        e = Entry(text="a", maxlength=10)
+        assert e.maxlength == 10
+
+    def test_maxlength_setter(self):
+        e = Entry(text="a")
+        e.maxlength = 5
+        assert e.maxlength == 5
+        e.maxlength = None
+        assert e.maxlength is None
+
+    def test_justify_center_render(self):
+        e = Entry(text="a", justify="center")
+        html = e._render()
+        assert "text-align:center" in html
+
+    def test_justify_right_render(self):
+        e = Entry(text="a", justify="right")
+        html = e._render()
+        assert "text-align:right" in html
+
 
 class TestCheckBox:
     def test_create_checked(self):
@@ -75,6 +120,11 @@ class TestCheckBox:
         html = cb._render()
         assert "iskg-check-wrap" in html
         assert "checked" in html
+
+    def test_disabled_class(self):
+        cb = CheckBox(text="X", disabled=True)
+        html = cb._render()
+        assert "disabled" in html
 
 
 class TestRadioButton:
@@ -175,3 +225,52 @@ class TestToggleSwitch:
         ts = ToggleSwitch(text="Mode", checked=True)
         html = ts._render()
         assert "iskg-toggle-wrap" in html
+
+    def test_disabled_class(self):
+        ts = ToggleSwitch(text="X", disabled=True)
+        html = ts._render()
+        assert "disabled" in html
+
+
+class TestRadioButtonExtended:
+    def test_command_init(self):
+        rb = RadioButton(text="X", command=lambda: None)
+        assert rb._config_dict.get("command") is not None
+
+    def test_disabled_class(self):
+        rb = RadioButton(text="X", disabled=True)
+        html = rb._render()
+        assert "disabled" in html
+
+
+class TestComboBoxExtended:
+    def test_editable(self):
+        cb = ComboBox(values=["A", "B"], current=0, editable=True)
+        html = cb._render()
+        assert "<input" in html
+
+    def test_non_editable(self):
+        cb = ComboBox(values=["A", "B"], current=0)
+        html = cb._render()
+        assert "<input" not in html
+
+
+class TestSliderExtended:
+    def test_init_with_min_max(self):
+        s = Slider(from_=0, to=100, value=50, min_value=10, max_value=90)
+        assert s._config_dict.get("from") == 10
+        assert s._config_dict.get("to") == 90
+
+
+class TestSpinBoxExtended:
+    def test_init_with_min_max(self):
+        sp = SpinBox(from_=0, to=100, value=50, min_value=10, max_value=90)
+        assert sp._config_dict.get("from") == 10
+        assert sp._config_dict.get("to") == 90
+
+
+class TestScaleExtended:
+    def test_vertical_render(self):
+        sc = Scale(value=50, orient="vertical")
+        html = sc._render()
+        assert "iskg-slider-vert" in html

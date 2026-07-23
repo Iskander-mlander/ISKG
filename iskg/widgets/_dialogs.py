@@ -34,6 +34,7 @@ class MessageDialog(Widget):
         if not a:
             return
         from ..app import _HANDLERS
+
         _HANDLERS[self._id] = self._handle_bridge_event
         self._msg_app = a
         html = json.dumps(self._render())
@@ -86,6 +87,7 @@ class MessageDialog(Widget):
                 self._dialog_callback(str(event_data))
                 self._dialog_callback = None
             from ..app import _HANDLERS
+
             _HANDLERS.pop(self._id, None)
         super()._handle_bridge_event(event_name, event_data)
 

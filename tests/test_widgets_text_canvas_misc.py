@@ -219,3 +219,48 @@ class TestGridImprovements:
         assert f._grid_column_weights[0] == (2, 100)
         f.grid_columnconfigure(0, weight=0, minsize=0)
         assert 0 not in f._grid_column_weights
+
+
+class TestCanvasExtended:
+    def test_create_rectangle(self):
+        c = Canvas()
+        c.create_rectangle(10, 10, 50, 50, fill="red", outline="blue")
+        assert len(c._draw_commands) == 1
+        cmd = c._draw_commands[0]
+        assert cmd[0] == "rect"
+
+    def test_create_line(self):
+        c = Canvas()
+        c.create_line(10, 10, 100, 50, color="green", width=2)
+        assert c._draw_commands[0][0] == "line"
+
+    def test_create_oval(self):
+        c = Canvas()
+        c.create_oval(10, 10, 50, 50)
+        assert c._draw_commands[0][0] == "oval"
+
+    def test_create_text(self):
+        c = Canvas()
+        c.create_text(50, 30, text="Hello")
+        assert c._draw_commands[0][0] == "text"
+
+    def test_create_arc(self):
+        c = Canvas()
+        c.create_arc(10, 10, 50, 50, start=0, extent=180)
+        assert c._draw_commands[0][0] == "arc"
+
+    def test_render_update_js_delegates_to_rebuild(self):
+        c = Canvas()
+        assert c._render_update_js() == c._render_rebuild_js()
+
+    def test_render_children_empty(self):
+        c = Canvas()
+        assert c._render_children() == ""
+        assert c._render_children_js() == ""
+
+
+class TestTextExtended:
+    def test_text_setter(self):
+        t = Text(text="a")
+        t.text = "b"
+        assert t.text == "b"

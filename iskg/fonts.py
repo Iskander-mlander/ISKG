@@ -3,19 +3,15 @@
 No external CDN required — all fonts are compiled directly into the
 package as base64-encoded ``@font-face`` CSS.
 
-Available fonts and their CSS variables:
+Available fonts:
 
-+------------------+----------------------------------+------------------+
-| Font             | CSS variable                     | Style            |
-+------------------+----------------------------------+------------------+
-| Inter            | ``--font-sans``, ``--font-display`` | UI sans-serif    |
-| JetBrains Mono   | ``--font-mono``                  | Monospace        |
-| Nunito           | ``--font-rounded``               | Rounded sans     |
-| Manrope          | ``--font-geometric``             | Geometric sans   |
-| Space Grotesk    | ``--font-display-alt``           | Display sans     |
-| Fira Sans        | ``--font-humanist``              | Humanist sans    |
-| Playfair Display | ``--font-serif``                 | Serif            |
-+------------------+----------------------------------+------------------+
+- **Inter** (``--font-sans``, ``--font-display``) — UI sans-serif
+- **JetBrains Mono** (``--font-mono``) — Monospace
+- **Nunito** (``--font-rounded``) — Rounded sans
+- **Manrope** (``--font-geometric``) — Geometric sans
+- **Space Grotesk** (``--font-display-alt``) — Display sans
+- **Fira Sans** (``--font-humanist``) — Humanist sans
+- **Playfair Display** (``--font-serif``) — Serif
 
 Usage::
 

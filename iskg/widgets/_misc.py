@@ -6,7 +6,9 @@ from ..base import Widget
 
 
 class Tooltip(Widget):
-    """A hover tooltip that displays text near a widget."""
+    """A tooltip that appears on hover."""
+
+    _ARIA_ROLE = "tooltip"
 
     def __init__(
         self,

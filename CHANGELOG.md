@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.3.62] — 2026-07-23
+
+### Added
+- ARIA attributes (`role`, `aria-*`) en todos los widgets — accesibilidad para screen-readers (#M4)
+- Docstrings en ~140 métodos públicos de la API (#M5)
+- Test de integración ScrolledFrame + PanedWindow + grid mixto (#F4)
+
+### Fixed
+- SyntaxError en `ProgressBar` por `"""` huérfano en `_display.py`
+- `aria-disabled="true"` perdido en CheckBox, RadioButton, Slider, SpinBox, ToggleSwitch
+- `_render_attrs()` no se emitía en ProgressBar, StatusBar, ScrollBar, ListBox, DataGrid, TreeView, DropTarget, MenuBar, ComboBox, Slider, SpinBox, Scale, Notebook, RichText
+- Separator, Entry, Text, RichText sin `_ARIA_ROLE`
+
+### Changed
+- Widgets reordenados en demo (gauges, botones 2-col)
+
 ## [0.3.11] — 2026-07-22
 
 ### Added

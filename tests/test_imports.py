@@ -1,7 +1,7 @@
 def test_all_widgets_importable():
-    from iskg import __version__, VERSION, Button, Widget
+    from iskg import VERSION, Button, Widget, __version__
 
-    assert VERSION == __version__
+    assert __version__ == VERSION
     assert VERSION is not None
     assert isinstance(VERSION, str)
     assert issubclass(Button, Widget)

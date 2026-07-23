@@ -76,6 +76,8 @@ class Entry(Widget):
     ``_CONFIG_TO_CSS``.
     """
 
+    _ARIA_ROLE = "textbox"
+
     def __init__(
         self,
         parent: Widget | None = None,
@@ -182,6 +184,15 @@ document.getElementById("{self._id}").oninput=function(){{
 class CheckBox(Widget):
     """A toggleable check box with label."""
 
+    _ARIA_ROLE = "checkbox"
+
+    def _render_aria_attrs(self) -> str:
+        checked = self._config_dict.get("checked", False)
+        result = f' role="checkbox" aria-checked="{str(checked).lower()}"'
+        if self._config_dict.get("disabled"):
+            result += ' aria-disabled="true"'
+        return result
+
     def __init__(
         self,
         parent: Widget | None = None,
@@ -255,6 +266,15 @@ class CheckBox(Widget):
 
 class RadioButton(Widget):
     """A radio button for single-selection within a group."""
+
+    _ARIA_ROLE = "radio"
+
+    def _render_aria_attrs(self) -> str:
+        sel = self._config_dict.get("selected", False)
+        result = f' role="radio" aria-checked="{str(sel).lower()}"'
+        if self._config_dict.get("disabled"):
+            result += ' aria-disabled="true"'
+        return result
 
     def __init__(
         self,
@@ -358,6 +378,8 @@ if(el)el.querySelector(".iskg-radio").classList.toggle("checked",{json.dumps(sel
 class ComboBox(Widget):
     """A dropdown select menu."""
 
+    _ARIA_ROLE = "combobox"
+
     def __init__(
         self,
         parent: Widget | None = None,
@@ -435,9 +457,10 @@ class ComboBox(Widget):
         cls = "iskg-cb-wrap"
         if self._config_dict.get("disabled"):
             cls += " iskg-disabled"
+        attrs = self._render_attrs()
         if self._config_dict.get("editable"):
             sel_esc = cur_text.replace("&", "&amp;").replace('"', "&quot;")
-            return f'''<div id="{self._id}" class="{cls}" style="{style}width:{width}px;">
+            return f'''<div id="{self._id}" class="{cls}" style="{style}width:{width}px;" {attrs}>
   <input id="{self._id}-input" class="iskg-cb-input" value="{sel_esc}" style="width:{width - 22}px;">
   <div class="iskg-cb-display" id="{self._id}-disp">
     <span class="iskg-cb-arrow">▾</span>
@@ -446,7 +469,7 @@ class ComboBox(Widget):
     {items_html}
   </div>
 </div>'''
-        return f'''<div id="{self._id}" class="{cls}" style="{style}width:{width}px;">
+        return f'''<div id="{self._id}" class="{cls}" style="{style}width:{width}px;" {attrs}>
   <div class="iskg-cb-display" id="{self._id}-disp">
     <span id="{self._id}-text">{cur_text}</span>
     <span class="iskg-cb-arrow">▾</span>
@@ -531,6 +554,19 @@ class Slider(Widget):
     plus all CSS properties.
     """
 
+    _ARIA_ROLE = "slider"
+
+    def _render_aria_attrs(self) -> str:
+        from_ = self._config_dict.get("from", 0)
+        to = self._config_dict.get("to", 100)
+        val = self._config_dict.get("value", 0)
+        result = (
+            f' role="slider" aria-valuemin="{from_}" aria-valuemax="{to}" aria-valuenow="{val}"'
+        )
+        if self._config_dict.get("disabled"):
+            result += ' aria-disabled="true"'
+        return result
+
     def __init__(
         self,
         parent: Widget | None = None,
@@ -572,6 +608,7 @@ class Slider(Widget):
         show_val = self._get_cfg("show-value", True)
         style = self._render_style()
         width = self._config_dict.get("width", 150)
+        attrs = self._render_attrs()
 
         if orient == "vertical":
             vlen = self._config_dict.get("height", 100)
@@ -583,7 +620,7 @@ class Slider(Widget):
             val_html = f'<span class="iskg-slider-val-center">{val}</span>' if show_val else ""
             return f'''<div class="iskg-slider-wrap" style="{wrap_style}">
   <div class="{track_cls}" style="{track_style}">
-    <input id="{self._id}" class="{slider_cls}" type="range" min="{lo}" max="{hi}" value="{val}" style="{slider_style}"/>
+    <input id="{self._id}" class="{slider_cls}" type="range" min="{lo}" max="{hi}" value="{val}" style="{slider_style}" {attrs}/>
   </div>
   {val_html}
 </div>'''
@@ -593,7 +630,7 @@ class Slider(Widget):
             slider_style = f"width:{width}px;"
             val_html = f'<span class="iskg-slider-val">{val}</span>' if show_val else ""
             return f'''<div class="iskg-slider-wrap" style="{wrap_style}">
-  <input id="{self._id}" class="{slider_cls}" type="range" min="{lo}" max="{hi}" value="{val}" style="{slider_style}"/>
+  <input id="{self._id}" class="{slider_cls}" type="range" min="{lo}" max="{hi}" value="{val}" style="{slider_style}" {attrs}/>
   {val_html}
 </div>'''
 
@@ -644,6 +681,17 @@ if(wrap){{
 class SpinBox(Widget):
     """A numeric stepper with up/down buttons."""
 
+    _ARIA_ROLE = "spinbutton"
+
+    def _render_aria_attrs(self) -> str:
+        from_ = self._config_dict.get("from", 0)
+        to = self._config_dict.get("to", 100)
+        val = self._config_dict.get("value", 0)
+        result = f' role="spinbutton" aria-valuemin="{from_}" aria-valuemax="{to}" aria-valuenow="{val}"'
+        if self._config_dict.get("disabled"):
+            result += ' aria-disabled="true"'
+        return result
+
     def __init__(
         self,
         parent: Widget | None = None,
@@ -680,8 +728,9 @@ class SpinBox(Widget):
     def _render(self) -> str:
         val = self._config_dict.get("value", 0)
         style = self._render_style()
+        attrs = self._render_attrs()
         return f'''<div class="iskg-spinbox-wrap" style="{style}">
-  <input id="{self._id}" class="iskg-spinbox" type="text" value="{val}" readonly/>
+  <input id="{self._id}" class="iskg-spinbox" type="text" value="{val}" readonly {attrs}/>
   <div class="iskg-spinbox-btns">
     <button class="iskg-spinup" id="{self._id}-up">▲</button>
     <button class="iskg-spindown" id="{self._id}-dn">▼</button>
@@ -744,18 +793,19 @@ class Scale(Slider):
         orient = self._config_dict.get("orient", "horizontal")
         style = self._render_style()
         width = self._config_dict.get("width", 200)
+        attrs = self._render_attrs()
 
         if orient == "horizontal":
             return f'''<div class="iskg-scale-wrap" style="{style}width:{width}px;">
   <div class="iskg-scale-labels"><span>{lo}</span><span>{hi}</span></div>
-  <input id="{self._id}" class="iskg-slider" type="range" min="{lo}" max="{hi}" value="{val}" style="width:100%;"/>
+  <input id="{self._id}" class="iskg-slider" type="range" min="{lo}" max="{hi}" value="{val}" style="width:100%;" {attrs}/>
 </div>'''
         else:
             height = self._config_dict.get("height", 200)
             return f'''<div class="iskg-scale-wrap" style="{style}height:{height}px;align-items:center;">
   <span>{hi}</span>
   <div class="iskg-slider-vert-track" style="flex:1;width:30px;">
-    <input id="{self._id}" class="iskg-slider-vert" type="range" min="{lo}" max="{hi}" value="{val}" style="width:{height}px;height:4px;"/>
+    <input id="{self._id}" class="iskg-slider-vert" type="range" min="{lo}" max="{hi}" value="{val}" style="width:{height}px;height:4px;" {attrs}/>
   </div>
   <span>{lo}</span>
 </div>'''
@@ -763,6 +813,15 @@ class Scale(Slider):
 
 class ToggleSwitch(Widget):
     """A toggle switch akin to a checkbox with slider appearance."""
+
+    _ARIA_ROLE = "switch"
+
+    def _render_aria_attrs(self) -> str:
+        checked = self._config_dict.get("checked", False)
+        result = f' role="switch" aria-checked="{str(checked).lower()}"'
+        if self._config_dict.get("disabled"):
+            result += ' aria-disabled="true"'
+        return result
 
     def __init__(
         self,

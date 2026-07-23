@@ -59,6 +59,8 @@ class Menu:
 class MenuBar(Widget):
     """A main menu bar with dropdown menus."""
 
+    _ARIA_ROLE = "menubar"
+
     def __init__(
         self,
         parent: Widget | None = None,
@@ -99,11 +101,12 @@ class MenuBar(Widget):
 
     def _render(self) -> str:
         style = self._render_style()
+        attrs = self._render_attrs()
         items_html = "".join(
             f'<div class="iskg-menubar-item" data-m="{m._id}">{m.text}</div>' for m in self._menus
         )
         dds_html = "".join(self._render_menu_dd(m, top_level_text=m.text) for m in self._menus)
-        return f'<div id="{self._id}" class="iskg-menubar" style="{style}position:relative;">{items_html}{dds_html}</div>'
+        return f'<div id="{self._id}" class="iskg-menubar" style="{style}position:relative;" {attrs}>{items_html}{dds_html}</div>'
 
     def _render_js(self) -> str:
         return f'''(function(){{
