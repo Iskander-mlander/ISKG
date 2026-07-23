@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import json
 from typing import Any
 
@@ -34,7 +35,20 @@ class Canvas(Widget):
         return self._render_rebuild_js()
 
     def _render_js(self) -> str:
-        return self._render_rebuild_js()
+        return (
+            self._render_rebuild_js()
+            + f'''
+(function(){{
+var c=document.getElementById("{self._id}");
+if(!c)return;
+new ResizeObserver(function(entries){{
+  var e=entries[0];
+  if(!e)return;
+  var r=e.contentRect;
+  iskg_bridge_event("{self._id}","resize",JSON.stringify({{width:Math.round(r.width),height:Math.round(r.height)}}));
+}}).observe(c);
+}})();'''
+        )
 
     def clear(self) -> None:
         self._draw_commands = []
@@ -69,6 +83,15 @@ class Canvas(Widget):
         self._draw_commands.append(("arc", x1, y1, x2, y2, start, extent, kwargs))
         self._sync()
 
+    def create_polygon(self, *points: int, **kwargs: Any) -> None:
+        self._draw_commands.append(("polygon", points, kwargs))
+        self._sync()
+
+    def create_image(self, x: int, y: int, data: bytes, **kwargs: Any) -> None:
+        b64 = base64.b64encode(data).decode("ascii")
+        self._draw_commands.append(("image", x, y, b64, kwargs))
+        self._sync()
+
     def _render_rebuild_js(self) -> str:
         w = self._canvas_w
         h = self._canvas_h
@@ -77,47 +100,74 @@ class Canvas(Widget):
 var c=document.getElementById("{self._id}");
 if(!c)return;
 var ctx=c.getContext("2d");
-ctx.clearRect(0,0,{w},{h});
 var cmds={cmds};
-for(var i=0;i<cmds.length;i++){{
-  var cmd=cmds[i];
-  switch(cmd[0]){{
-    case "rect":
-      ctx.fillStyle=cmd[5].fill||"#4ade80";
-      ctx.strokeStyle=cmd[5].outline||"#22d3ee";
-      ctx.lineWidth=cmd[5].width||1;
-      ctx.fillRect(cmd[1],cmd[2],cmd[3]-cmd[1],cmd[4]-cmd[2]);
-      ctx.strokeRect(cmd[1],cmd[2],cmd[3]-cmd[1],cmd[4]-cmd[2]);
-      break;
-    case "line":
-      ctx.strokeStyle=cmd[5].fill||cmd[5].color||"#22d3ee";
-      ctx.lineWidth=cmd[5].width||1;
-      ctx.beginPath();ctx.moveTo(cmd[1],cmd[2]);ctx.lineTo(cmd[3],cmd[4]);ctx.stroke();
-      break;
-    case "oval":
-      ctx.fillStyle=cmd[5].fill||"transparent";
-      ctx.strokeStyle=cmd[5].outline||"#22d3ee";
-      ctx.lineWidth=cmd[5].width||1;
-      ctx.beginPath();
-      ctx.ellipse((cmd[1]+cmd[3])/2,(cmd[2]+cmd[4])/2,(cmd[3]-cmd[1])/2,(cmd[4]-cmd[2])/2,0,0,Math.PI*2);
-      ctx.fill();ctx.stroke();
-      break;
-    case "text":
-      ctx.fillStyle=cmd[4].fill||"#c8d6e5";
-      ctx.font=cmd[4].font||"11px Share Tech Mono";
-      ctx.textAlign=cmd[4].anchor||"start";
-      ctx.fillText(cmd[3],cmd[1],cmd[2]);
-      break;
-    case "arc":
-      ctx.fillStyle=cmd[7].fill||"transparent";
-      ctx.strokeStyle=cmd[7].outline||"#22d3ee";
-      ctx.lineWidth=cmd[7].width||1;
-      ctx.beginPath();
-      ctx.arc((cmd[1]+cmd[3])/2,(cmd[2]+cmd[4])/2,Math.min((cmd[3]-cmd[1])/2,(cmd[4]-cmd[2])/2),cmd[5]*Math.PI/180,(cmd[5]+cmd[6])*Math.PI/180);
-      cmd[7].fill!==undefined?ctx.fill():ctx.stroke();
-      break;
+function drawAll(){{
+  ctx.clearRect(0,0,{w},{h});
+  for(var i=0;i<cmds.length;i++){{
+    var cmd=cmds[i];
+    switch(cmd[0]){{
+      case "rect":
+        ctx.fillStyle=cmd[5].fill||"#4ade80";
+        ctx.strokeStyle=cmd[5].outline||"#22d3ee";
+        ctx.lineWidth=cmd[5].width||1;
+        ctx.fillRect(cmd[1],cmd[2],cmd[3]-cmd[1],cmd[4]-cmd[2]);
+        ctx.strokeRect(cmd[1],cmd[2],cmd[3]-cmd[1],cmd[4]-cmd[2]);
+        break;
+      case "line":
+        ctx.strokeStyle=cmd[5].fill||cmd[5].color||"#22d3ee";
+        ctx.lineWidth=cmd[5].width||1;
+        ctx.beginPath();ctx.moveTo(cmd[1],cmd[2]);ctx.lineTo(cmd[3],cmd[4]);ctx.stroke();
+        break;
+      case "oval":
+        ctx.fillStyle=cmd[5].fill||"transparent";
+        ctx.strokeStyle=cmd[5].outline||"#22d3ee";
+        ctx.lineWidth=cmd[5].width||1;
+        ctx.beginPath();
+        ctx.ellipse((cmd[1]+cmd[3])/2,(cmd[2]+cmd[4])/2,(cmd[3]-cmd[1])/2,(cmd[4]-cmd[2])/2,0,0,Math.PI*2);
+        ctx.fill();ctx.stroke();
+        break;
+      case "text":
+        ctx.fillStyle=cmd[4].fill||"#c8d6e5";
+        ctx.font=cmd[4].font||"11px Share Tech Mono";
+        ctx.textAlign=cmd[4].anchor||"start";
+        ctx.fillText(cmd[3],cmd[1],cmd[2]);
+        break;
+      case "arc":
+        ctx.fillStyle=cmd[7].fill||"transparent";
+        ctx.strokeStyle=cmd[7].outline||"#22d3ee";
+        ctx.lineWidth=cmd[7].width||1;
+        ctx.beginPath();
+        ctx.arc((cmd[1]+cmd[3])/2,(cmd[2]+cmd[4])/2,Math.min((cmd[3]-cmd[1])/2,(cmd[4]-cmd[2])/2),cmd[5]*Math.PI/180,(cmd[5]+cmd[6])*Math.PI/180);
+        cmd[7].fill!==undefined?ctx.fill():ctx.stroke();
+        break;
+      case "polygon":
+        ctx.fillStyle=cmd[2].fill||"rgba(78,204,163,0.3)";
+        ctx.strokeStyle=cmd[2].outline||"#4ade80";
+        ctx.lineWidth=cmd[2].width||2;
+        ctx.beginPath();
+        ctx.moveTo(cmd[1][0],cmd[1][1]);
+        for(var pi=2;pi<cmd[1].length;pi+=2)ctx.lineTo(cmd[1][pi],cmd[1][pi+1]);
+        ctx.closePath();ctx.fill();ctx.stroke();
+        break;
+    }}
   }}
 }}
+var pending=0;
+for(var i=0;i<cmds.length;i++){{
+  if(cmds[i][0]==="image"){{
+    (function(cmd){{
+      pending++;
+      var img=new Image();
+      img.onload=function(){{
+        ctx.drawImage(img,cmd[1],cmd[2],cmd[4].width||img.width,cmd[4].height||img.height);
+        pending--;
+        if(pending===0)drawAll();
+      }};
+      img.src="data:image/png;base64,"+cmd[3];
+    }})(cmds[i]);
+  }}
+}}
+if(pending===0)drawAll();
 }})();'''
 
     def _sync(self) -> None:

@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.67] — 2026-07-24
+
+### Added
+- Canvas: `create_polygon(*points, **kwargs)` — polígonos rellenos con contorno
+- Canvas: `create_image(x, y, data, **kwargs)` — blit de tiles PNG desde bytes
+- Canvas: `<<Resize>>` event via `ResizeObserver` + bridge — notifica `{width, height}`
+- Documentación de API regenerada para nuevos métodos de Canvas
+
 ## [0.3.62] — 2026-07-23
 
 ### Added
