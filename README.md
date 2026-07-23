@@ -18,7 +18,7 @@ No browser, no HTTP server — just a Python process and a lightweight WebView.
 
 ## Features
 
-- **38 widgets**: Button, Entry, ComboBox, Slider, ProgressBar, Canvas, TreeView, DataGrid, Knob, Gauge, Notebook, MenuBar, and more.
+- **50 widgets**: Button, Entry, ComboBox, Slider, ProgressBar, Canvas, TreeView, DataGrid, Knob, Gauge, Notebook, MenuBar, and more.
 - **Layout engines**: `pack`, `grid` (with sticky + weights), `place`.
 - **Theming**: 10 built-in themes (ifaz, desert, infinity, cyberdusk, light, dracula, nord, gruvbox, monokai, catppuccin), CSS variable system.
 - **Cross-platform**: Linux, Windows, macOS (same codebase).
@@ -29,23 +29,6 @@ No browser, no HTTP server — just a Python process and a lightweight WebView.
 - **Debug mode**: Pass `debug=True` to `Application()` to log JS errors to stderr.
 - **7 embedded fonts** (SIL OFL): [Inter](https://rsms.me/inter/), [JetBrains Mono](https://www.jetbrains.com/lp/mono/), [Nunito](https://fonts.google.com/specimen/Nunito), [Manrope](https://manropefont.com/), [Space Grotesk](https://fonts.google.com/specimen/Space+Grotesk), [Fira Sans](https://fonts.google.com/specimen/Fira+Sans), [Playfair Display](https://fonts.google.com/specimen/Playfair+Display) — no CDN, todo embebido.
 
-## Comparison — lightness & footprint
-
-| Framework | Dependencies | Installed size | Own code | Notes |
-|-----------|-------------|----------------|----------|-------|
-| **Tkinter** | 0 (stdlib) | ~1 MB | — | No modern widgets, dated look |
-| **Remi** | 1 (bottle/werkzeug) | ~2 MB | ~15 KLoC | Browser-based, needs a tab |
-| <b style="color:#4ade80;">ISKG</b> | <b style="color:#4ade80;">1 (pywebview)</b> | <b style="color:#4ade80;">~2 MB</b> | <b style="color:#4ade80;">~6 KLoC</b> | <b style="color:#4ade80;">Native window, modern widgets</b> |
-| **PySimpleGUI** | 1 (tkinter/Qt) | ~5 MB | ~100 KLoC | Wrapper, not a framework |
-| **Dear PyGui** | 0 (bundled) | ~10 MB | ~80 KLoC | GPU-accelerated, no native look |
-| **Kivy** | SDL2, GLEW, etc | ~15 MB | ~200 KLoC | Own UI language, heavy |
-| **wxPython** | wxWidgets | ~20 MB | ~150 KLoC | Native look, complex build |
-| **PyQt/PySide** | Qt (~100 MB) | ~50 MB | ~500 KLoC | Full-featured, huge size |
-| **NiceGUI** | FastAPI + uvicorn + Vue | ~30 MB | ~50 KLoC | Browser-based, async |
-| **Flet** | Flutter SDK | ~200 MB | — | Requires Flutter toolchain |
-
-**ISKG ranks 3rd** in lightness — only Tkinter and Remi are smaller. Among frameworks that render in a **native window** (not a browser tab), ISKG is the **lightest after Tkinter**.
-
 ## Quick start
 
 ```bash
@@ -53,7 +36,7 @@ No browser, no HTTP server — just a Python process and a lightweight WebView.
 pip install iskg
 
 # from GitHub Releases
-pip install https://github.com/Iskander-mlander/ISKG/releases/download/v0.3.9/iskg-0.3.9-py3-none-any.whl
+pip install https://github.com/Iskander-mlander/ISKG/releases/download/v0.3.27/iskg-0.3.27-py3-none-any.whl
 ```
 
 ```python
@@ -134,7 +117,7 @@ app.add(root)
 app.run()
 ```
 
-![ISKG Dashboard screenshot](examples/screenshot.png)
+![ISKG Dashboard](examples/captura.png)
 
 ## Documentation
 
