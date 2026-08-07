@@ -203,8 +203,10 @@ def build_html(
 <title>ISKG App</title>
 <style>{font_css()}</style>
 <style>
-body {{ margin:0; padding:0; overflow:auto; width:100vw; height:100vh; background:var(--bg-primary); }}
-#iskg-root {{ min-height:100vh; display:flex; flex-direction:column; }}
+body {{ margin:0; padding:0; overflow:auto; width:100vw; height:100vh;
+       background:var(--bg-primary, #0c111a); color:var(--text, #c8d6e5); }}
+#iskg-root {{ min-height:100vh; display:flex; flex-direction:column;
+              background:var(--bg-primary, #0c111a); }}
 </style>
 <style>{ifaz_css}</style>
 {extra_css_block}

@@ -10,6 +10,13 @@ import time
 from collections.abc import Callable
 from typing import Any
 
+# webkit2gtk may render the window entirely white (uncomposited content)
+# when its accelerated compositing path misbehaves on some drivers. Force
+# the software/compositing-disabled path so the UI is always visible.
+# setdefault() keeps an explicit user override working.
+if os.name == "posix":
+    os.environ.setdefault("WEBKIT_DISABLE_COMPOSITING_MODE", "1")
+
 from .base import Widget
 from .template import build_html
 from .theme import IFAZ_CSS
@@ -155,6 +162,13 @@ class Application:
         from ._vendor import try_import
 
         try_import("webview", "pywebview>=5.0")
+
+        # Re-assert before the GTK/WebKit loop starts; the GTK window is opaque,
+        # so if the web-layer composition fails the user would see white. Forcing
+        # the disabled-compositing path here guards against late/lazy imports.
+        if os.name == "posix":
+            os.environ.setdefault("WEBKIT_DISABLE_COMPOSITING_MODE", "1")
+
         import webview
 
         self._running = True

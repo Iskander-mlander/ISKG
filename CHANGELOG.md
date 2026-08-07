@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.3.68] — 2026-08-07
+
+### Fixed
+- Ventana completamente blanca (sin contenido) en Linux/webkit2gtk por un fallo del
+  camino de compositing acelerado. `Application.run()` ahora fuerza
+  `WEBKIT_DISABLE_COMPOSITING_MODE=1` (con `setdefault`, respetando override
+  del usuario) antes de arrancar el loop GTK, de modo que la UI es siempre visible.
+- Fallback de color de fondo en `template.py` (`body`/`#iskg-root`): si una
+  variable CSS de tema queda sin definir, se usa un fondo oscuro en vez de blanco.
+
 ## [0.3.67] — 2026-07-24
 
 ### Added
