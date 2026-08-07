@@ -569,6 +569,31 @@ class TestFileDialog:
             result = app.file_dialog("open")
         assert result == "/path/file.txt"
 
+    def test_file_dialog_cancel_does_not_open_second_dialog(self):
+        """A user Cancel (None) must not fall through to pywebview's dialog,
+        which would open a second, unexpected dialog."""
+        app = Application()
+        app._window = MagicMock()
+        app._window.create_file_dialog.return_value = "/ignored"
+        app._running = True
+        with patch("iskg.app.Application._gtk_file_dialog", return_value=None):
+            result = app.file_dialog("folder")
+        assert result is None
+        app._window.create_file_dialog.assert_not_called()
+
+    def test_file_dialog_gtk_unavailable_falls_back_to_webview(self):
+        """When GTK itself is unavailable, fall back to pywebview's dialog."""
+        from iskg.app import _GTK_UNAVAILABLE
+
+        app = Application()
+        app._window = MagicMock()
+        app._window.create_file_dialog.return_value = "/wv"
+        app._running = True
+        with patch("iskg.app.Application._gtk_file_dialog", return_value=_GTK_UNAVAILABLE):
+            result = app.file_dialog("folder")
+        assert result == "/wv"
+        app._window.create_file_dialog.assert_called_once()
+
     def test_file_dialog_gtk_returns_none_no_window(self):
         app = Application()
         app._window = None
@@ -583,6 +608,77 @@ class TestFileDialog:
             with patch("builtins.__import__", side_effect=ImportError("no webview")):
                 result = app.file_dialog("open")
         assert result is None
+
+    def test_gtk_file_dialog_off_main_thread_uses_idle_add(self):
+        """GTK dialogs must run on the main thread; bridge calls arrive on a
+        worker thread, so _gtk_file_dialog must dispatch via GLib.idle_add
+        instead of calling dialog.run() directly on the bridge thread."""
+        import threading
+
+        import gi
+
+        try:
+            gi.require_version("Gtk", "3.0")
+        except (ImportError, ValueError):
+            return
+
+        import gi
+
+        gi.require_version("Gtk", "3.0")
+        from gi.repository import Gtk
+
+        main_thread = threading.main_thread()
+        effects = {}
+
+        class GummyDialog:
+            def set_default_size(self, *_a):
+                pass
+
+            def set_position(self, *_a):
+                pass
+
+            def set_current_folder(self, *_a):
+                pass
+
+            def add_filter(self, *_a):
+                pass
+
+            def run(self):
+                effects["dialog_run_on_main"] = threading.current_thread() is main_thread
+                return Gtk.ResponseType.ACCEPT
+
+            def get_filename(self):
+                return "/tmp/folder"
+
+            def destroy(self):
+                pass
+
+        def fake_idle_add(callback):
+            effects["idle_add_used"] = True
+            return callback()
+
+        app = Application()
+        result_holder = {}
+
+        def worker():
+            with (
+                patch(
+                    "gi.repository.Gtk.FileChooserDialog",
+                    return_value=GummyDialog(),
+                ),
+                patch(
+                    "gi.repository.GLib.idle_add",
+                    side_effect=fake_idle_add,
+                ),
+            ):
+                result_holder["value"] = app._gtk_file_dialog("folder", "/tmp", [], False)
+
+        t = threading.Thread(target=worker)
+        t.start()
+        t.join(timeout=10)
+        assert not t.is_alive(), "dialog call from worker thread must not hang"
+        assert effects.get("idle_add_used") is True, "must dispatch via idle_add"
+        assert result_holder.get("value") == "/tmp/folder"
 
 
 # ── color_dialog ───────────────────────────────────────────────────────

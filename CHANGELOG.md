@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.3.70] — 2026-08-07
+
+### Fixed
+- Diálogo nativo de carpeta/archivo (GTK) congelaba la app y crasheaba WebKit:
+  pywebview despacha las llamadas del bridge JS en un hilo worker, pero ISKG
+  ejecutaba `dialog.run()` en ese hilo. Nuevo `Application._run_gtk_modal()`, que
+  ejecuta el diálogo en el hilo principal vía `GLib.idle_add` + `Event` (mismo
+  patrón que el `create_file_dialog` interno de pywebview). Aplicado a
+  `file_dialog`, `color_dialog` y `font_dialog`.
+- Pulsar Cancelar en el diálogo GTK abría un segundo diálogo (el fallback de
+  pywebview) porque `None` se confundía con "GTK no disponible": `_gtk_file_dialog`
+  devuelve ahora el sentinel `_GTK_UNAVAILABLE` cuando no importa GTK, y
+  `file_dialog` sólo cae al diálogo de pywebview en ese caso.
+
 ## [0.3.69] — 2026-08-07
 
 ### Fixed

@@ -24,6 +24,8 @@ from .theme import IFAZ_CSS
 _HANDLERS: dict[str, Callable] = {}
 _LOCK = threading.Lock()
 
+_GTK_UNAVAILABLE = object()
+
 
 class _JSAPI:
     _DEBOUNCE_MS = 50
@@ -337,18 +339,17 @@ class Application:
         """Open a native OS file dialog.
 
         Uses GTK directly (same toolkit as pywebview underneath) with
-        explicit dialog sizing. Falls back to pywebview's built-in dialog.
+        explicit dialog sizing.
 
-        Args:
-            dialog_type: ``"open"``, ``"save"``, or ``"folder"``.
-            directory: starting directory path.
-            file_types: list of extensions like ``["*.txt", "*.py"]``.
-            allow_multiple: allow multiple file selection (open only).
-            title: dialog window title (GTK path only).
+        ``_gtk_file_dialog`` returns ``_GTK_UNAVAILABLE`` when GTK is not
+        importable, so a user Cancel (``None``) is not mistaken for a missing
+        toolkit and does not trigger a second dialog via pywebview.
         """
-        result = self._gtk_file_dialog(dialog_type, directory, file_types, allow_multiple, title)
-        if result is not None:
-            return result
+        gtk_result = self._gtk_file_dialog(
+            dialog_type, directory, file_types, allow_multiple, title
+        )
+        if gtk_result is not _GTK_UNAVAILABLE:
+            return gtk_result
         try:
             import webview as _wv
         except ImportError:
@@ -367,6 +368,36 @@ class Application:
             file_types=file_types or (),
         )
 
+    def _run_gtk_modal(self, fn: Callable[[], None]) -> None:
+        """Run a GTK dialog-owning callback on the main thread.
+
+        pywebview dispatches JS bridge calls (which trigger ``file_dialog``,
+        ``color_dialog``, etc.) on a worker thread; GTK widgets must be driven
+        from the thread running the GLib main loop, otherwise ``dialog.run()``
+        deadlocks or crashes WebKit. Runs inline on the main thread and
+        otherwise marshals through ``GLib.idle_add`` + a semaphore, mirroring
+        pywebview's own ``create_file_dialog`` implementation.
+        """
+        if threading.current_thread() is threading.main_thread():
+            fn()
+            return
+        try:
+            from gi.repository import GLib  # type: ignore[import-untyped]
+        except (ImportError, ValueError):
+            fn()
+            return
+        done = threading.Event()
+
+        def _dispatch() -> bool:
+            try:
+                fn()
+            finally:
+                done.set()
+            return False
+
+        GLib.idle_add(_dispatch)
+        done.wait()
+
     def _gtk_file_dialog(
         self,
         dialog_type: str,
@@ -381,58 +412,61 @@ class Application:
             gi.require_version("Gtk", "3.0")
             from gi.repository import Gtk  # type: ignore[import-untyped]
         except (ImportError, ValueError):
-            return None
+            return _GTK_UNAVAILABLE
 
-        action_map = {
-            "open": Gtk.FileChooserAction.OPEN,
-            "save": Gtk.FileChooserAction.SAVE,
-            "folder": Gtk.FileChooserAction.SELECT_FOLDER,
-        }
-        action = action_map.get(dialog_type, Gtk.FileChooserAction.OPEN)
-        accept = {
-            "open": "_Open",
-            "save": "_Save",
-            "folder": "_Select",
-        }.get(dialog_type, "_Open")
+        result_holder: list[Any] = []
 
-        dialog = Gtk.FileChooserDialog(
-            title=title or "",
-            parent=None,
-            action=action,
-            buttons=(
-                "_Cancel",
-                Gtk.ResponseType.CANCEL,
-                accept,
-                Gtk.ResponseType.ACCEPT,
-            ),
-        )
-        dialog.set_default_size(700, 500)
-        dialog.set_position(Gtk.WindowPosition.CENTER_ALWAYS)
+        def _run() -> None:
+            action_map = {
+                "open": Gtk.FileChooserAction.OPEN,
+                "save": Gtk.FileChooserAction.SAVE,
+                "folder": Gtk.FileChooserAction.SELECT_FOLDER,
+            }
+            action = action_map.get(dialog_type, Gtk.FileChooserAction.OPEN)
+            accept = {
+                "open": "_Open",
+                "save": "_Save",
+                "folder": "_Select",
+            }.get(dialog_type, "_Open")
 
-        if directory:
-            dialog.set_current_folder(directory)
-        if file_types:
-            for ft in file_types:
-                filt = Gtk.FileFilter()
-                filt.set_name(ft)
-                filt.add_pattern(ft)
-                dialog.add_filter(filt)
-        if allow_multiple:
-            dialog.set_select_multiple(True)
+            dialog = Gtk.FileChooserDialog(
+                title=title or "",
+                parent=None,
+                action=action,
+                buttons=(
+                    "_Cancel",
+                    Gtk.ResponseType.CANCEL,
+                    accept,
+                    Gtk.ResponseType.ACCEPT,
+                ),
+            )
+            dialog.set_default_size(700, 500)
+            dialog.set_position(Gtk.WindowPosition.CENTER_ALWAYS)
 
-        response = dialog.run()
-        if response == Gtk.ResponseType.ACCEPT:
-            if dialog_type == "folder":
-                result = dialog.get_filename()
-            elif allow_multiple:
-                result = list(dialog.get_filenames())
-            else:
-                result = dialog.get_filename()
-        else:
-            result = None
+            if directory:
+                dialog.set_current_folder(directory)
+            if file_types:
+                for ft in file_types:
+                    filt = Gtk.FileFilter()
+                    filt.set_name(ft)
+                    filt.add_pattern(ft)
+                    dialog.add_filter(filt)
+            if allow_multiple:
+                dialog.set_select_multiple(True)
 
-        dialog.destroy()
-        return result
+            response = dialog.run()
+            if response == Gtk.ResponseType.ACCEPT:
+                if dialog_type == "folder":
+                    result_holder.append(dialog.get_filename())
+                elif allow_multiple:
+                    result_holder.append(list(dialog.get_filenames()))
+                else:
+                    result_holder.append(dialog.get_filename())
+
+            dialog.destroy()
+
+        self._run_gtk_modal(_run)
+        return result_holder[0] if result_holder else None
 
     def alert(self, message: str) -> None:
         """Show a browser-style alert dialog."""
@@ -492,12 +526,18 @@ class Application:
         dialog.set_rgba(rgba)
         dialog.set_use_alpha(False)
 
-        result: str | None = None
-        if dialog.run() == Gtk.ResponseType.OK:
-            c = dialog.get_rgba()
-            result = f"#{int(c.red * 255):02x}{int(c.green * 255):02x}{int(c.blue * 255):02x}"
-        dialog.destroy()
-        return result
+        result: list[str] = []
+
+        def _run() -> None:
+            if dialog.run() == Gtk.ResponseType.OK:
+                c = dialog.get_rgba()
+                result.append(
+                    f"#{int(c.red * 255):02x}{int(c.green * 255):02x}{int(c.blue * 255):02x}"
+                )
+            dialog.destroy()
+
+        self._run_gtk_modal(_run)
+        return result[0] if result else None
 
     def font_dialog(
         self,
@@ -536,26 +576,32 @@ class Application:
         if initial_font:
             dialog.set_font_name(initial_font)
 
-        result: dict[str, Any] | None = None
-        if dialog.run() == Gtk.ResponseType.OK:
-            font_name = dialog.get_font_name()
-            parts = font_name.split()
-            family = parts[0] if parts else "Sans"
-            size = 12
-            weight = "normal"
-            style = "normal"
-            if len(parts) > 1:
-                with contextlib.suppress(ValueError):
-                    size = int(parts[-1])
-            result = {
-                "family": family,
-                "size": size,
-                "weight": weight,
-                "style": style,
-                "_full_name": font_name,
-            }
-        dialog.destroy()
-        return result
+        result: list[dict[str, Any]] = []
+
+        def _run() -> None:
+            if dialog.run() == Gtk.ResponseType.OK:
+                font_name = dialog.get_font_name()
+                parts = font_name.split()
+                family = parts[0] if parts else "Sans"
+                size = 12
+                weight = "normal"
+                style = "normal"
+                if len(parts) > 1:
+                    with contextlib.suppress(ValueError):
+                        size = int(parts[-1])
+                result.append(
+                    {
+                        "family": family,
+                        "size": size,
+                        "weight": weight,
+                        "style": style,
+                        "_full_name": font_name,
+                    }
+                )
+            dialog.destroy()
+
+        self._run_gtk_modal(_run)
+        return result[0] if result else None
 
 
 Window = Application
