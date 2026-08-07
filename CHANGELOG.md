@@ -13,6 +13,13 @@
   pywebview) porque `None` se confundía con "GTK no disponible": `_gtk_file_dialog`
   devuelve ahora el sentinel `_GTK_UNAVAILABLE` cuando no importa GTK, y
   `file_dialog` sólo cae al diálogo de pywebview en ese caso.
+- Botones con altura inconsistente: `Button(size="sm"|"lg")` generaba clases CSS
+  sin reglas. Ahora `.iskg-btn` usa `height` fija por tamaño (26/22/30/18px) con
+  el texto centrado y `padding` horizontal variable, de modo que todos los botones
+  de un mismo tamaño comparten altura exacta y el ancho sólo sigue al texto.
+- Dropdown de `ComboBox` recortado sin overlay: ahora en apertura se renderiza con
+  `position:fixed` (+ `width`/`left`/`top` calculados con `getBoundingClientRect`),
+  escapando el `overflow:hidden` y contextos de apilamiento de cualquier ancestro.
 
 ## [0.3.69] — 2026-08-07
 

@@ -92,6 +92,27 @@ class TestThemeCss:
         css = theme_css("nonexistent")
         assert "--bg-primary: #070b10" in css
 
+    def test_buttons_have_fixed_heights_per_size(self):
+        """Every button of a given size must share the same height so buttons
+        in a row never look misaligned."""
+        from iskg.theme import IFAZ_CSS
+
+        assert ".iskg-btn.sm, .iskg-btn.small" in IFAZ_CSS
+        assert ".iskg-btn.lg, .iskg-btn.large" in IFAZ_CSS
+        base = IFAZ_CSS[IFAZ_CSS.index(".iskg-btn {") :]
+        assert "height:26px" in base
+        sm = IFAZ_CSS[IFAZ_CSS.index(".iskg-btn.sm") :]
+        assert "height:22px" in sm
+
+    def test_combo_dropdown_uses_fixed_position(self):
+        """The ComboBox dropdown must escape ancestor overflow/stacking
+        contexts (rendered with position:fixed at open time)."""
+        from iskg.widgets._controls import ComboBox
+
+        js = ComboBox(values=["a", "b"])._render_js()
+        assert 'drop.style.position="fixed"' in js
+        assert "getBoundingClientRect" in js
+
 
 class TestAvailableThemes:
     def test_available_themes_returns_list(self):

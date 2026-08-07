@@ -56,13 +56,15 @@ html, body {
 .iskg-btn {
   font-family:var(--font-mono);
   font-size:10px; letter-spacing:1px;
-  padding:5px 14px;
+  height:26px; line-height:26px;
+  padding:0 14px;
   background:var(--bg-panel-alt);
   border:1px solid var(--border-light);
   color:var(--text); border-radius:var(--radius);
   cursor:pointer; text-transform:uppercase;
   transition:all var(--transition-speed); white-space:nowrap;
-  line-height:1.2;
+  display:inline-block; text-align:center; vertical-align:middle;
+  box-sizing:border-box;
 }
 .iskg-btn:hover {
   background:var(--bg-panel-hi);
@@ -86,8 +88,24 @@ html, body {
 .iskg-btn.danger:hover { background:var(--red-dim); border-color:var(--red); box-shadow:var(--glow-red); }
 .iskg-btn.caution { border-color:var(--amber-dim); color:var(--amber); }
 .iskg-btn.caution:hover { background:var(--amber-dim); border-color:var(--amber); box-shadow:var(--glow-amber); }
-.iskg-btn.small { padding:3px 10px; font-size:9px; }
-.iskg-btn.tiny { padding:2px 6px; font-size:8px; }
+
+/* Sizes: fixed heights so every button of a size matches in height; only the
+   horizontal padding (and thus width) follows the label length. */
+.iskg-btn.sm, .iskg-btn.small {
+  height:22px; line-height:22px;
+  padding:0 10px;
+  font-size:9px; letter-spacing:0.5px;
+}
+.iskg-btn.lg, .iskg-btn.large {
+  height:30px; line-height:30px;
+  padding:0 18px;
+  font-size:11px;
+}
+.iskg-btn.tiny {
+  height:18px; line-height:18px;
+  padding:0 6px;
+  font-size:8px; letter-spacing:0.5px;
+}
 
 .iskg-btn.pulsed {
   animation: iskg-pulsedBtn 2s infinite;

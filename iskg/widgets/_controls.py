@@ -480,56 +480,59 @@ class ComboBox(Widget):
 </div>'''
 
     def _render_js(self) -> str:
-        if self._config_dict.get("editable"):
-            return f'''(function(){{
-var wrap=document.getElementById("{self._id}");
-var inp=document.getElementById("{self._id}-input");
-var disp=document.getElementById("{self._id}-disp");
-var drop=document.getElementById("{self._id}-drop");
-function closeDrop(){{drop.style.display="none";wrap.classList.remove("iskg-cb-open");}}
-disp.onclick=function(e){{e.stopPropagation();
-  var isOpen=drop.style.display=="block";
-  document.querySelectorAll(".iskg-cb-drop").forEach(function(d){{d.style.display="none";}});
-  document.querySelectorAll(".iskg-cb-wrap").forEach(function(w){{w.classList.remove("iskg-cb-open");}});
-  if(!isOpen){{drop.style.display="block";wrap.classList.add("iskg-cb-open");}}
-}};
-drop.onclick=function(e){{var item=e.target.closest(".iskg-cb-item");
-  if(item){{var idx=item.dataset.idx;
-    inp.value=item.innerText;
-    closeDrop();
-    iskg_bridge_event("{self._id}","change",idx);
-  }}
-}};
-inp.oninput=function(){{
-  iskg_bridge_event("{self._id}","change","-1");
-}};
-document.addEventListener("click",function(e){{
-  if(!wrap.contains(e.target))closeDrop();
-}});
-}})();'''
+        editable = self._config_dict.get("editable")
+        if editable:
+            refs = (
+                'var inp=document.getElementById("%(id)s-input");\n'
+                'var disp=document.getElementById("%(id)s-disp");'
+            )
+            setter = "inp.value=item.innerText;"
+        else:
+            refs = (
+                'var disp=document.getElementById("%(id)s-disp");\n'
+                'var text=document.getElementById("%(id)s-text");'
+            )
+            setter = "text.innerText=item.innerText;"
+        refs = refs.replace("%(id)s", self._id)
         return f'''(function(){{
 var wrap=document.getElementById("{self._id}");
-var disp=document.getElementById("{self._id}-disp");
 var drop=document.getElementById("{self._id}-drop");
-var text=document.getElementById("{self._id}-text");
-function closeDrop(){{drop.style.display="none";wrap.classList.remove("iskg-cb-open");}}
+function placeDrop(){{
+  var r=wrap.getBoundingClientRect();
+  /* fixed positioning escapes any ancestor with overflow:hidden or a
+     stacking context, so the list always overlays surrounding widgets. */
+  drop.style.position="fixed";
+  drop.style.top=(r.bottom)+"px";
+  drop.style.left=r.left+"px";
+  drop.style.width=r.width+"px";
+}}
+function closeDrop(){{
+  drop.style.display="none";wrap.classList.remove("iskg-cb-open");
+  drop.style.position="";drop.style.top="";drop.style.left="";drop.style.width="";
+}}
+function openDrop(){{
+  placeDrop();
+  drop.style.display="block";wrap.classList.add("iskg-cb-open");
+}}
+{refs}
 disp.onclick=function(e){{e.stopPropagation();
-  var isOpen=drop.style.display=="block";
+  if(drop.style.display=="block"){{closeDrop();return;}}
   document.querySelectorAll(".iskg-cb-drop").forEach(function(d){{d.style.display="none";}});
   document.querySelectorAll(".iskg-cb-wrap").forEach(function(w){{w.classList.remove("iskg-cb-open");}});
-  if(!isOpen){{drop.style.display="block";wrap.classList.add("iskg-cb-open");}}
+  openDrop();
 }};
 drop.onclick=function(e){{var item=e.target.closest(".iskg-cb-item");
   if(item){{var idx=item.dataset.idx;
-    text.innerText=item.innerText;
+    {setter}
     closeDrop();
     iskg_bridge_event("{self._id}","change",idx);
   }}
 }};
+window.addEventListener("resize",function(){{if(drop.style.display=="block")placeDrop();}});
 document.addEventListener("click",function(e){{
   if(!wrap.contains(e.target))closeDrop();
 }});
-}})();'''
+}}());'''
 
     def _default_takefocus(self) -> bool:
         return True
