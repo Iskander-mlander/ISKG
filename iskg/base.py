@@ -66,6 +66,29 @@ _CONFIG_TO_CSS: list[tuple[str, str, bool]] = [
 _PX_KEYS: set[str] = {k for k, _, px in _CONFIG_TO_CSS if px}
 
 
+# Expected Python types for well-known config keys. Keys not listed here are
+# accepted as-is. `None` is always allowed (means "unset"/inherit).
+# Note: width/height are intentionally NOT type-checked strictly because they
+# accept CSS strings too ("95%", "10px"), which the widgets rely on.
+_CONFIG_TYPE_SPECS: dict[str, type | tuple[type, ...]] = {
+    "visible": bool,
+    "text": str,
+    "disabled": bool,
+    "hidden": bool,
+}
+
+
+def _validate_config_type(key: str, val: Any) -> None:
+    """Raise ``TypeError`` if ``val`` has an unexpected type for ``key``."""
+    spec = _CONFIG_TYPE_SPECS.get(key)
+    if spec is None or val is None:
+        return
+    if not isinstance(val, spec):
+        expected = spec if isinstance(spec, tuple) else (spec,)
+        names = " or ".join(t.__name__ for t in expected)
+        raise TypeError(f"{key!r} expects {names}, got {type(val).__name__}")
+
+
 def _validate_css_value(key: str, val: Any) -> None:
     if key in _PX_KEYS and val is not None and val != "" and isinstance(val, str):
         cleaned = val.strip()
@@ -107,6 +130,7 @@ class Widget:
         self._textvariable: Any = None
         self._variable: Any = None
         self._last_sync_js: str = ""
+        self._last_style_css: str = ""
 
         for k, v in kwargs.items():
             key = k.replace("_", "-")
@@ -128,6 +152,7 @@ class Widget:
             elif key == "tooltip":
                 self._config_dict["tooltip"] = str(v) if v else ""
             else:
+                _validate_config_type(k, v)
                 self._config_dict[key] = v
 
         if parent is not None:
@@ -370,6 +395,7 @@ el.onmouseleave=function(){{clearTimeout(timer);tip.style.display="none";}};
             if key == "state":
                 self._set_state(v)
             elif key == "visible":
+                _validate_config_type("visible", v)
                 if v:
                     self._eval_js(f'iskg_set_visible("{self._id}",true);')
                 else:
@@ -401,6 +427,7 @@ el.onmouseleave=function(){{clearTimeout(timer);tip.style.display="none";}};
                         )
                     else:
                         _validate_css_value(key, v)
+                _validate_config_type(k, v)
                 self._config_dict[key] = v
         self._sync()
         return self
@@ -822,7 +849,8 @@ el.onmouseleave=function(){{clearTimeout(timer);tip.style.display="none";}};
 
     def _render_style_update_js(self) -> str:
         css = self._render_style_css()
-        if css:
+        if css and css != self._last_style_css:
+            self._last_style_css = css
             return f'iskg_set_style("{self._id}",{json.dumps(css)});'
         return ""
 

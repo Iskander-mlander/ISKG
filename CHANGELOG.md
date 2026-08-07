@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.3.69] — 2026-08-07
+
+### Fixed
+- 7 tests preexistentes que fallaban desde v0.3.62 (la suite pasa ahora 604/604):
+  - `Widget`: validación de tipos en `config()`/`__init__` (`visible`→bool, `text`→str,
+    `disabled`/`hidden`→bool): se lanza `TypeError` ante tipos inválidos. `None` se
+    permite siempre; `width`/`height` no se validan estrictamente por aceptar CSS
+    ("95%", "10px").
+  - `_render_style_update_js()`: cache del último CSS → segunda llamada con el mismo
+    estilo devuelve "", sólo reenvía al cambiar.
+  - `FileDialog.open_file/save_file/open_folder`: ahora reenvían `title` a
+    `Application.file_dialog(..., title=...)`, que a su vez lo usa en el diálogo GTK.
+  - `Application.get_clipboard/set_clipboard`: importan `pyperclip` vía
+    `importlib.import_module` para soportar mocking y fallar a `""` ante ImportError.
+
 ## [0.3.68] — 2026-08-07
 
 ### Fixed

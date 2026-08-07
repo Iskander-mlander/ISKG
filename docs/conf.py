@@ -6,7 +6,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 project = "ISKG"
 copyright = "2026, Iskander-mlander"
 author = "Iskander-mlander"
-release = "0.3.68"
+release = "0.3.69"
 
 extensions = [
     "sphinx.ext.autodoc",

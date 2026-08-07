@@ -309,8 +309,9 @@ class Application:
     def set_clipboard(self, text: str) -> None:
         """Copy text to the system clipboard (requires pyperclip)."""
         try:
-            import pyperclip
+            import importlib
 
+            pyperclip = importlib.import_module("pyperclip")
             pyperclip.copy(text)
         except ImportError:
             pass
@@ -318,8 +319,9 @@ class Application:
     def get_clipboard(self) -> str:
         """Read text from the system clipboard (requires pyperclip)."""
         try:
-            import pyperclip
+            import importlib
 
+            pyperclip = importlib.import_module("pyperclip")
             return pyperclip.paste()
         except ImportError:
             return ""
@@ -330,6 +332,7 @@ class Application:
         directory: str = "",
         file_types: list[str] | None = None,
         allow_multiple: bool = False,
+        title: str = "",
     ) -> Any | None:
         """Open a native OS file dialog.
 
@@ -341,8 +344,9 @@ class Application:
             directory: starting directory path.
             file_types: list of extensions like ``["*.txt", "*.py"]``.
             allow_multiple: allow multiple file selection (open only).
+            title: dialog window title (GTK path only).
         """
-        result = self._gtk_file_dialog(dialog_type, directory, file_types, allow_multiple)
+        result = self._gtk_file_dialog(dialog_type, directory, file_types, allow_multiple, title)
         if result is not None:
             return result
         try:
@@ -369,6 +373,7 @@ class Application:
         directory: str,
         file_types: list[str] | None,
         allow_multiple: bool,
+        title: str = "",
     ) -> Any | None:
         try:
             import gi  # type: ignore[import-untyped]
@@ -391,7 +396,7 @@ class Application:
         }.get(dialog_type, "_Open")
 
         dialog = Gtk.FileChooserDialog(
-            title="",
+            title=title or "",
             parent=None,
             action=action,
             buttons=(

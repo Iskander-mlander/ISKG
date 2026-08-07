@@ -149,7 +149,7 @@ class FileDialog:
         file_types: list[str] | None = None,
         multiple: bool = False,
     ) -> Any:
-        return app.file_dialog("open", directory, file_types, multiple)
+        return app.file_dialog("open", directory, file_types, multiple, title=title)
 
     @staticmethod
     def save_file(
@@ -158,7 +158,7 @@ class FileDialog:
         directory: str = "",
         file_types: list[str] | None = None,
     ) -> Any:
-        return app.file_dialog("save", directory, file_types, False)
+        return app.file_dialog("save", directory, file_types, False, title=title)
 
     @staticmethod
     def open_folder(
@@ -166,4 +166,4 @@ class FileDialog:
         title: str = "Select Folder",
         directory: str = "",
     ) -> Any:
-        return app.file_dialog("folder", directory, None, False)
+        return app.file_dialog("folder", directory, None, False, title=title)
