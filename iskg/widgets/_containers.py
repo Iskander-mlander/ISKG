@@ -130,6 +130,7 @@ class Frame(Widget):
             header = f'<div class="iskg-frame-header"><span class="hdr-dot"></span> {text}</div>'
 
         has_grid = any(c._layout_mode == "grid" for c in self._children if not c._destroyed)
+        has_place = any(c._layout_mode == "place" for c in self._children if not c._destroyed)
 
         children_html = ""
         skip_hidden = self._get_cfg("skip-hidden", True)
@@ -149,6 +150,8 @@ class Frame(Widget):
             rows = _grid_template(self._grid_row_weights, nrows, "auto", "auto")
             gap = self._get_cfg("gap", 3)
             children_html = f'<div class="iskg-grid" style="display:grid;gap:{gap}px;grid-template-columns:{cols};grid-template-rows:{rows};min-height:0;min-width:0;">{children_html}</div>'
+        elif has_place:
+            children_html = f'<div style="position:relative;flex:1;min-height:0;min-width:0;">{children_html}</div>'
         else:
             gap = self._get_cfg("gap", 3)
             hstyle = self._wrapper_height_style()

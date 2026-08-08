@@ -167,6 +167,11 @@ terminar el loop (flag `_close_fired` evita doble ejecución). Tests
 sticky)`, `place(x, y, w, h)`) y detener la duplicación entre CSS y helper. Opcional
 antes de R3; pero `layout.py` debe o commitarse y usarse, o eliminarse.
 
+**Estado:** ✓ CORREGIDO — `Frame._render` detecta `has_place` y envuelve los hijos
+`.place()` en un wrapper `position:relative; flex:1` (`_containers.py`) para que las
+coordenadas absolutas queden contenidas; `iskg/layout.py` (muerto, sin importaciones)
+eliminado. Test `test_place_children_relative_wrapper` en `tests/test_widgets_containers.py`.
+
 ---
 
 ## 7. `_sync()` re-renderiza verboso y compara cadenas (PRIORIDAD MEDIA)
@@ -193,6 +198,11 @@ def _sync(self):
 **Propuesta:** batching de `_eval_js` por marco (`after(0)` que agregue todos los
 cambios pendientes en una sola transacción) con diff por widget. Opcional para R3.
 
+**Estado:** ✓ CORREGIDO — `Application.sync_batch()` (context manager opt-in, clase
+`SyncBatch`) con `_defer_sync`/`_flush_sync`/`_begin_sync_batch`/`_end_sync_batch`;
+`Widget._sync` usa `_defer_sync` fuera del batch y vacía la cola al finalizarlo. Tests
+`TestSyncBatch` (4) en `tests/test_app.py`; `TestSync` actualizado.
+
 ---
 
 ## 8. Debounce del log pipeline / batch en R3 (referencia, no cambio de ISKG)
@@ -217,6 +227,12 @@ garantías: eventos con `commit=True` nunca se debounceen; alta cadencia va por 
   (recorder) para tests de integración sin display — hoy los tests usan falsos.
 - Backend textual de baja densidad (tipo `curses`/ANSI) o `ISKG_HEADLESS=1`.
 
+**Estado:** ✓ CORREGIDO (mínimo) — `Application.test_loop()` devuelve `TestLoop` con
+ventana fake `_TestWindow` (graba `evaluate_js`), `loop.html`/`loop.js_calls`,
+`loop.fire(id, event, data)` (puente bridge a `_JSAPI.on_event`) y `loop.stop()`.
+`TestLoop` y `_TestWindow` exportados desde `iskg.app`; tests `TestTestLoop` (4) en
+`tests/test_app.py`. El backend textual dato queda como fase posterior.
+
 ---
 
 ## 10. Tests sin ventana real / CI (PRIORIDAD MEDIA)
@@ -225,10 +241,10 @@ garantías: eventos con `commit=True` nunca se debounceen; alta cadencia va por 
 Todos corren en ~0.8 s. Ninguno abre una ventana WebKit real; `test_app::TestFileDialog`
 mockea GTK (skip si `gi` no está).
 
-**Propuesta:**
-- Replicar el smoke que ya existe en R3 (`ISKG_SMOKE_TEST=1 timeout 25 python -m src.gui.iskg.launcher`)
-  como `tests/test_e2e_smoke.py` con `pytest-xvfb`.
-- Añadir `pytest` + `xvfb-run` en CI GitHub Actions (linux) para el paso real.
+**Estado:** ✓ CORREGIDO — `tests/test_e2e_smoke.py` con 5 tests: árbol headless,
+roundtrip de sync (JS capturado), fire de comandos vía bridge, ventana real pywebview
+bajo `xvfb` (`ISKG_SMOKE_TEST=1`, skip sin flag) y entrypoint subprocess. Nuevo job
+`e2e-linux` en `.github/workflows/ci.yml` con `xvfb`.
 
 ---
 
@@ -247,7 +263,18 @@ mockea GTK (skip si `gi` no está).
   idempotente, compartido con `run()`.
 - Verificado: 594 tests pasan (~0.6 s) tras los cambios.
 
+## Ítems 6, 7, 9, 10 — hechos en fases posteriores
+
+- **Ítem 6** (layout): wrapper `position:relative; flex:1` para hijos `.place()`;
+  `iskg/layout.py` muerto eliminado.
+- **Ítem 7** (`_sync` batching): `Application.sync_batch()` opt-in con `_defer_sync`/
+  `_flush_sync`; `Widget._sync` usa `_defer_sync`.
+- **Ítem 9** (headless): `Application.test_loop()` → `TestLoop`/`_TestWindow`.
+- **Ítem 10** (E2E): `tests/test_e2e_smoke.py` (5 tests) + job `e2e-linux` en CI con
+  `xvfb`.
+- Verificado: 607 tests pasan (~0.6 s); smoke real pywebview bajo `xvfb` OK.
+
 ## Prioridad propuesta
 
 1. **✓ Ítems 1, 2, 3, 4, 5** — hechos en esta pasada.
-2. **Ítems 6, 7, 9, 10** — refactors y CI, en una fase posterior.
+2. **✓ Ítems 6, 7, 9, 10** — refactors, headless y CI, en una fase posterior.

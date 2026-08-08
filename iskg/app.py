@@ -60,6 +60,25 @@ class _JSAPI:
 _JSAPI_INSTANCE = _JSAPI()
 
 
+class SyncBatch:
+    """Context manager returned by :meth:`Application.sync_batch`.
+
+    Accumulates ``_sync`` JS emitted inside the ``with`` block and flushes it
+    as a single ``evaluate_js`` call when the block exits.
+    """
+
+    def __init__(self, app: Application) -> None:
+        self._app = app
+        self._flushed = False
+
+    def __enter__(self) -> SyncBatch:
+        self._app._begin_sync_batch()
+        return self
+
+    def __exit__(self, *exc: Any) -> None:
+        self._app._end_sync_batch()
+
+
 class Application:
     """Main application entry point.
 
@@ -107,6 +126,9 @@ class Application:
         self._close_fired = False
         self._on_close_callbacks: list[Callable] = []
         self._window: Any = None
+        self._deferred_sync: list[str] = []
+        self._sync_lock = threading.Lock()
+        self._sync_batch_depth = 0
 
     def add(self, widget: Widget) -> Widget:
         """Register a root-level widget with the application.
@@ -249,6 +271,44 @@ class Application:
                     import sys
 
                     print(f"[ISKG:js] {exc}", file=sys.stderr)
+
+    # ── Sync batching (opt-in) ────────────────────────────────────────
+    # Multiple rapid `_sync()` calls (e.g. a progress pipeline that ticks at
+    # high cadence) each produce an evaluate_js round-trip. Callers can wrap a
+    # burst with `with app.sync_batch():` to coalesce all pending JS into a
+    # single evaluate_js() at the end of the block. Default behaviour (no
+    # batch) stays immediate, so existing widget tests remain synchronous.
+
+    def sync_batch(self) -> SyncBatch:
+        """Context manager that batches `_sync` JS until the block exits."""
+        return SyncBatch(self)
+
+    def _defer_sync(self, js: str) -> None:
+        with self._sync_lock:
+            self._deferred_sync.append(js)
+            batch = self._sync_batch_depth > 0
+        if not batch:
+            self._flush_sync()
+
+    def _flush_sync(self) -> None:
+        with self._sync_lock:
+            if not self._deferred_sync:
+                return
+            js = ";".join(self._deferred_sync)
+            self._deferred_sync.clear()
+        if js:
+            self._eval_js(js)
+
+    def _begin_sync_batch(self) -> None:
+        with self._sync_lock:
+            self._sync_batch_depth += 1
+
+    def _end_sync_batch(self) -> None:
+        with self._sync_lock:
+            self._sync_batch_depth = max(0, self._sync_batch_depth - 1)
+            flush = self._sync_batch_depth == 0
+        if flush:
+            self._flush_sync()
 
     @property
     def debug(self) -> bool:
@@ -630,6 +690,75 @@ class Application:
 
         self._run_gtk_modal(_run)
         return result[0] if result else None
+
+    def test_loop(self) -> TestLoop:
+        """Build the widget tree without a native window (headless).
+
+        Returns a :class:`TestLoop` recorder that captures the JS emitted by
+        ``_sync()``/``_eval_js()`` instead of calling pywebview, so widgets can
+        be exercised in CI/without a display (no GTK/WebKit involved).
+
+        Example::
+
+            app = Application("t")
+            label = Label(text="hi")
+            app.add(label)
+            loop = app.test_loop()
+            assert "hi" in loop.html
+            label.text = "bye"
+            assert "bye" in "".join(loop.js_calls)
+            loop.stop()
+        """
+        self._running = True
+        self._window = _TestWindow()
+        return TestLoop(self)
+
+
+class _TestWindow:
+    """Minimal pywebview-compatible window that records ``evaluate_js`` calls."""
+
+    def __init__(self) -> None:
+        self.js_calls: list[str] = []
+
+    def evaluate_js(self, js: str) -> None:
+        self.js_calls.append(js)
+
+    def destroy(self) -> None:
+        pass
+
+
+class TestLoop:
+    """Headless controller returned by :meth:`Application.test_loop`.
+
+    Exposes the rendered HTML, the JS emitted so far, and helpers to push
+    bridge events into the widget tree (same path pywebview would use).
+    """
+
+    def __init__(self, app: Application) -> None:
+        self._app = app
+        self._html = app._build_html()
+
+    @property
+    def html(self) -> str:
+        """The full HTML document built for the current widget tree."""
+        return self._html
+
+    @property
+    def js_calls(self) -> list[str]:
+        """Every ``evaluate_js`` string sent to the (fake) window."""
+        window = self._app._window
+        return list(window.js_calls) if isinstance(window, _TestWindow) else []
+
+    def fire(self, widget_id: str, event_name: str, data: Any = None) -> None:
+        """Deliver a bridge event as if it came from JS."""
+        payload = json.dumps(data) if data is not None else None
+        _JSAPI_INSTANCE.on_event(widget_id, event_name, payload)
+
+    def stop(self) -> None:
+        """Tear down the loop: stop the app and fire ``on_close`` callbacks."""
+        self._app._running = False
+        self._app._window = None
+        self._app._fire_close_callbacks()
 
 
 Window = Application

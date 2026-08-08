@@ -2,15 +2,23 @@
 
 ## [Unreleased]
 
+### Added
+- Fonts opcionales: `font_css(ids=None)`, `build_html(..., font_ids=...)` y `Application(..., font_ids=...)` permiten embeber solo un subset de las 7 familias para reducir payload.
+- `Application.sync_batch()`: context manager opt-in que agrupa `_sync` de varios widgets en una sola transacción JS (`_defer_sync`/`_flush_sync`); fuera del batch el flush sigue siendo inmediato.
+- `Application.test_loop()`: backend headless para testing — devuelve `TestLoop` con ventana fake `_TestWindow` (captura `evaluate_js`), expone `loop.html`, `loop.js_calls`, `loop.fire(widget_id, event, event_data)` (puente al bridge) y `loop.stop()`. `TestLoop` y `_TestWindow` exportados desde `iskg.app`.
+- `Frame`: los hijos `.place()` se envuelven en un contenedor `position:relative; flex:1` para que sus coordenadas absolutas queden contenidas.
+- `tests/test_e2e_smoke.py`: smoke E2E (árbol headless, roundtrip de sync, fire de comandos vía bridge, ventana real pywebview bajo `xvfb`, entrypoint subprocess).
+- CI: job `e2e-linux` con `xvfb` en `.github/workflows/ci.yml`.
+
+### Changed
+- `Widget._sync` usa `_defer_sync` de la aplicación (dedup por cola + flush por batch); el archivo `iskg/layout.py` (sin uso) eliminado.
+
 ### Fixed
 - `Application.run()`: stderr del proceso se restauraba solo en fallo de `webview.start`; ahora se restaura en un `finally` (incluye `SystemExit`/interrupciones). Nuevo parámetro `stderr_log` apunta el redirect a un archivo de log (por defecto `/dev/null`).
 - `_JSAPI.on_event`: el debounce de 50 ms descartaba eventos legítimos con distinto payload; ahora dedupa por `(widget_id, event_name, event_data)`.
 - `Application.quit()`: no disparaba `on_close`; ahora lo hace mediante `_fire_close_callbacks()` idempotente, también usado por `run()`.
 - `iskg_bind_key` (template): el retry para elemento no montado podía quedar en bucle infinito al destruir el widget; ahora reintenta una sola vez.
-- `Widget.destroy()`: no limpiaba listeners/tooltips; nuevo `window.iskg_cleanup(id)` elimina el elemento y sus tooltips (`data-tipfor`) del DOM.
-
-### Added
-- Fonts opcionales: `font_css(ids=None)`, `build_html(..., font_ids=...)` y `Application(..., font_ids=...)` permiten embeder solo un subset de las 7 familias para reducir payload.
+- `Widget.destroy()`: no limpiaba los listeners/tooltips; nuevo `window.iskg_cleanup(id)` elimina el elemento y sus tooltips del DOM.
 
 ## [0.3.70] — 2026-08-07
 

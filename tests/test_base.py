@@ -1241,28 +1241,28 @@ class TestSync:
         w.destroy()
         w._sync()
 
-    def test_sync_calls_eval_with_style(self):
+    def test_sync_calls_defer_with_style(self):
         w = _ConcreteWidget()
         w._app = Mock()
         w._app._running = True
         w._config_dict["fg"] = "red"
         w._sync()
-        w._app._eval_js.assert_called_once()
+        w._app._defer_sync.assert_called_once()
 
-    def test_sync_calls_eval_with_update_js(self):
+    def test_sync_calls_defer_with_update_js(self):
         w = _WidgetWithUpdateJs()
         w._app = Mock()
         w._app._running = True
         w._sync()
-        w._app._eval_js.assert_called_once()
+        w._app._defer_sync.assert_called_once()
 
-    def test_sync_calls_eval_with_attr_js(self):
+    def test_sync_calls_defer_with_attr_js(self):
         w = _ConcreteWidget()
         w._app = Mock()
         w._app._running = True
         w._config_dict["disabled"] = True
         w._sync()
-        w._app._eval_js.assert_called_once()
+        w._app._defer_sync.assert_called_once()
 
     def test_sync_skips_duplicate_js(self):
         w = _ConcreteWidget()
@@ -1270,9 +1270,9 @@ class TestSync:
         w._app._running = True
         w._config_dict["fg"] = "red"
         w._sync()
-        first_call = w._app._eval_js.call_count
+        first_call = w._app._defer_sync.call_count
         w._sync()  # same JS → skipped
-        assert w._app._eval_js.call_count == first_call
+        assert w._app._defer_sync.call_count == first_call
 
     def test_render_update_js_default(self):
         w = _ConcreteWidget()

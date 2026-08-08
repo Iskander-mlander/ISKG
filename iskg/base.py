@@ -813,7 +813,7 @@ el.onmouseleave=function(){{clearTimeout(timer);tip.style.display="none";}};
         combined = ";".join(parts) if parts else ""
         if combined and combined != self._last_sync_js:
             self._last_sync_js = combined
-            self._app._eval_js(combined)
+            self._app._defer_sync(combined)
 
     def _render(self) -> str:
         """Return the HTML string for this widget. Override in subclasses."""

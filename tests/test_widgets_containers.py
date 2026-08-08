@@ -76,6 +76,13 @@ class TestFrame:
         html = f._render()
         assert "overflow:auto" in html
 
+    def test_place_children_relative_wrapper(self):
+        f = Frame()
+        Label(f, text="pos").place(x=10, y=20, width=100, height=50)
+        html = f._render()
+        assert "position:relative" in html
+        assert "left:10px" in html and "top:20px" in html
+
 
 class TestNotebook:
     def test_create(self):

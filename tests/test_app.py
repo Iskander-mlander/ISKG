@@ -8,7 +8,15 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from iskg import Label, Widget
-from iskg.app import _HANDLERS, _JSAPI, _JSAPI_INSTANCE, Application, Window
+from iskg.app import (
+    _HANDLERS,
+    _JSAPI,
+    _JSAPI_INSTANCE,
+    Application,
+    TestLoop,
+    Window,
+    _TestWindow,
+)
 
 # ── _JSAPI ─────────────────────────────────────────────────────────────
 
@@ -466,6 +474,47 @@ class TestTheme:
 # ── quit / on_close ────────────────────────────────────────────────────
 
 
+class TestSyncBatch:
+    def test_defer_flushes_immediately_outside_batch(self):
+        app = Application()
+        app._window = MagicMock()
+        app._running = True
+        app._defer_sync("a")
+        app._window.evaluate_js.assert_called_once_with("a")
+        assert app._deferred_sync == []
+
+    def test_batch_coalesces_into_single_eval(self):
+        app = Application()
+        app._window = MagicMock()
+        app._running = True
+        with app.sync_batch():
+            app._defer_sync("a")
+            app._defer_sync("b")
+            app._window.evaluate_js.assert_not_called()
+        app._window.evaluate_js.assert_called_once_with("a;b")
+        assert app._deferred_sync == []
+
+    def test_nested_batch_flushes_once(self):
+        app = Application()
+        app._window = MagicMock()
+        app._running = True
+        with app.sync_batch():
+            with app.sync_batch():
+                app._defer_sync("x")
+                app._defer_sync("y")
+            app._window.evaluate_js.assert_not_called()
+        app._window.evaluate_js.assert_called_once()
+        joined = app._window.evaluate_js.call_args[0][0]
+        assert joined == "x;y"
+
+    def test_flush_sync_empty_no_op(self):
+        app = Application()
+        app._window = MagicMock()
+        app._running = True
+        app._flush_sync()
+        app._window.evaluate_js.assert_not_called()
+
+
 class TestLifecycle:
     def test_quit_no_window(self):
         app = Application()
@@ -890,6 +939,52 @@ class TestRunStderr:
                 app.run()
             with open(log_path, "rb") as fh:
                 assert b"gtk noise line" in fh.read()
+
+
+# ── test_loop (headless) ──────────────────────────────────────────────
+
+
+class TestTestLoop:
+    def test_test_loop_builds_html_and_sets_running(self):
+        app = Application("t")
+        label = Label(text="hi")
+        app.add(label)
+        loop = app.test_loop()
+        assert app._running is True
+        assert isinstance(app._window, _TestWindow)
+        assert isinstance(loop, TestLoop)
+        assert "hi" in loop.html
+
+    def test_test_loop_captures_js(self):
+        app = Application("t")
+        label = Label(text="hi")
+        app.add(label)
+        loop = app.test_loop()
+        label.text = "bye"
+        assert loop.js_calls, "no JS captured"
+        assert "iskg_set_text" in loop.js_calls[0]
+
+    def test_test_loop_fire_event(self):
+        app = Application("t")
+        from iskg import Button
+
+        btn = Button(text="Go")
+        got = []
+        btn.bind("click", lambda data: got.append(data))
+        app.add(btn)
+        loop = app.test_loop()
+        loop.fire(btn._id, "click", "x")
+        assert got == ["x"]
+
+    def test_test_loop_stop_fires_on_close(self):
+        app = Application("t")
+        calls = []
+        app.on_close(lambda: calls.append(1))
+        loop = app.test_loop()
+        loop.stop()
+        assert calls == [1]
+        assert app._running is False
+        assert app._window is None
 
 
 # ── _build_html with widgets ──────────────────────────────────────────
