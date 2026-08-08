@@ -740,14 +740,13 @@ class TestFileDialog:
         instead of calling dialog.run() directly on the bridge thread."""
         import threading
 
+        pytest.importorskip("gi")
         import gi
 
         try:
             gi.require_version("Gtk", "3.0")
         except (ImportError, ValueError):
-            return
-
-        import gi
+            pytest.skip("GTK 3.0 no disponible")
 
         gi.require_version("Gtk", "3.0")
         from gi.repository import Gtk

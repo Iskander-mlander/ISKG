@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 - `docs/`: badge PyPI dinámico; docstring de `Frame` y `Slider` corregidos para Sphinx; `step` horizontal del `Slider` aplicaba antes solo en orientación vertical.
+- CI: fix de los fallos en todos los jobs de test — el test GTK hacía `import gi` sin guard (fallaba sin `gi`), y `TestLoop` era detectado como clase de test; `result` reutilizado con tipos distintos rompía pyright.
 
 ## [0.3.71] — 2026-08-08
 

@@ -605,8 +605,8 @@ class Application:
                 f"}});i.click();return p;"
                 f"}})()"
             )
-            result = self._js_eval(js)
-            return result if result else None
+            picked = self._js_eval(js)
+            return picked if picked else None
 
         rgba = Gdk.RGBA()
         rgba.parse(initial_color)
@@ -733,6 +733,8 @@ class TestLoop:
     Exposes the rendered HTML, the JS emitted so far, and helpers to push
     bridge events into the widget tree (same path pywebview would use).
     """
+
+    __test__ = False
 
     def __init__(self, app: Application) -> None:
         self._app = app
