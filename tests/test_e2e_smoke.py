@@ -113,10 +113,12 @@ def test_smoke_real_window():
         height=480,
     )
 
-    timer = threading.Timer(1.5, window.destroy)
-    timer.start()
+    timer = threading.Timer(4.0, window.destroy)
+
     try:
-        webview.start(private_mode=False)
+        # func is called once the GUI event loop is up, so the webview
+        # exists before we schedule the window close.
+        webview.start(func=timer.start, private_mode=False)
     finally:
         timer.cancel()
         app._running = False

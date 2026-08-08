@@ -2,8 +2,10 @@
 
 ## [Unreleased]
 
+- README: ejemplo de quick start rehecho con widgets comunes (Entry, Slider, ProgressBar, ComboBox, ToggleSwitch) y temas actualizados (incluye night/warm/cold); verificado con `test_loop`.
 - `docs/`: badge PyPI dinámico; docstring de `Frame` y `Slider` corregidos para Sphinx; `step` horizontal del `Slider` aplicaba antes solo en orientación vertical.
 - CI: fix de los fallos en todos los jobs de test — el test GTK hacía `import gi` sin guard (fallaba sin `gi`), y `TestLoop` era detectado como clase de test; `result` reutilizado con tipos distintos rompía pyright.
+- E2E: el smoke de ventana real programaba el cierre antes de que GTK inicializara; ahora se agenda desde `func` de `webview.start` (4s) y es fiable bajo xvfb en CI.
 
 ## [0.3.71] — 2026-08-08
 
