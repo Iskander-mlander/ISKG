@@ -2,6 +2,7 @@
 
 import contextlib
 import json
+import os
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -76,6 +77,50 @@ class TestJSAPI:
         api.on_event("debounce_m", "b", None)
         assert len(calls) == 2
         _HANDLERS.pop("debounce_m", None)
+
+    def test_debounce_allows_different_data_within_window(self):
+        api = _JSAPI()
+        api._last_event.clear()
+        calls = []
+        _HANDLERS["debounce_data"] = lambda name, data: calls.append((name, data))
+        api.on_event("debounce_data", "change", "1")
+        api.on_event("debounce_data", "change", "2")
+        assert len(calls) == 2
+        _HANDLERS.pop("debounce_data", None)
+
+    def test_debounce_drops_same_event_same_data(self):
+        api = _JSAPI()
+        api._last_event.clear()
+        calls = []
+        _HANDLERS["debounce_dup"] = lambda name, data: calls.append((name, data))
+        api.on_event("debounce_dup", "change", '"x"')
+        api.on_event("debounce_dup", "change", '"x"')
+        assert len(calls) == 1
+        _HANDLERS.pop("debounce_dup", None)
+
+
+# ── BRIDGE JS ─────────────────────────────────────────────────────────
+
+
+class TestBridgeJS:
+    def test_bind_key_retries_at_most_once(self):
+        from iskg.template import BRIDGE_JS
+
+        m = __import__("re").search(
+            r"iskg_bind_key\s*=\s*function\s*\(id, eventType, keyFilter, mods, _retry\)", BRIDGE_JS
+        )
+        assert m, "iskg_bind_key signature must include a retry marker"
+        # the retry call passes attempt=1, and no recursion beyond that
+        assert "if (!_retry) setTimeout" in BRIDGE_JS
+
+    def test_bridge_exposes_iskg_cleanup(self):
+        from iskg.template import BRIDGE_JS
+
+        assert "window.iskg_cleanup = function" in BRIDGE_JS
+        assert (
+            "data-tipfor" in BRIDGE_JS
+            or "querySelectorAll('.iskg-tooltip[data-tipfor=' " in BRIDGE_JS
+        )
 
 
 # ── Application basic state ────────────────────────────────────────────
@@ -474,6 +519,23 @@ class TestLifecycle:
                 cb()
         assert calls == [1]
 
+    def test_quit_fires_on_close_callbacks(self):
+        app = Application()
+        calls = []
+        app.on_close(lambda: calls.append("closed"))
+        app._running = True
+        app.quit()
+        assert calls == ["closed"]
+        assert app._running is False
+
+    def test_fire_close_callbacks_idempotent(self):
+        app = Application()
+        calls = []
+        app.on_close(lambda: calls.append(1))
+        app._fire_close_callbacks()
+        app._fire_close_callbacks()
+        assert calls == [1]
+
 
 # ── _build_html ────────────────────────────────────────────────────────
 
@@ -510,6 +572,20 @@ class TestBuildHtml:
         app.add(Label(text="Hello"))
         html = app._build_html()
         assert "Hello" in html
+
+    def test_build_html_font_subset_embeds_only_selected(self):
+        app = Application(font_ids=["inter", "jetbrains-mono"])
+        html = app._build_html()
+        assert "font-family:'Inter'" in html
+        assert "font-family:'JetBrains Mono'" in html
+        assert "font-family:'Nunito'" not in html
+        assert "font-family:'Playfair Display'" not in html
+
+    def test_build_html_font_ids_none_embeds_all(self):
+        app = Application()
+        html = app._build_html()
+        assert "font-family:'Inter'" in html
+        assert "font-family:'Playfair Display'" in html
 
 
 # ── clipboard ──────────────────────────────────────────────────────────
@@ -764,6 +840,56 @@ class TestFontDialog:
             assert result["size"] == 14
         except ImportError:
             pytest.skip("gi not available")
+
+
+# ── run() / stderr management ─────────────────────────────────────────
+
+
+class TestRunStderr:
+    def _make_ok_webview(self):
+        window = MagicMock()
+
+        def _create_window(*a, **kw):
+            return window
+
+        return window, _create_window
+
+    def test_run_restores_stderr_on_start_failure(self):
+        app = Application()
+        before = os.dup(2)
+        try:
+            with (
+                patch("webview.create_window"),
+                patch("webview.start", side_effect=RuntimeError("boom")),
+                pytest.raises(SystemExit),
+            ):
+                app.run()
+            # descriptor restored to a live fd (not redirected to devnull)
+            assert app._saved_stderr is None
+            probe = os.fstat(2)
+            assert probe.st_mode != 0
+            assert os.fstat(2).st_ino == os.fstat(before).st_ino
+        finally:
+            os.close(before)
+
+    def test_run_writes_stderr_to_log_file(self):
+        import tempfile
+
+        def _noisy_start(*a, **kw):
+            os.write(2, b"gtk noise line\n")
+            raise RuntimeError("boom")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            log_path = os.path.join(tmp, "stderr.log")
+            app = Application(stderr_log=log_path)
+            with (
+                patch("webview.create_window", return_value=MagicMock()),
+                patch("webview.start", side_effect=_noisy_start),
+                pytest.raises(SystemExit),
+            ):
+                app.run()
+            with open(log_path, "rb") as fh:
+                assert b"gtk noise line" in fh.read()
 
 
 # ── _build_html with widgets ──────────────────────────────────────────

@@ -27,10 +27,18 @@ To use system fonts instead, override the CSS variable::
 """
 
 
-def font_css() -> str:
-    """Return @font-face CSS rules for all embedded fonts."""
+def font_css(ids: list[str] | None = None) -> str:
+    """Return ``@font-face`` CSS rules for embedded fonts.
+
+    Args:
+        ids: subset of font ids to embed (``"inter"``, ``"jetbrains-mono"``,
+            ``"nunito"``, ``"manrope"``, ``"space-grotesk"``, ``"fira-sans"``,
+            ``"playfair-display"``). ``None`` embeds all fonts.
+    """
     parts: list[str] = []
     for f in FONTS:
+        if ids is not None and f["id"] not in ids:
+            continue
         parts.append(
             f"@font-face{{"
             f"font-family:'{f['family']}';"

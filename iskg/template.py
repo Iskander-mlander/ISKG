@@ -88,9 +88,15 @@ BRIDGE_JS = """
         if (el) el.focus();
     };
 
-    window.iskg_bind_key = function(id, eventType, keyFilter, mods) {
+    window.iskg_bind_key = function(id, eventType, keyFilter, mods, _retry) {
         var el = document.getElementById(id);
-        if (!el) { setTimeout(function(){iskg_bind_key(id,eventType,keyFilter,mods);},50); return; }
+        if (!el) {
+            // Widget may not be mounted yet; retry at most once to avoid an
+            // infinite loop if the widget is destroyed before the element is
+            // ever created.
+            if (!_retry) setTimeout(function(){iskg_bind_key(id,eventType,keyFilter,mods,1);},50);
+            return;
+        }
         var fn = function(e) {
             if (keyFilter && e.key !== keyFilter && e.code !== keyFilter && e.key.toLowerCase() !== keyFilter.toLowerCase()) return;
             if (mods) {
@@ -111,6 +117,22 @@ BRIDGE_JS = """
             el.removeEventListener(eventType === 'keyrelease' ? 'keyup' : 'keydown', el._iskg_key_fn);
             delete el._iskg_key_fn;
         }
+    };
+
+    // Remove a destroyed widget from the DOM and tear down its listeners.
+    window.iskg_cleanup = function(id) {
+        var el = document.getElementById(id);
+        if (el) {
+            if (el._iskg_key_fn) {
+                el.removeEventListener('keydown', el._iskg_key_fn);
+                el.removeEventListener('keyup', el._iskg_key_fn);
+                delete el._iskg_key_fn;
+            }
+            el.remove();
+        }
+        // Tear down tooltips attached to this widget (created via _render_tooltip_js).
+        var tips = document.querySelectorAll('.iskg-tooltip[data-tipfor="' + id + '"]');
+        for (var i = 0; i < tips.length; i++) { tips[i].remove(); }
     };
 
     window.iskg_set_style = function(id, cssText) {
@@ -163,6 +185,7 @@ def build_html(
     extra_js: str = "",
     extra_css: str = "",
     theme_name: str = "ifaz",
+    font_ids: list[str] | None = None,
 ) -> str:
     all_widgets: list[Any] = []
     for w in root_widgets:
@@ -201,7 +224,7 @@ def build_html(
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ISKG App</title>
-<style>{font_css()}</style>
+<style>{font_css(font_ids)}</style>
 <style>
 body {{ margin:0; padding:0; overflow:auto; width:100vw; height:100vh;
        background:var(--bg-primary, #0c111a); color:var(--text, #c8d6e5); }}

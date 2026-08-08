@@ -79,6 +79,25 @@ def test_widget_destroy():
     assert child.parent is None
 
 
+def test_widget_destroy_calls_cleanup_js():
+    from unittest.mock import MagicMock
+
+    app = MagicMock()
+    app._running = True
+    w = Widget()
+    w._app = app
+    w.destroy()
+    assert app._eval_js.called
+    js = app._eval_js.call_args[0][0]
+    assert "iskg_cleanup" in js
+    assert w._id in js
+
+
+def test_widget_destroy_no_app_no_raise():
+    w = Widget()
+    w.destroy()  # app is None -> must not raise
+
+
 def test_widget_render_default():
     w = Widget()
     assert w._render() == ""

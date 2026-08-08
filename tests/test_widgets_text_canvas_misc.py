@@ -82,6 +82,13 @@ class TestTooltip:
         assert t._render() == ""
         assert t._render_js() == ""
 
+    def test_tooltip_js_marks_data_tipfor(self):
+        from iskg import Label
+
+        w = Label(tooltip="Ayuda")
+        js = w._render_tooltip_js()
+        assert '"data-tipfor","' + w._id + '"' in js
+
 
 class TestImageBox:
     def test_create(self):

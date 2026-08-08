@@ -29,7 +29,7 @@ _GTK_UNAVAILABLE = object()
 
 class _JSAPI:
     _DEBOUNCE_MS = 50
-    _last_event: dict[tuple[str, str], float] = {}
+    _last_event: dict[tuple[str, str], tuple[float, str | None]] = {}
 
     def on_event(
         self,
@@ -40,10 +40,14 @@ class _JSAPI:
         key = (widget_id, event_name)
         now = time.time()
         with _LOCK:
-            last = self._last_event.get(key, 0)
-            if (now - last) * 1000 < self._DEBOUNCE_MS:
+            last = self._last_event.get(key)
+            if (
+                last is not None
+                and (now - last[0]) * 1000 < self._DEBOUNCE_MS
+                and last[1] == event_data_json
+            ):
                 return
-            self._last_event[key] = now
+            self._last_event[key] = (now, event_data_json)
         handler = _HANDLERS.get(widget_id)
         if handler:
             try:
@@ -84,6 +88,8 @@ class Application:
         theme: str = "ifaz",
         debug: bool = False,
         extra_css: str = "",
+        stderr_log: str | None = None,
+        font_ids: list[str] | None = None,
     ) -> None:
         self._title = title
         self._width = width
@@ -93,9 +99,12 @@ class Application:
         self._theme_name = theme
         self._debug = debug
         self._extra_css = extra_css
+        self._stderr_log = stderr_log
+        self._font_ids = font_ids
 
         self._root_widgets: list[Widget] = []
         self._running = False
+        self._close_fired = False
         self._on_close_callbacks: list[Callable] = []
         self._window: Any = None
 
@@ -156,7 +165,9 @@ class Application:
         """Open the window and start the application main loop.
 
         Blocks until the window is closed. Redirects GTK stderr warnings
-        to /dev/null during execution.
+        to ``stderr_log`` (or ``/dev/null`` when no log path is given) during
+        execution. The original descriptor is always restored via ``finally``,
+        so application prints and tracebacks are never silently swallowed.
 
         Args:
             extra_js: additional JavaScript to execute on startup (e.g. tooltip init code).
@@ -184,27 +195,31 @@ class Application:
             js_api=_JSAPI_INSTANCE,
         )
 
-        self._saved_stderr = os.dup(2)
-        devnull = os.open(os.devnull, os.O_WRONLY)
-        os.dup2(devnull, 2)
-        os.close(devnull)
+        saved = os.dup(2)
+        self._saved_stderr = saved
+        log_path = self._stderr_log or os.devnull
+        log_fd = os.open(log_path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o644)
+        try:
+            os.dup2(log_fd, 2)
+        finally:
+            os.close(log_fd)
 
         try:
             webview.start(private_mode=False, debug=False)
         except Exception as exc:
+            os.dup2(saved, 2)
+            self._saved_stderr = None
+            os.close(saved)
+            print(f"ISKG: webview.start() failed: {exc}", file=__import__("sys").stderr)
+            __import__("sys").exit(1)
+        finally:
             if self._saved_stderr is not None:
                 os.dup2(self._saved_stderr, 2)
                 os.close(self._saved_stderr)
                 self._saved_stderr = None
-            print(f"ISKG: webview.start() failed: {exc}", file=__import__("sys").stderr)
-            __import__("sys").exit(1)
 
         self._running = False
-        for cb in self._on_close_callbacks:
-            try:
-                cb()
-            except Exception:
-                pass
+        self._fire_close_callbacks()
         if self._saved_stderr is not None:
             os.dup2(self._saved_stderr, 2)
             os.close(self._saved_stderr)
@@ -217,6 +232,7 @@ class Application:
             extra_js=extra_js,
             extra_css=self._extra_css,
             theme_name=self._theme_name,
+            font_ids=self._font_ids,
         )
         if not self._scanlines:
             html = html.replace('<div id="iskg-scanlines"></div>', "")
@@ -299,14 +315,26 @@ class Application:
         self._eval_js(js_code)
         return self
 
+    def _fire_close_callbacks(self) -> None:
+        """Run the registered ``on_close`` callbacks exactly once."""
+        if self._close_fired:
+            return
+        self._close_fired = True
+        with contextlib.suppress(Exception):
+            for cb in self._on_close_callbacks:
+                cb()
+
     def quit(self) -> None:
-        """Close the application window and exit the main loop."""
+        """Close the application window, fire ``on_close`` and exit the main loop.
+
+        The ``on_close`` callbacks run exactly once (idempotent with the
+        invocation done in :meth:`run` when the loop ends naturally).
+        """
         if self._window:
-            try:
+            with contextlib.suppress(Exception):
                 self._window.destroy()
-            except Exception:
-                pass
         self._running = False
+        self._fire_close_callbacks()
 
     def set_clipboard(self, text: str) -> None:
         """Copy text to the system clipboard (requires pyperclip)."""

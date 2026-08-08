@@ -3,6 +3,7 @@ style rendering, and widget tree management."""
 
 from __future__ import annotations
 
+import contextlib
 import json
 import warnings
 from collections.abc import Callable
@@ -364,6 +365,7 @@ var el=document.getElementById("{self._id}");
 if(!el)return;
 var tip=document.createElement("div");
 tip.className="iskg-tooltip";
+tip.setAttribute("data-tipfor","{self._id}");
 tip.innerHTML="{escaped}";
 tip.style.display="none";
 document.body.appendChild(tip);
@@ -784,12 +786,16 @@ el.onmouseleave=function(){{clearTimeout(timer);tip.style.display="none";}};
     def destroy(self) -> None:
         """Destroy this widget and all its children."""
         self._destroyed = True
+        app = self._app
         for child in list(self._children):
             child.destroy()
         if self._parent:
             self._parent.remove(self)
-        if self._app:
-            self._app._widget_destroyed(self._id)
+        if app and app._running:
+            with contextlib.suppress(Exception):
+                app._eval_js(f'iskg_cleanup("{self._id}");')
+        if app:
+            app._widget_destroyed(self._id)
 
     def _sync(self) -> None:
         if self._destroyed or not (self._app and self._app._running):

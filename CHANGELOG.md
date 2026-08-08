@@ -1,5 +1,17 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+- `Application.run()`: stderr del proceso se restauraba solo en fallo de `webview.start`; ahora se restaura en un `finally` (incluye `SystemExit`/interrupciones). Nuevo parámetro `stderr_log` apunta el redirect a un archivo de log (por defecto `/dev/null`).
+- `_JSAPI.on_event`: el debounce de 50 ms descartaba eventos legítimos con distinto payload; ahora dedupa por `(widget_id, event_name, event_data)`.
+- `Application.quit()`: no disparaba `on_close`; ahora lo hace mediante `_fire_close_callbacks()` idempotente, también usado por `run()`.
+- `iskg_bind_key` (template): el retry para elemento no montado podía quedar en bucle infinito al destruir el widget; ahora reintenta una sola vez.
+- `Widget.destroy()`: no limpiaba listeners/tooltips; nuevo `window.iskg_cleanup(id)` elimina el elemento y sus tooltips (`data-tipfor`) del DOM.
+
+### Added
+- Fonts opcionales: `font_css(ids=None)`, `build_html(..., font_ids=...)` y `Application(..., font_ids=...)` permiten embeder solo un subset de las 7 familias para reducir payload.
+
 ## [0.3.70] — 2026-08-07
 
 ### Fixed
