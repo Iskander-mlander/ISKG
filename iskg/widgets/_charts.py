@@ -89,8 +89,15 @@ class TimeSeriesGraph(Widget):
             del values[: len(values) - max_pts]
         self._sync()
 
-    def update(self, value: float) -> None:
-        """Append to the first series (convenience for single-series graphs)."""
+    def update(self, value: float | None = None) -> None:
+        """Append to the first series (convenience for single-series graphs).
+
+        With no argument, behaves like the base :meth:`~iskg.base.Widget.update`
+        (re-sync the widget).
+        """
+        if value is None:
+            super().update()
+            return
         self.append(self.series[0], value)
 
     def replace(self, series: str | list[float], values: list[float] | None = None) -> None:
@@ -104,9 +111,12 @@ class TimeSeriesGraph(Widget):
             name = next(iter(self._data))
             data = [float(v) for v in series]  # type: ignore[union-attr]
         else:
-            name = series  # type: ignore[assignment]
+            name = str(series)  # type: ignore[arg-type]
             data = [float(v) for v in values]
-        self._data[name] = data
+        if name not in self._data:
+            self._data[name] = data
+        else:
+            self._data[name][:] = data
         max_pts = int(self._config_dict.get("max_pts", 200))
         if len(self._data[name]) > max_pts:
             self._data[name] = self._data[name][-max_pts:]

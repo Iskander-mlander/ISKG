@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from datetime import date
+from datetime import date as _date
 from typing import Any
 
 from ..base import Widget
@@ -27,9 +27,9 @@ _WEEKDAYS = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"]
 
 def _month_grid(year: int, month: int, selected_iso: str) -> str:
     """Build the day-cell grid HTML for a given month (Sunday-first)."""
-    first = date(year, month, 1)
+    first = _date(year, month, 1)
     start = (first.weekday() + 1) % 7
-    days = 31 if month == 12 else (date(year, month + 1, 1) - date(year, month, 1)).days
+    days = 31 if month == 12 else (_date(year, month + 1, 1) - _date(year, month, 1)).days
     cells = ""
     for _ in range(start):
         cells += '<span class="iskg-dp-day empty"></span>'
@@ -127,25 +127,25 @@ class DatePicker(Widget):
         self,
         parent: Widget | None = None,
         width: int = 120,
-        date: date | None = None,
+        date: _date | None = None,
         command: Any = None,
         format_: str = "%Y-%m-%d",
         **kwargs: Any,
     ) -> None:
         super().__init__(parent, **kwargs)
         self._config_dict["width"] = width
-        self._config_dict["date"] = date or date.today()
+        self._config_dict["date"] = date or _date.today()
         self._config_dict["format"] = format_
         if command is not None:
             self._config_dict["command"] = command
 
     @property
-    def value(self) -> date:
+    def value(self) -> _date:
         """The currently selected date."""
-        return self._config_dict.get("date", date.today())
+        return self._config_dict.get("date", _date.today())
 
     @value.setter
-    def value(self, d: date) -> None:
+    def value(self, d: _date) -> None:
         self._config_dict["date"] = d
         self._sync()
 
@@ -202,9 +202,9 @@ class DatePicker(Widget):
                 years += (new_index - 1) // 12
                 day = min(d.day, 28)
                 try:
-                    target = date(years, months, day)
+                    target = _date(years, months, day)
                 except ValueError:
-                    target = date(years, months, 1)
+                    target = _date(years, months, 1)
                 self._config_dict["date"] = target
                 self._eval_js(self._apply_popup_js())
         elif event_name == "select" and self._app and self._app._running:

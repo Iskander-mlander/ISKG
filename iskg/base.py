@@ -864,11 +864,7 @@ el.onmouseleave=function(){{clearTimeout(timer);tip.style.display="none";}};
             if cmd:
                 cmd()
             return None
-        if (
-            event_name == "contextmenu"
-            and getattr(self, "_context_menu", None) is not None
-            and self._context_show
-        ):
+        if event_name == "contextmenu" and self._context_menu is not None and self._context_show:
             from .widgets._menus import render_context_items
 
             html = render_context_items(self._context_menu.items)
