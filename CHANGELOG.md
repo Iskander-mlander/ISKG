@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+- CI (`e2e-linux`): el smoke de ventana real fallaba con `ModuleNotFoundError: No module named 'gi'` porque `actions/setup-python` crea un venv aislado que no ve los bindings `python3-gi`/webkit del sistema. El job ahora crea el venv con `--system-site-packages` y usa `python3` del sistema.
+
 ## [0.3.72] — 2026-08-08
 
 ### Changed
