@@ -1,11 +1,15 @@
 # Changelog
 
-## [Unreleased]
+## [0.3.71] — 2026-08-08
 
 ### Added
 - Fonts opcionales: `font_css(ids=None)`, `build_html(..., font_ids=...)` y `Application(..., font_ids=...)` permiten embeber solo un subset de las 7 familias para reducir payload.
 - `Application.sync_batch()`: context manager opt-in que agrupa `_sync` de varios widgets en una sola transacción JS (`_defer_sync`/`_flush_sync`); fuera del batch el flush sigue siendo inmediato.
 - `Application.test_loop()`: backend headless para testing — devuelve `TestLoop` con ventana fake `_TestWindow` (captura `evaluate_js`), expone `loop.html`, `loop.js_calls`, `loop.fire(widget_id, event, event_data)` (puente al bridge) y `loop.stop()`. `TestLoop` y `_TestWindow` exportados desde `iskg.app`.
+- `Slider(step=...)`: atributo HTML `step` en el input `range` para valores discretos.
+- `Application.sync_batch()`: context manager opt-in que agrupa `_sync` de varios widgets en una sola transacción JS (`_defer_sync`/`_flush_sync`); fuera del batch el flush sigue siendo inmediato.
+- `Application.test_loop()`: backend headless para testing — devuelve `TestLoop` con ventana fake `_TestWindow` (captura `evaluate_js`), expone `loop.html`, `loop.js_calls`, `loop.fire(widget_id, event, event_data)` (puente al bridge) y `loop.stop()`. `TestLoop` y `_TestWindow` exportados desde `iskg.app`.
+- `Slider(step=...)`: atributo HTML `step` en el input `range` para valores discretos.
 - `Frame`: los hijos `.place()` se envuelven en un contenedor `position:relative; flex:1` para que sus coordenadas absolutas queden contenidas.
 - `tests/test_e2e_smoke.py`: smoke E2E (árbol headless, roundtrip de sync, fire de comandos vía bridge, ventana real pywebview bajo `xvfb`, entrypoint subprocess).
 - CI: job `e2e-linux` con `xvfb` en `.github/workflows/ci.yml`.

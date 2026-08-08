@@ -609,6 +609,8 @@ class Slider(Widget):
         val = self._config_dict.get("value", 0)
         orient = self._config_dict.get("orient", "horizontal")
         show_val = self._get_cfg("show-value", True)
+        step = self._get_cfg("step")
+        step_attr = f' step="{step}"' if step is not None else ""
         style = self._render_style()
         width = self._config_dict.get("width", 150)
         attrs = self._render_attrs()
@@ -623,7 +625,7 @@ class Slider(Widget):
             val_html = f'<span class="iskg-slider-val-center">{val}</span>' if show_val else ""
             return f'''<div class="iskg-slider-wrap" style="{wrap_style}">
   <div class="{track_cls}" style="{track_style}">
-    <input id="{self._id}" class="{slider_cls}" type="range" min="{lo}" max="{hi}" value="{val}" style="{slider_style}" {attrs}/>
+    <input id="{self._id}" class="{slider_cls}" type="range" min="{lo}" max="{hi}" value="{val}"{step_attr} style="{slider_style}" {attrs}/>
   </div>
   {val_html}
 </div>'''
