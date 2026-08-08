@@ -32,17 +32,19 @@ class Frame(Widget):
 
     Config options (via kwargs or .config()):
 
-        text (str): Header text shown above children.
-        container (bool): If True the outer div becomes ``display:flex;flex-direction:column``
-            so the inner wrapper can fill it via ``flex:1``.  Default ``True``.
-        direction (str): ``"auto"`` (detect from children's ``side``),
-            ``"row"``, or ``"column"``.  Default ``"auto"``.
-        gap (int): Gap between children in pixels.  Default ``3``.
-        skip_hidden (bool): If True, hidden children are omitted from the HTML.
-            If False, they are rendered with ``display:none``. Default ``True``.
-        height_mode (str): ``"flex"`` (wrapper uses ``flex:1``, needs ``container=True``),
-            ``"percent"`` (wrapper uses ``height:100%``), or ``"auto"``.
-            Default ``"flex"``.
+    - ``text`` (str): Header text shown above children.
+    - ``container`` (bool): If True the outer div becomes
+      ``display:flex;flex-direction:column`` so the inner wrapper can fill it
+      via ``flex:1``. Default ``True``.
+    - ``direction`` (str): ``"auto"`` (detect from children's ``side``),
+      ``"row"``, or ``"column"``. Default ``"auto"``.
+    - ``gap`` (int): Gap between children in pixels. Default ``3``.
+    - ``skip_hidden`` (bool): If True, hidden children are omitted from the
+      HTML. If False, they are rendered with ``display:none``. Default
+      ``True``.
+    - ``height_mode`` (str): ``"flex"`` (wrapper uses ``flex:1``, needs
+      ``container=True``), ``"percent"`` (wrapper uses ``height:100%``), or
+      ``"auto"``. Default ``"flex"``.
     """
 
     def __init__(

@@ -183,6 +183,21 @@ class TestSlider:
         html = s._render()
         assert "iskg-slider-vert" in html
 
+    def test_step_horizontal(self):
+        s = Slider(from_=0, to=100, value=50, step=5)
+        html = s._render()
+        assert ' step="5"' in html
+
+    def test_step_vertical(self):
+        s = Slider(from_=0, to=100, value=50, orient="vertical", step=10)
+        html = s._render()
+        assert ' step="10"' in html
+
+    def test_step_omitted_when_not_set(self):
+        s = Slider(from_=0, to=100, value=50)
+        html = s._render()
+        assert "step=" not in html
+
 
 class TestSpinBox:
     def test_create(self):

@@ -552,7 +552,7 @@ items.forEach(function(x,i){{x.classList.toggle("iskg-cb-sel",i=={cur});}});'''
 class Slider(Widget):
     """A horizontal range slider.
 
-    Config options: ``from``, ``to``, ``value``, ``orient``
+    Config options: ``from``, ``to``, ``value``, ``step``, ``orient``
     (``"horizontal"`` / ``"vertical"``), ``show_value`` (bool),
     plus all CSS properties.
     """
@@ -635,7 +635,7 @@ class Slider(Widget):
             slider_style = f"width:{width}px;"
             val_html = f'<span class="iskg-slider-val">{val}</span>' if show_val else ""
             return f'''<div class="iskg-slider-wrap" style="{wrap_style}">
-  <input id="{self._id}" class="{slider_cls}" type="range" min="{lo}" max="{hi}" value="{val}" style="{slider_style}" {attrs}/>
+  <input id="{self._id}" class="{slider_cls}" type="range" min="{lo}" max="{hi}" value="{val}"{step_attr} style="{slider_style}" {attrs}/>
   {val_html}
 </div>'''
 

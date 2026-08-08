@@ -1,5 +1,9 @@
 # Changelog
 
+## [Unreleased]
+
+- `docs/`: badge PyPI dinámico; docstring de `Frame` y `Slider` corregidos para Sphinx; `step` horizontal del `Slider` aplicaba antes solo en orientación vertical.
+
 ## [0.3.71] — 2026-08-08
 
 ### Added
