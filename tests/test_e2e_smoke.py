@@ -24,6 +24,7 @@ from iskg import (
     Button,
     Frame,
     Label,
+    Menu,
     ProgressBar,
     ScrolledFrame,
     Slider,
@@ -87,6 +88,49 @@ def test_smoke_headless_fire_command():
             w.bind("click", lambda data: got.append(1))
             loop.fire(w._id, "click", "")
     assert got, "button command must be reachable via the bridge"
+    loop.stop()
+
+
+def test_contextmenu_headless_command():
+    app = _build_demo_app()
+    loop = app.test_loop()
+    btn = next(w for w in _widgets(app) if isinstance(w, Button))
+
+    calls = []
+    menu = Menu()
+    menu.add_item("Copy", command=lambda: calls.append("copy"))
+    sub = menu.add_menu("Export")
+    sub.add_item("PNG", command=lambda: calls.append("png"))
+
+    btn.set_menu(menu)
+    js = "".join(loop.js_calls)
+    assert 'iskg_bind_contextmenu("' + btn._id + '")' in js
+
+    loop.fire(btn._id, "contextmenu", {"x": 10, "y": 20})
+    js = "".join(loop.js_calls)
+    unescaped = js.replace('\\"', '"')
+    assert 'iskg_open_contextmenu("' + btn._id + '"' in js
+    assert 'data-cmd="Copy"' in unescaped
+    assert 'data-cmd="Export/PNG"' in unescaped
+
+    loop.fire(btn._id, "contextcmd", "Copy")
+    assert calls == ["copy"]
+    loop.fire(btn._id, "contextcmd", "Export/PNG")
+    assert calls == ["copy", "png"]
+    loop.fire(btn._id, "contextcmd", "Export/Missing")
+    assert calls == ["copy", "png"]
+    loop.stop()
+
+
+def test_contextmenu_bind_reports_position():
+    app = _build_demo_app()
+    loop = app.test_loop()
+    btn = next(w for w in _widgets(app) if isinstance(w, Button))
+
+    got = []
+    btn.bind("contextmenu", lambda data: got.append(data))
+    loop.fire(btn._id, "contextmenu", {"x": 10, "y": 20})
+    assert got and got[0]["x"] == 10 and got[0]["y"] == 20
     loop.stop()
 
 

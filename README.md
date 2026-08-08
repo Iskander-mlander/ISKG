@@ -19,6 +19,7 @@ No browser, no HTTP server — just a Python process and a lightweight WebView.
 ## Features
 
 - **38 widgets**: Button, Entry, ComboBox, Slider, ProgressBar, Canvas, TreeView, DataGrid, Knob, Gauge, Notebook, MenuBar, and more.
+- **Context menus**: right-click menus per widget via `set_menu()` / `popup_menu()` and `bind("contextmenu", cb)`, with submenus, separators, and shortcuts.
 - **Layout engines**: `pack`, `grid` (with sticky + weights), `place`.
 - **Theming**: 13 built-in themes (ifaz, desert, infinity, cyberdusk, night, warm, cold, light, dracula, nord, gruvbox, monokai, catppuccin), CSS variable system.
 - **Cross-platform**: Linux, Windows, macOS (same codebase).

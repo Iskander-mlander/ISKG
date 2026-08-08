@@ -2,8 +2,12 @@
 
 ## [Unreleased]
 
+### Added
+- Menú contextual (clic derecho) por widget: `widget.set_menu(menu)` / `widget.popup_menu(menu, x, y)` y `bind("contextmenu", cb)` (el callback recibe `{x, y}`). Reutiliza `Menu`/`MenuItem`; submenús, separadores y atajos soportados. `MenuItem` ahora se exporta a nivel de paquete (`iskg.MenuItem`).
+
 ### Fixed
 - CI (`e2e-linux`): el smoke de ventana real fallaba con `ModuleNotFoundError: No module named 'gi'` porque `actions/setup-python` crea un venv aislado que no ve los bindings `python3-gi`/webkit del sistema. El job ahora crea el venv con `--system-site-packages` y usa `python3` del sistema.
+- Lint: corregidos f-string sin placeholder y `if` anidado (`ruff SIM102`) introducidos al añadir el menú contextual.
 
 ## [0.3.72] — 2026-08-08
 

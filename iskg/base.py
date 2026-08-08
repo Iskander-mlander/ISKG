@@ -132,6 +132,8 @@ class Widget:
         self._variable: Any = None
         self._last_sync_js: str = ""
         self._last_style_css: str = ""
+        self._context_menu: Any = None
+        self._context_show: bool = False
 
         for k, v in kwargs.items():
             key = k.replace("_", "-")
@@ -712,6 +714,12 @@ el.onmouseleave=function(){{clearTimeout(timer);tip.style.display="none";}};
         parts = [self._render_key_binding_js(e) for e in self._key_bindings]
         return "".join(parts)
 
+    def _render_contextmenu_js(self) -> str:
+        """Return JS installing the right-click listener, if needed."""
+        if "contextmenu" in self._bindings or self._config_dict.get("menu") is not None:
+            return f'iskg_bind_contextmenu("{self._id}");'
+        return ""
+
     def bind(self, event: str, callback: Callable) -> None:
         """Bind a callback to an event.
 
@@ -719,6 +727,8 @@ el.onmouseleave=function(){{clearTimeout(timer);tip.style.display="none";}};
         tkinter-style key events (``"<KeyPress-a>"``, ``"<KeyRelease-Return>"``,
         ``"<Control-c>"``, ``"<Key>"``), and virtual events
         (``"<<CustomEvent>>"``).
+        events. Right-click is available as ``"contextmenu"``; its callback
+        receives a dict with ``x`` and ``y``.
 
         Key event callbacks receive a dict with ``key``, ``code``, ``ctrl``,
         ``alt``, ``shift``.
@@ -728,6 +738,8 @@ el.onmouseleave=function(){{clearTimeout(timer);tip.style.display="none";}};
             self._install_key_binding(parsed, callback)
         else:
             self._bindings[event] = callback
+            if event == "contextmenu" and self._app and self._app._running:
+                self._eval_js(f'iskg_bind_contextmenu("{self._id}");')
 
     def unbind(self, event: str) -> None:
         """Remove a previously bound event callback."""
@@ -751,6 +763,55 @@ el.onmouseleave=function(){{clearTimeout(timer);tip.style.display="none";}};
         else:
             self._bindings.pop(event, None)
 
+    def set_menu(self, menu: Any = None, *, show: bool = True) -> None:
+        """Attach a context (right-click) menu to this widget.
+
+        Args:
+            menu: a :class:`Menu`, a list of ``MenuItem``/``None``
+                (``None`` renders a separator), or ``None`` to remove
+                the menu (keep the ``"contextmenu"`` event notification).
+            show: when ``True`` (default on attach), the menu is shown at
+                the right-click position and its item command fires on
+                selection. When ``False``, the menu is only announced via
+                the ``"contextmenu"`` binding and no popup is shown.
+        """
+        if menu is None:
+            self._config_dict.pop("menu", None)
+            self._context_menu = None
+            self._context_show = False
+            self._bindings.pop("contextcmd", None)
+            if self._app and self._app._running:
+                self._eval_js("iskg_close_contextmenu();")
+            return
+        self._context_menu = menu
+        self._context_show = show
+        self._config_dict["menu"] = menu
+        if self._app and self._app._running:
+            self._eval_js(f'iskg_bind_contextmenu("{self._id}");')
+
+    def popup_menu(self, menu: Any, x: int | None = None, y: int | None = None) -> None:
+        """Show a context menu at the given position or the last right-click.
+
+        Args:
+            menu: a :class:`Menu` or a list of ``MenuItem`` (or ``None``
+                for a separator).
+            x: absolute X coordinate; defaults to the last right-click.
+            y: absolute Y coordinate; defaults to the last right-click.
+        """
+        if self._app is None or not self._app._running:
+            return
+        from .widgets._menus import render_context_items
+
+        items = menu.items if hasattr(menu, "items") else menu
+        html = render_context_items(items)
+        script = f'iskg_open_contextmenu("{self._id}", {json.dumps(html)});'
+        if x is not None and y is not None:
+            script = f"window.__iskg_ctx_pos={{x:{x},y:{y},clamped:true}};" + script
+        self._eval_js(script)
+        if hasattr(menu, "items"):
+            self._context_menu = menu
+            self._context_show = False
+
     def event_generate(self, event: str, data: Any = None) -> bool:
         """Generate a virtual event that bubbles up the parent chain.
 
@@ -768,6 +829,23 @@ el.onmouseleave=function(){{clearTimeout(timer);tip.style.display="none";}};
         return False
 
     def _handle_bridge_event(self, event_name: str, event_data: Any) -> str | None:
+        if event_name == "contextcmd" and self._context_menu is not None:
+            from .widgets._menus import resolve_context_command
+
+            cmd = resolve_context_command(self._context_menu, str(event_data or ""))
+            if cmd:
+                cmd()
+            return None
+        if (
+            event_name == "contextmenu"
+            and getattr(self, "_context_menu", None) is not None
+            and self._context_show
+        ):
+            from .widgets._menus import render_context_items
+
+            html = render_context_items(self._context_menu.items)
+            if self._app and self._app._running:
+                self._eval_js(f'iskg_open_contextmenu("{self._id}", {json.dumps(html)});')
         if event_name in ("change", "input"):
             if self._textvariable is not None and not getattr(self, "_variable_handled", False):
                 self._textvariable.set(str(event_data), _from_widget=self)

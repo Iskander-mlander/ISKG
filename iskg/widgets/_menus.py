@@ -6,6 +6,61 @@ from typing import Any
 from ..base import Widget
 
 
+def _escape(text: str) -> str:
+    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+def _item_span(item: MenuItem) -> str:
+    txt = _escape(item.text)
+    sc = f'<span class="iskg-menu-sc">{_escape(item.shortcut)}</span>' if item.shortcut else ""
+    ico = f'<span class="iskg-menu-ico">{item.icon}</span>' if item.icon else ""
+    return f'{ico}<span class="iskg-menu-txt">{txt}</span>{sc}'
+
+
+def render_context_items(items: list[MenuItem | None], prefix: str = "") -> str:
+    """Render MenuItems as the inner HTML of a context-menu popup.
+
+    Each leaf item carries a ``data-cmd`` attribute with its slash-joined
+    path (``prefix/text``); submenus are nested ``.iskg-menu-dd`` blocks.
+    """
+    parts = []
+    for item in items:
+        if item is None:
+            parts.append('<div class="iskg-menu-sep"></div>')
+            continue
+        path = f"{prefix}/{item.text}" if prefix else item.text
+        if item.submenu is not None:
+            parts.append(
+                f'<div class="iskg-menu-item iskg-menu-sub" data-sub="{item.submenu._id}">'
+                f"{_item_span(item)}"
+                f'<div id="{item.submenu._id}" class="iskg-menu-dd" style="display:none;position:absolute;top:0;left:100%;margin-left:2px;">'
+                f"{render_context_items(item.submenu.items, path)}</div></div>"
+            )
+        else:
+            parts.append(
+                f'<div class="iskg-menu-item" data-cmd="{_escape(path)}">{_item_span(item)}</div>'
+            )
+    return "".join(parts)
+
+
+def resolve_context_command(menu: Any, path: str) -> Callable | None:
+    """Resolve a slash-joined context-menu path to its item command."""
+    keys = [k for k in path.split("/") if k]
+    if not keys:
+        return None
+    items = menu.items if hasattr(menu, "items") else menu
+    for item in items:
+        if item is None:
+            continue
+        if item.text != keys[0]:
+            continue
+        if len(keys) == 1:
+            return item.command
+        if item.submenu is not None:
+            return resolve_context_command(item.submenu, "/".join(keys[1:]))
+    return None
+
+
 class MenuItem:
     """An item within a Menu."""
 

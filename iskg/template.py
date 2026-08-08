@@ -175,6 +175,70 @@ BRIDGE_JS = """
         }
         return false;
     };
+
+    // Right-click / context-menu support.
+    window.__iskg_ctx_pos = { x: 0, y: 0 };
+    window.iskg_bind_contextmenu = function(id, _retry) {
+        var el = document.getElementById(id);
+        if (!el) {
+            if (!_retry) setTimeout(function(){ iskg_bind_contextmenu(id, 1); }, 60);
+            return;
+        }
+        el.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            window.__iskg_ctx_pos = { x: e.clientX, y: e.clientY };
+            iskg_bridge_event(id, 'contextmenu', JSON.stringify({ x: e.clientX, y: e.clientY }));
+        });
+    };
+
+    window.iskg_open_contextmenu = function(ownerId, itemsHtml) {
+        iskg_close_contextmenu();
+        if (!itemsHtml) return;
+        var d = document.createElement('div');
+        d.id = 'iskg-ctx-popup';
+        d.className = 'iskg-menu-dd';
+        d.style.position = 'fixed';
+        d.style.display = 'block';
+        d.style.zIndex = '2000';
+        d.style.left = '0px';
+        d.style.top = '0px';
+        d.innerHTML = itemsHtml;
+        document.body.appendChild(d);
+        var pos = window.__iskg_ctx_pos;
+        var vw = document.documentElement.clientWidth;
+        var vh = document.documentElement.clientHeight;
+        var w = d.offsetWidth || 160;
+        var h = d.offsetHeight || 40;
+        var left = pos.clamped ? pos.x : Math.min(pos.x, Math.max(0, vw - w - 4));
+        var top = pos.clamped ? pos.y : Math.min(pos.y, Math.max(0, vh - h - 4));
+        d.style.left = left + 'px';
+        d.style.top = top + 'px';
+        window._iskg_ctx_owner = ownerId;
+        d.querySelectorAll('.iskg-menu-sub[data-sub]').forEach(function(sub) {
+            var subEl = document.getElementById(sub.getAttribute('data-sub'));
+            if (!subEl) return;
+            sub.onmouseenter = function() { subEl.style.display = 'block'; };
+            sub.onmouseleave = function() { setTimeout(function(){ if (!sub.matches(':hover') && !subEl.matches(':hover')) subEl.style.display = 'none'; }, 200); };
+        });
+        d.querySelectorAll('.iskg-menu-item[data-cmd]').forEach(function(it) {
+            it.onclick = function() {
+                var path = it.getAttribute('data-cmd');
+                iskg_close_contextmenu();
+                iskg_bridge_event(ownerId, 'contextcmd', path);
+            };
+        });
+    };
+    window.iskg_close_contextmenu = function() {
+        var old = document.getElementById('iskg-ctx-popup');
+        if (old) old.remove();
+    };
+    document.addEventListener('mousedown', function(e) {
+        var p = document.getElementById('iskg-ctx-popup');
+        if (p && !(e.target && p.contains(e.target))) iskg_close_contextmenu();
+    });
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') iskg_close_contextmenu();
+    });
 })();
 """
 
@@ -198,11 +262,12 @@ def build_html(
         if not w._destroyed:
             all_js_parts.append(w._render_js())
             all_js_parts.append(w._render_children_js())
-    # Include base JS (tooltips, key bindings) for every widget in the tree
+    # Include base JS (tooltips, key bindings, context menus) for every widget
     for _, w in all_widgets:
         if not w._destroyed:
             all_js_parts.append(w._render_tooltip_js())
             all_js_parts.append(w._render_key_bindings_js())
+            all_js_parts.append(w._render_contextmenu_js())
     all_js = "\n".join(p for p in all_js_parts if p)
     if extra_js:
         all_js += "\n" + extra_js
