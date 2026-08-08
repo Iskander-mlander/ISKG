@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.3.81] — 2026-08-08
+
+### Fixed
+- Re-release de 0.3.80 con el job de typecheck de CI en verde: `pyright` señalaba
+  7 errores — `date` (el parámetro) sombreaba el tipo importado en `DatePicker`,
+  `TimeSeriesGraph.update(value)` rompía la firma de `Widget.update()` y el acceso
+  a `self._context_menu.items` quedaba sin narrowing. Solo cambios de tipos; sin
+  cambios de comportamiento en runtime.
+
 ## [0.3.80] — 2026-08-08
 
 ### Added
