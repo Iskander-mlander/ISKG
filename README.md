@@ -18,9 +18,9 @@ No browser, no HTTP server — just a Python process and a lightweight WebView.
 
 ## Features
 
-- **50 widgets**: Button, Entry, ComboBox, Slider, ProgressBar, Canvas, TreeView, DataGrid, Knob, Gauge, Notebook, MenuBar, and more.
+- **38 widgets**: Button, Entry, ComboBox, Slider, ProgressBar, Canvas, TreeView, DataGrid, Knob, Gauge, Notebook, MenuBar, and more.
 - **Layout engines**: `pack`, `grid` (with sticky + weights), `place`.
-- **Theming**: 10 built-in themes (ifaz, desert, infinity, cyberdusk, light, dracula, nord, gruvbox, monokai, catppuccin), CSS variable system.
+- **Theming**: 13 built-in themes (ifaz, desert, infinity, cyberdusk, night, warm, cold, light, dracula, nord, gruvbox, monokai, catppuccin), CSS variable system.
 - **Cross-platform**: Linux, Windows, macOS (same codebase).
 - **Zero HTTP**: No server, no ports, no browser tabs — just a window.
 - **JS bridge**: Bidirectional Python ↔ JavaScript calls for real-time UI updates.
@@ -36,7 +36,7 @@ No browser, no HTTP server — just a Python process and a lightweight WebView.
 pip install iskg
 
 # from GitHub Releases
-pip install https://github.com/Iskander-mlander/ISKG/releases/download/v0.3.69/iskg-0.3.69-py3-none-any.whl
+pip install https://github.com/Iskander-mlander/ISKG/releases/download/v0.3.71/iskg-0.3.71-py3-none-any.whl
 ```
 
 ```python
