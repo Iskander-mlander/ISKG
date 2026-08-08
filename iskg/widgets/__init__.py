@@ -1,6 +1,7 @@
 """All widget classes re-exported for convenient access via ``iskg.widgets``."""
 
 from ._canvas import Canvas, Knob
+from ._charts import Sparkline, TimeSeriesGraph
 from ._containers import Frame, Notebook, PanedWindow, ScrollBar, ScrolledFrame, Separator, Spacer
 from ._controls import (
     Button,
@@ -14,6 +15,7 @@ from ._controls import (
     ToggleSwitch,
 )
 from ._data import DataGrid, DropTarget, ListBox, TreeView
+from ._datetime import Clock, DatePicker
 from ._dialogs import (
     FileDialog,
     MessageDialog,
@@ -32,6 +34,7 @@ from ._display import (
     RadialGauge,
     StatusBar,
 )
+from ._logview import LogViewer
 from ._menus import Menu, MenuBar, MenuItem
 from ._misc import Tooltip
 from ._text import RichText, Text
@@ -79,4 +82,9 @@ __all__ = [
     "showquestion",
     "MenuItem",
     "Menu",
+    "TimeSeriesGraph",
+    "Sparkline",
+    "LogViewer",
+    "Clock",
+    "DatePicker",
 ]

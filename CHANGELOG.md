@@ -1,13 +1,27 @@
 # Changelog
 
-## [Unreleased]
+## [0.3.80] — 2026-08-08
 
 ### Added
-- Menú contextual (clic derecho) por widget: `widget.set_menu(menu)` / `widget.popup_menu(menu, x, y)` y `bind("contextmenu", cb)` (el callback recibe `{x, y}`). Reutiliza `Menu`/`MenuItem`; submenús, separadores y atajos soportados. `MenuItem` ahora se exporta a nivel de paquete (`iskg.MenuItem`).
+- **Menú contextual** (clic derecho) por widget: `widget.set_menu(menu)` / `widget.popup_menu(menu, x, y)` y `bind("contextmenu", cb)` (el callback recibe `{x, y}`). Reutiliza `Menu`/`MenuItem`; submenús, separadores y atajos soportados. `MenuItem` ahora se exporta a nivel de paquete (`iskg.MenuItem`).
+- **Event bus** global: `app.on(event, cb)` / `app.emit(event, *args)` / `app.off(event, cb)` (soporta decorador). Eventos integrados `theme-changed` (al cambiar tema), `closing` y `widget-created`.
+- **`TimeSeriesGraph` / `Sparkline`**: gráficos SVG en tiempo real con múltiples series, curvas Bézier suavizadas (`smooth=True`), límite de puntos (`max_pts`), bounds fijos (`y_min`/`y_max`) y `append/replace/update/clear`. `Sparkline` hereda la API.
+- **`LogViewer`**: área de log auto-scroll con colores por severidad (DEBUG/INFO/WARN/ERROR/CRITICAL), timestamps opcionales (`show_timestamp`), recorte (`max_lines`) y `append/clear`.
+- **`Clock`**: reloj digital en vivo (24h/12h, con/sin segundos) que se actualiza solo en el navegador y puede invocar `command` por tick.
+- **`DatePicker`**: campo con popup de calendario (navegación mes/mes), evento `change` con fecha ISO, `command` y propiedades `value`/`iso`. El popup usa `position:fixed` para superponerse a contenedores bajos.
+- **Atajos globales**: `app.bind("<Control-s>")` (sintaxis tkinter) dispara sin importar el foco; soporta decorador. Callback recibe `{key, code, ctrl, alt, shift}`.
+- **Drag & drop entre widgets**: `draggable=True` en la fuente y `widget.bind("<<Drop>>", cb)` como destino; el callback recibe `{source, x, y, target}`.
+- `examples/widget_demo.py`: filas nuevas con los widgets del batch 2026 (charts, sparklines, LogViewer, Clock, DatePicker, telemetry por event bus, atajos globales y drag&drop a una bahía).
+
+### Changed
+- **Bump 0.3.72 → 0.3.80**; README con captura nueva (`examples/Cap.png`), 40 widgets y features del batch documentadas. `docs/api.rst` añade los módulos `_charts`, `_logview`, `_datetime`.
 
 ### Fixed
-- CI (`e2e-linux`): el smoke de ventana real fallaba con `ModuleNotFoundError: No module named 'gi'` porque `actions/setup-python` crea un venv aislado que no ve los bindings `python3-gi`/webkit del sistema. El job ahora crea el venv con `--system-site-packages` y usa `python3` del sistema.
-- Lint: corregidos f-string sin placeholder y `if` anidado (`ruff SIM102`) introducidos al añadir el menú contextual.
+- CI (`e2e-linux`): el smoke de ventana real fallaba en GitHub con `ModuleNotFoundError: No module named 'gi'` porque `actions/setup-python` crea un venv aislado que no ve los bindings del sistema. **El test de ventana real y el job `e2e-linux` se eliminaron definitivamente** (nunca se estabilizó en CI); los tests headless siguen corriendo en todos los runners.
+- `DatePicker`: el popup quedaba oculto si el card padre tenía `overflow:hidden`/poca altura — ahora se reposiciona con `position:fixed`.
+- `Application.bind` exigía callback obligatorio; ahora soporta `@app.bind(...)` como decorador.
+- Lint: corregidos f-string sin placeholder y `if` anidado (`ruff SIM102`) del menú contextual.
+- Charts: polylines → paths Bézier suavizados por defecto (opción `smooth=False` para líneas rectas).
 
 ## [0.3.72] — 2026-08-08
 

@@ -18,8 +18,12 @@ No browser, no HTTP server — just a Python process and a lightweight WebView.
 
 ## Features
 
-- **38 widgets**: Button, Entry, ComboBox, Slider, ProgressBar, Canvas, TreeView, DataGrid, Knob, Gauge, Notebook, MenuBar, and more.
+- **40 widgets**: Button, Entry, ComboBox, Slider, ProgressBar, Canvas, TreeView, DataGrid, Knob, Gauge, Notebook, MenuBar, TimeSeriesGraph, Sparkline, LogViewer, Clock, DatePicker, and more.
 - **Context menus**: right-click menus per widget via `set_menu()` / `popup_menu()` and `bind("contextmenu", cb)`, with submenus, separators, and shortcuts.
+- **Live data widgets**: `TimeSeriesGraph`/`Sparkline` (smooth SVG curves, multi-series), colour-coded `LogViewer` with autoscroll, ticking `Clock`, and a `DatePicker` calendar popup.
+- **Event bus**: app-wide pub/sub via `app.on(event, cb)` / `app.emit(event, *args)`, with built-in `theme-changed` and `closing` events.
+- **Global shortcuts**: `app.bind("<Control-s>")` fires regardless of widget focus.
+- **Drag & drop**: `draggable=True` sources and `bind("<<Drop>>", cb)` targets move data between widgets.
 - **Layout engines**: `pack`, `grid` (with sticky + weights), `place`.
 - **Theming**: 13 built-in themes (ifaz, desert, infinity, cyberdusk, night, warm, cold, light, dracula, nord, gruvbox, monokai, catppuccin), CSS variable system.
 - **Cross-platform**: Linux, Windows, macOS (same codebase).
@@ -37,7 +41,7 @@ No browser, no HTTP server — just a Python process and a lightweight WebView.
 pip install iskg
 
 # from GitHub Releases
-pip install https://github.com/Iskander-mlander/ISKG/releases/download/v0.3.72/iskg-0.3.72-py3-none-any.whl
+pip install https://github.com/Iskander-mlander/ISKG/releases/download/v0.3.80/iskg-0.3.80-py3-none-any.whl
 ```
 
 ```python
@@ -97,7 +101,7 @@ app.add(root)
 app.run()
 ```
 
-![ISKG Dashboard](examples/captura.png)
+![ISKG Dashboard](examples/Cap.png)
 
 ## Documentation
 

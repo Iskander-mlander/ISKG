@@ -7,7 +7,7 @@ Pasos obligatorios cada vez que se hacen cambios en el proyecto.
 Siempre antes de commitear:
 
 ```bash
-python -m pytest tests/ -v           # 612+ tests deben pasar
+python -m pytest tests/ -v           # 626+ tests deben pasar
 python -m ruff check iskg/ tests/    # lint limpio
 python -m ruff format iskg/ tests/   # formatear
 ```

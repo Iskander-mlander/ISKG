@@ -73,6 +73,30 @@ Widget Menus
    :undoc-members:
    :show-inheritance:
 
+Widget Charts
+-------------
+
+.. automodule:: iskg.widgets._charts
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Widget Log
+----------
+
+.. automodule:: iskg.widgets._logview
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Widget Datetime
+---------------
+
+.. automodule:: iskg.widgets._datetime
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Widget Dialogs
 --------------
 

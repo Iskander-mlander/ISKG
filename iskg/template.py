@@ -239,6 +239,86 @@ BRIDGE_JS = """
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') iskg_close_contextmenu();
     });
+
+    // Drag & drop between widgets (HTML5 DnD).
+    window._iskg_dnd = { sources: {}, targets: {} };
+    window.iskg_register_dnd = function(id, role) {
+        if (role === 'source' || role === 'both') window._iskg_dnd.sources[id] = true;
+        if (role === 'target' || role === 'both') window._iskg_dnd.targets[id] = true;
+    };
+    document.addEventListener('dragstart', function(e) {
+        var el = e.target && e.target.closest ? e.target.closest('[draggable="true"]') : null;
+        if (!el || !el.id) return;
+        window._iskg_drag_widget = el.id;
+        try { e.dataTransfer.setData('text/plain', el.id); } catch(err) {}
+        e.dataTransfer.effectAllowed = 'move';
+    });
+    document.addEventListener('dragend', function() { window._iskg_drag_widget = null; });
+    document.addEventListener('dragover', function(e) {
+        var el = e.target && e.target.closest ? e.target.closest('.iskg-drop-target') : null;
+        if (!el || !el.id) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+    });
+    document.addEventListener('drop', function(e) {
+        var el = e.target && e.target.closest ? e.target.closest('.iskg-drop-target') : null;
+        if (!el || !el.id) return;
+        e.preventDefault();
+        var src = window._iskg_drag_widget || (e.dataTransfer.getData ? e.dataTransfer.getData('text/plain') : '');
+        var r = el.getBoundingClientRect();
+        var data = JSON.stringify({
+            source: src,
+            x: Math.round(e.clientX - r.left),
+            y: Math.round(e.clientY - r.top),
+            target: el.id,
+        });
+        iskg_bridge_event(el.id, 'drop', data);
+    });
+
+    // Global (window-wide) key bindings, e.g. <Control-s>. Listens on
+    // document so they fire regardless of which widget has focus.
+    window._iskg_global_keys = [];
+    window.iskg_bind_global_key = function(evt, keyFilter, mods) {
+        var entry = { t: evt, k: keyFilter, m: mods };
+        window._iskg_global_keys.push(entry);
+        if (!window._iskg_global_keys_bound) {
+            window._iskg_global_keys_bound = true;
+            document.addEventListener('keydown', function(e) {
+                if (window._iskg_global_keys_bound) { /* keep */ }
+                for (var i = 0; i < window._iskg_global_keys.length; i++) {
+                    var ent = window._iskg_global_keys[i];
+                    if (ent.t !== 'keypress') continue;
+                    if (ent.k && e.key !== ent.k && e.code !== ent.k &&
+                        e.key.toLowerCase() !== String(ent.k).toLowerCase()) continue;
+                    if (ent.m) {
+                        if (ent.m.ctrl && !e.ctrlKey) continue;
+                        if (ent.m.alt && !e.altKey) continue;
+                        if (ent.m.shift && !e.shiftKey) continue;
+                    }
+                    var data = JSON.stringify({key:e.key,code:e.code,ctrl:e.ctrlKey,alt:e.altKey,shift:e.shiftKey});
+                    iskg_bridge_event('__iskg_global__', 'key', data);
+                    return;
+                }
+            });
+            document.addEventListener('keyup', function(e) {
+                for (var i = 0; i < window._iskg_global_keys.length; i++) {
+                    var ent = window._iskg_global_keys[i];
+                    if (ent.t !== 'keyrelease') continue;
+                    if (ent.k && e.key !== ent.k && e.code !== ent.k &&
+                        e.key.toLowerCase() !== String(ent.k).toLowerCase()) continue;
+                    if (ent.m) {
+                        if (ent.m.ctrl && !e.ctrlKey) continue;
+                        if (ent.m.alt && !e.altKey) continue;
+                        if (ent.m.shift && !e.shiftKey) continue;
+                    }
+                    var data = JSON.stringify({key:e.key,code:e.code,ctrl:e.ctrlKey,alt:e.altKey,shift:e.shiftKey});
+                    iskg_bridge_event('__iskg_global__', 'global', data);
+                    return;
+                }
+            });
+        }
+        return true;
+    };
 })();
 """
 
@@ -268,6 +348,7 @@ def build_html(
             all_js_parts.append(w._render_tooltip_js())
             all_js_parts.append(w._render_key_bindings_js())
             all_js_parts.append(w._render_contextmenu_js())
+            all_js_parts.append(w._render_dnd_js())
     all_js = "\n".join(p for p in all_js_parts if p)
     if extra_js:
         all_js += "\n" + extra_js

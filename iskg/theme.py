@@ -445,6 +445,73 @@ html, body {
 }
 .iskg-text:disabled { opacity:0.35; }
 
+/* ===== LOG VIEWER ===== */
+.iskg-logviewer {
+  display:flex; flex-direction:column;
+  background:var(--bg-panel-alt);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  overflow:hidden;
+  font-family:var(--font-mono); font-size:11px;
+}
+.iskg-log-content {
+  flex:1; overflow-y:auto; padding:4px 8px;
+  line-height:1.55;
+}
+.iskg-log-line { white-space:pre-wrap; word-break:break-word; color:var(--text); }
+.iskg-log-badge { font-weight:600; margin-right:6px; }
+.iskg-log-ts { color:var(--text-dim); margin-right:8px; }
+
+/* ===== CLOCK ===== */
+.iskg-clock {
+  font-family:var(--font-mono);
+  font-size:18px; color:var(--cyan);
+  letter-spacing:1px; white-space:nowrap;
+}
+
+/* ===== DATE PICKER ===== */
+.iskg-datepicker {
+  position:relative; display:inline-block;
+  font-family:var(--font-mono); font-size:11px;
+}
+.iskg-datepicker-field {
+  display:block; padding:4px 8px;
+  background:var(--bg-panel-alt);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  color:var(--cyan); cursor:pointer;
+  user-select:none;
+}
+.iskg-datepicker-field:hover { border-color:var(--border-light); }
+.iskg-datepicker-popup {
+  position:absolute; top:100%; left:0; z-index:2000; margin-top:4px;
+  background:var(--bg-panel);
+  border:1px solid var(--border);
+  border-radius:4px;
+  box-shadow:0 4px 16px rgba(0,0,0,0.6);
+  padding:6px;
+}
+.iskg-dp-head { display:flex; align-items:center; gap:4px; margin-bottom:6px; }
+.iskg-dp-title { flex:1; text-align:center; color:var(--text); }
+.iskg-dp-nav {
+  background:var(--bg-panel-alt); border:1px solid var(--border);
+  color:var(--cyan); border-radius:2px; cursor:pointer;
+  padding:0 6px; line-height:16px; font-size:10px;
+}
+.iskg-dp-nav:hover { border-color:var(--cyan); }
+.iskg-dp-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
+.iskg-dp-dow {
+  color:var(--text-dim); font-size:9px; text-align:center; padding:2px 0;
+}
+.iskg-dp-day {
+  width:24px; height:20px; display:flex; align-items:center; justify-content:center;
+  cursor:pointer; border-radius:2px; color:var(--text);
+  font-size:10px;
+}
+.iskg-dp-day:hover { background:var(--cyan-dim); color:var(--cyan); }
+.iskg-dp-day.selected, .iskg-dp-day.iskg-dp-selected { background:var(--cyan); color:#0c111a; font-weight:700; }
+.iskg-dp-day.empty { cursor:default; }
+
 /* ===== SPINBOX ===== */
 .iskg-spinbox-wrap {
   display:inline-flex; align-items:stretch;

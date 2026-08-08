@@ -134,6 +134,7 @@ class Widget:
         self._last_style_css: str = ""
         self._context_menu: Any = None
         self._context_show: bool = False
+        self._dnd_target: bool = False
 
         for k, v in kwargs.items():
             key = k.replace("_", "-")
@@ -720,6 +721,24 @@ el.onmouseleave=function(){{clearTimeout(timer);tip.style.display="none";}};
             return f'iskg_bind_contextmenu("{self._id}");'
         return ""
 
+    def _render_dnd_js(self) -> str:
+        """Return JS marking this widget as a drag/drop target, if bound."""
+        if self._drop_enabled():
+            return (
+                f'iskg_register_dnd("{self._id}","target");'
+                f'(function(){{var el=document.getElementById("{self._id}");'
+                f'if(el)el.classList.add("iskg-drop-target");}})();'
+            )
+        return ""
+
+    def _drop_enabled(self) -> bool:
+        return bool(
+            self._dnd_target
+            or self._bindings.get("<<Drop>>")
+            or self._config_dict.get("drop")
+            or "drop" in self._bindings
+        )
+
     def bind(self, event: str, callback: Callable) -> None:
         """Bind a callback to an event.
 
@@ -740,6 +759,9 @@ el.onmouseleave=function(){{clearTimeout(timer);tip.style.display="none";}};
             self._bindings[event] = callback
             if event == "contextmenu" and self._app and self._app._running:
                 self._eval_js(f'iskg_bind_contextmenu("{self._id}");')
+            if event == "<<Drop>>":
+                self._dnd_target = True
+                self._eval_js(f'iskg_register_dnd("{self._id}","target");')
 
     def unbind(self, event: str) -> None:
         """Remove a previously bound event callback."""
@@ -829,6 +851,12 @@ el.onmouseleave=function(){{clearTimeout(timer);tip.style.display="none";}};
         return False
 
     def _handle_bridge_event(self, event_name: str, event_data: Any) -> str | None:
+        if event_name == "drop" and "<<Drop>>" in self._bindings:
+            cb = self._bindings["<<Drop>>"]
+            result = cb(event_data)
+            if result == "break":
+                return "break"
+            return None
         if event_name == "contextcmd" and self._context_menu is not None:
             from .widgets._menus import resolve_context_command
 
@@ -963,6 +991,8 @@ el.onmouseleave=function(){{clearTimeout(timer);tip.style.display="none";}};
         attrs = ""
         if self._config_dict.get("disabled"):
             attrs += " disabled"
+        if self._config_dict.get("draggable"):
+            attrs += ' draggable="true"'
         if self._config_dict.get("takefocus", self._default_takefocus()):
             attrs += ' tabindex="0"'
         attrs += self._render_aria_attrs()

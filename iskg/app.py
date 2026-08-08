@@ -125,10 +125,13 @@ class Application:
         self._running = False
         self._close_fired = False
         self._on_close_callbacks: list[Callable] = []
+        self._event_handlers: dict[str, list[Callable]] = {}
         self._window: Any = None
         self._deferred_sync: list[str] = []
         self._sync_lock = threading.Lock()
         self._sync_batch_depth = 0
+        self._global_key_bindings: list[dict[str, Any]] = []
+        _HANDLERS["__iskg_global__"] = self._handle_global_event
 
     def add(self, widget: Widget) -> Widget:
         """Register a root-level widget with the application.
@@ -142,6 +145,7 @@ class Application:
                 w._app = self
                 if isinstance(w, Widget):
                     _HANDLERS[w._id] = w._handle_bridge_event
+            self.emit("widget-created", widget._id)
         return widget
 
     def remove(self, widget: Widget) -> None:
@@ -153,6 +157,142 @@ class Application:
     def on_close(self, callback: Callable) -> None:
         """Register a callback to call when the window is closed."""
         self._on_close_callbacks.append(callback)
+
+    def on(self, event: str, callback: Callable | None = None) -> Callable:
+        """Subscribe to a global application event.
+
+        Built-in events:
+
+        * ``"theme-changed"`` — fired with the new theme name after
+          :meth:`set_theme`.
+        * ``"closing"`` — fired with ``None`` when the window is about to
+          close (in addition to :meth:`on_close`).
+        * ``"widget-created"`` — fired with the widget id when a widget is
+          added to the tree (root widgets registered via :meth:`add`).
+
+        Arbitrary user events are also supported.
+
+        Args:
+            event: event name.
+            callback: callable invoked as ``callback(*args)`` where args are
+                whatever was passed to :meth:`emit`. May be omitted to use
+                as a decorator::
+
+                    @app.on("my-event")
+                    def handler(value):
+                        ...
+
+        Returns:
+            The registered callback (handy as a decorator).
+        """
+        if callback is None:
+
+            def deco(fn: Callable) -> Callable:
+                self._event_handlers.setdefault(event, []).append(fn)
+                return fn
+
+            return deco
+        self._event_handlers.setdefault(event, []).append(callback)
+        return callback
+
+    def off(self, event: str, callback: Callable | None = None) -> Application:
+        """Unsubscribe one (or all) handler(s) from an event.
+
+        Args:
+            event: event name.
+            callback: handler to remove; when ``None`` all handlers for the
+                event are removed.
+        """
+        if callback is None:
+            self._event_handlers.pop(event, None)
+        else:
+            handlers = self._event_handlers.get(event, [])
+            self._event_handlers[event] = [h for h in handlers if h is not callback]
+        return self
+
+    def emit(self, event: str, *args: Any) -> Application:
+        """Fire a global application event synchronously.
+
+        Args:
+            event: event name.
+            *args: payload forwarded to every subscribed handler.
+        """
+        for handler in list(self._event_handlers.get(event, [])):
+            with contextlib.suppress(Exception):
+                handler(*args)
+        return self
+
+    def bind(self, event: str, callback: Callable | None = None) -> Callable:
+        """Bind a window-wide (global) keyboard shortcut.
+
+        Unlike ``Widget.bind``, these shortcuts fire regardless of which
+        widget has focus. Uses the same tkinter-style syntax:
+        ``"<Control-s>"``, ``"<Alt-F4>"``, ``"<KeyRelease-a>"``, etc.
+
+        The callback receives a dict with ``key``, ``code``, ``ctrl``,
+        ``alt``, ``shift``. May be used as a decorator::
+
+            @app.bind("<Control-s>")
+            def on_save(data):
+                ...
+        """
+        if callback is None:
+
+            def deco(fn: Callable) -> Callable:
+                self._register_global_key(event, fn)
+                return fn
+
+            return deco
+        self._register_global_key(event, callback)
+        return callback
+
+    def _register_global_key(self, event: str, callback: Callable) -> None:
+        parsed = Widget._parse_key_event(event)
+        if parsed is None:
+            raise ValueError(
+                f"{event!r} is not a key event; global bindings accept key events only"
+            )
+        entry = dict(parsed)
+        entry["cb"] = callback
+        self._global_key_bindings.append(entry)
+        if self._running and self._window:
+            self._eval_js(self._render_one_global_key_js(parsed))
+
+    def _render_one_global_key_js(self, parsed: dict[str, Any]) -> str:
+        mods = {}
+        if parsed["ctrl"]:
+            mods["ctrl"] = True
+        if parsed["alt"]:
+            mods["alt"] = True
+        if parsed["shift"]:
+            mods["shift"] = True
+        mods_json = json.dumps(mods) if mods else "null"
+        key_json = json.dumps(parsed["key"]) if parsed["key"] else "null"
+        evt = json.dumps(parsed["event_type"])
+        return f"iskg_bind_global_key({evt},{key_json},{mods_json});"
+
+    def _render_global_keys_js(self) -> str:
+        return "".join(self._render_one_global_key_js(e) for e in self._global_key_bindings)
+
+    def _handle_global_event(self, event_name: str, event_data: Any) -> str | None:
+        for entry in list(self._global_key_bindings):
+            if entry["event_type"] not in ("keypress" if event_name == "key" else "keyrelease",):
+                continue
+            data = event_data or {}
+            if entry.get("ctrl") and not data.get("ctrl"):
+                continue
+            if entry.get("alt") and not data.get("alt"):
+                continue
+            if entry.get("shift") and not data.get("shift"):
+                continue
+            if entry.get("key") and entry["key"] not in (
+                data.get("key"),
+                data.get("code"),
+            ):
+                continue
+            entry["cb"](data)
+            return "break"
+        return None
 
     def title(self, text: str | None = None) -> str:
         """Get or set the window title."""
@@ -248,6 +388,7 @@ class Application:
             self._saved_stderr = None
 
     def _build_html(self, extra_js: str = "") -> str:
+        extra_js = self._render_global_keys_js() + extra_js
         html = build_html(
             self._root_widgets,
             IFAZ_CSS,
@@ -348,6 +489,7 @@ class Application:
         resolve_theme(name)
         self._theme_name = name
         self._eval_js(theme_js(name))
+        self.emit("theme-changed", name)
         return self
 
     def current_theme(self) -> str:
@@ -380,6 +522,7 @@ class Application:
         if self._close_fired:
             return
         self._close_fired = True
+        self.emit("closing")
         with contextlib.suppress(Exception):
             for cb in self._on_close_callbacks:
                 cb()

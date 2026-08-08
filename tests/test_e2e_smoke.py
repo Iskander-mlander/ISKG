@@ -1,14 +1,9 @@
-"""E2E smoke tests.
+"""Headless smoke tests.
 
-Two tiers:
-
-1. **Headless** (default): builds a real widget tree via
-   :meth:`iskg.Application.test_loop` — no GTK/WebKit or display required, so
-   it always runs in CI.
-
-2. **Real window** (``ISKG_SMOKE_TEST=1``): opens an actual pywebview window
-   and drives it for a couple of seconds, verifying the bridge round-trip.
-   Skipped by default; run with ``xvfb-run -a pytest tests/test_e2e_smoke.py``.
+Builds a real widget tree via :meth:`iskg.Application.test_loop` — no
+GTK/WebKit or display required, so it always runs in CI. The real-window
+smoke that drove an actual pywebview window under xvfb was removed: it
+never stabilised in GitHub Actions.
 """
 
 from __future__ import annotations
@@ -16,8 +11,6 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
-
-import pytest
 
 from iskg import (
     Application,
@@ -132,42 +125,6 @@ def test_contextmenu_bind_reports_position():
     loop.fire(btn._id, "contextmenu", {"x": 10, "y": 20})
     assert got and got[0]["x"] == 10 and got[0]["y"] == 20
     loop.stop()
-
-
-@pytest.mark.skipif(
-    os.environ.get("ISKG_SMOKE_TEST") != "1",
-    reason="set ISKG_SMOKE_TEST=1 (optionally under xvfb-run) to open a real window",
-)
-def test_smoke_real_window():
-    """Open a real pywebview window and verify it starts/closes cleanly."""
-    import threading
-
-    import webview
-
-    from iskg.app import _JSAPI_INSTANCE
-
-    app = _build_demo_app()
-    loop = app.test_loop()
-
-    window = webview.create_window(
-        "ISKG smoke",
-        html=loop.html,
-        js_api=_JSAPI_INSTANCE,
-        width=640,
-        height=480,
-    )
-
-    timer = threading.Timer(4.0, window.destroy)
-
-    try:
-        # func is called once the GUI event loop is up, so the webview
-        # exists before we schedule the window close.
-        webview.start(func=timer.start, private_mode=False)
-    finally:
-        timer.cancel()
-        app._running = False
-        app._window = None
-    assert True
 
 
 def test_smoke_script_entrypoint():

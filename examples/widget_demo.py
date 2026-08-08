@@ -2,6 +2,7 @@
 import os
 import sys
 import urllib.parse
+from datetime import date
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -116,7 +117,9 @@ btn_row = iskg.Frame(parent=frm_btns, direction="row", gap=6, height_mode="auto"
 col1 = iskg.Frame(parent=btn_row, height_mode="auto")
 iskg.Button(parent=col1, text="Primary", command=lambda: on_btn_click("Primary"))
 iskg.Button(parent=col1, text="Danger", variant="danger", command=lambda: on_btn_click("Danger"))
-iskg.Button(parent=col1, text="Caution", variant="caution", command=lambda: on_btn_click("Caution"))
+iskg.Button(
+    parent=col1, text="Caution", variant="caution", command=lambda: on_btn_click("Caution")
+)
 iskg.Button(parent=col1, text="Disabled", disabled=True)
 b_js = iskg.Button(parent=col1, text="Run JS", command=lambda: app.execute_js('alert("Hello!")'))
 tt(b_js, "Execute arbitrary JavaScript")
@@ -147,8 +150,12 @@ entry_row = iskg.Frame(parent=frm_btns, direction="row", gap=6, height_mode="aut
 iskg.Label(parent=entry_row, text="Name:")
 entry_name = iskg.Entry(parent=entry_row, text="", placeholder="Your name")
 tt(entry_name, "Text input field")
+
+
 def on_name_change(val):
     print(f"[ISGK] Name changed: {val}")
+
+
 entry_name.bind("change", lambda ev, d=entry_name: on_name_change(d.text))
 iskg.Label(parent=entry_row, text="Password:")
 iskg.Entry(parent=entry_row, text="", placeholder="********", password=True)
@@ -160,34 +167,61 @@ frm_sel_ctrl = iskg.Frame(parent=row1, text="Selection & Controls", height_mode=
 cb1 = iskg.CheckBox(parent=frm_sel_ctrl, text="Enable logging", checked=True)
 tt(cb1, "Toggle checkbox on/off")
 cb2 = iskg.CheckBox(parent=frm_sel_ctrl, text="Auto-sync")
+
+
 def on_check_change(val):
     print(f"[ISGK] Check changed: {val}")
+
+
 cb1.bind("change", lambda ev, d=cb1: on_check_change(d.checked))
 iskg.RadioButton(parent=frm_sel_ctrl, text="Option A", value="a")
 iskg.RadioButton(parent=frm_sel_ctrl, text="Option B", value="b")
 iskg.RadioButton(parent=frm_sel_ctrl, text="Option C", value="c")
-combo = iskg.ComboBox(parent=frm_sel_ctrl, values=["Alpha", "Bravo", "Charlie", "Delta"], current=0)
+combo = iskg.ComboBox(
+    parent=frm_sel_ctrl, values=["Alpha", "Bravo", "Charlie", "Delta"], current=0
+)
 tt(combo, "Select from dropdown")
+
+
 def on_combo_change(val):
     print(f"[ISGK] Combo selected index: {val}")
+
+
 combo.bind("change", lambda ev, d=combo: on_combo_change(d.current))
 slider = iskg.Slider(parent=frm_sel_ctrl, from_=0, to=100, value=65, width=140)
 tt(slider, "Drag or scroll to adjust")
+
+
 def on_slider_change(val):
     print(f"[ISGK] Slider value: {val}")
+
+
 slider.bind("change", lambda ev, d=slider: on_slider_change(d.value))
 sv = iskg.Slider(parent=frm_sel_ctrl, from_=0, to=100, value=42, orient="vertical", height=60)
 
 frm_prog_knob = iskg.Frame(parent=row1, text="Progress & Knobs", height_mode="auto")
 pg = iskg.ProgressBar(parent=frm_prog_knob, value=67, width=220, show_text=True)
 tt(pg, "Progress indicator")
-lb = iskg.ListBox(parent=frm_prog_knob, items=["Item Alpha", "Item Bravo", "Item Charlie", "Item Delta", "Item Echo"], width=220, height=90)
+lb = iskg.ListBox(
+    parent=frm_prog_knob,
+    items=["Item Alpha", "Item Bravo", "Item Charlie", "Item Delta", "Item Echo"],
+    width=220,
+    height=90,
+)
 tt(lb, "Click an item to select")
+
+
 def on_list_select(idx):
     print(f"[ISGK] List selected index: {idx}")
+
+
 lb.bind("change", lambda ev, d=lb: on_list_select(ev))
+
+
 def on_knob_change(val):
     print(f"[ISGK] Knob: {val}")
+
+
 knob1 = iskg.Knob(parent=frm_prog_knob, from_=0, to=100, value=65, size=55, color="cyan")
 tt(knob1, "Drag in circle to adjust value")
 knob1.bind("change", lambda ev, d=knob1: on_knob_change(d.value))
@@ -195,14 +229,24 @@ iskg.Knob(parent=frm_prog_knob, from_=0, to=10, value=3, size=50, color="green")
 iskg.Knob(parent=frm_prog_knob, from_=0, to=100, value=80, size=50, color="amber")
 
 frm_gauges = iskg.Frame(parent=row1, text="Radial Gauges", height_mode="auto")
-gauge_signal = iskg.RadialGauge(parent=frm_gauges, from_=0, to=100, value=72, size=75, label="SIGNAL", units="%")
+gauge_signal = iskg.RadialGauge(
+    parent=frm_gauges, from_=0, to=100, value=72, size=75, label="SIGNAL", units="%"
+)
 gauge_rpm = iskg.RadialGauge(parent=frm_gauges, from_=0, to=3500, value=2200, size=75, label="RPM")
-gauge_fuel = iskg.RadialGauge(parent=frm_gauges, from_=0, to=100, value=35, size=75, label="FUEL", units="%")
+gauge_fuel = iskg.RadialGauge(
+    parent=frm_gauges, from_=0, to=100, value=35, size=75, label="FUEL", units="%"
+)
 
 frm_leds = iskg.Frame(parent=row1, text="LEDs & Indicators", height_mode="auto")
-led_rpm = iskg.LEDDisplay(parent=frm_leds, value=42, digits=3, color="green", label="RPM", height=34)
-led_alarms = iskg.LEDDisplay(parent=frm_leds, value=1984, digits=4, color="red", label="ALARMS", height=30)
-led_volts = iskg.LEDDisplay(parent=frm_leds, value=314, digits=4, color="amber", label="VOLTS", height=28)
+led_rpm = iskg.LEDDisplay(
+    parent=frm_leds, value=42, digits=3, color="green", label="RPM", height=34
+)
+led_alarms = iskg.LEDDisplay(
+    parent=frm_leds, value=1984, digits=4, color="red", label="ALARMS", height=30
+)
+led_volts = iskg.LEDDisplay(
+    parent=frm_leds, value=314, digits=4, color="amber", label="VOLTS", height=28
+)
 il1 = iskg.IndicatorLED(parent=frm_leds, color="green", size=8, active=True, label="Online")
 tt(il1, "Online indicator")
 iskg.IndicatorLED(parent=frm_leds, color="red", size=8, active=False, label="Alarm")
@@ -211,8 +255,12 @@ iskg.IndicatorLED(parent=frm_leds, color="cyan", size=8, active=True, label="Lin
 iskg.IndicatorLED(parent=frm_leds, color="blue", size=6, active=False, label="Off")
 
 frm_tog_sc = iskg.Frame(parent=row1, text="Toggles & Scale", height_mode="auto")
+
+
 def on_toggle(val):
     print(f"[ISGK] Toggle: {val}")
+
+
 tog1 = iskg.ToggleSwitch(parent=frm_tog_sc, text="Master Arm", checked=True)
 tt(tog1, "Toggle switch on/off")
 tog1.bind("change", lambda ev, d=tog1: on_toggle(d.checked))
@@ -220,15 +268,21 @@ iskg.ToggleSwitch(parent=frm_tog_sc, text="NV Mode", checked=False)
 iskg.ToggleSwitch(parent=frm_tog_sc, text="Auto Track", checked=True)
 sc = iskg.Scale(parent=frm_tog_sc, from_=0, to=100, value=50, width=160)
 tt(sc, "Drag or scroll to adjust")
+
+
 def on_scale_change(val):
     print(f"[ISGK] Scale: {val}")
+
+
 sc.bind("change", lambda ev, d=sc: on_scale_change(d.value))
 
 frm_scroll_txt = iskg.Frame(parent=row1, text="Scrollbars & Text", height_mode="auto")
 sb_h = iskg.ScrollBar(parent=frm_scroll_txt, orient="vertical", value=30, height=70)
 tt(sb_h, "Scroll with mouse wheel")
 iskg.ScrollBar(parent=frm_scroll_txt, orient="horizontal", value=50, width=100)
-txt = iskg.Text(parent=frm_scroll_txt, text="[ISKG] System initialized.\n[ISKG] Ready.", width=260, height=70)
+txt = iskg.Text(
+    parent=frm_scroll_txt, text="[ISKG] System initialized.\n[ISKG] Ready.", width=260, height=70
+)
 tt(txt, "Multi-line text area")
 
 # ════════════════════════════════════════════
@@ -249,8 +303,12 @@ dg = iskg.DataGrid(
 )
 dg.pack(expand=True, fill="both", side="left")
 tt(dg, "Click column header to sort")
+
+
 def on_grid_select(row_idx):
     print(f"[ISGK] Grid selected row: {row_idx}")
+
+
 dg.bind("select", on_grid_select)
 
 cv = iskg.Canvas(parent=row2, height=110)
@@ -373,6 +431,127 @@ dt = iskg.DropTarget(
 )
 dt.pack(expand=True, fill="both", side="left")
 tt(dt, "Drag and drop files here")
+
+# ════════════════════════════════════════════
+# ROW 4 — 2026 batch: TimeSeriesGraph, Sparkline, LogViewer, telemetry bus
+# ════════════════════════════════════════════
+row4 = hrow(main)
+
+frm_charts = iskg.Frame(parent=row4, text="TimeSeriesGraph + Sparklines", height_mode="auto")
+graph = iskg.TimeSeriesGraph(
+    parent=frm_charts,
+    width=460,
+    height=120,
+    series={"cpu": "green", "mem": "cyan"},
+    max_pts=100,
+    y_min=0,
+    y_max=100,
+)
+tt(graph, "Streams live data; smooth Bézier curves by default")
+spark_row = iskg.Frame(parent=frm_charts, direction="row", gap=18, height_mode="auto")
+for sname, scol in [("PWR", "green"), ("SIG", "cyan"), ("NET", "amber")]:
+    sk = iskg.Sparkline(parent=spark_row, width=90, height=26)
+    sk._config_dict["series"] = {sname: scol}
+
+log_viewer = iskg.LogViewer(
+    parent=row4,
+    height=190,
+    max_lines=80,
+    show_timestamp=True,
+)
+tt(log_viewer, "Colour-coded, auto-scrolling log output")
+log_viewer.append("2026 batch loaded", "INFO")
+
+# app-wide telemetry through the event bus, emitted by button/shortcut
+_tick = {"n": 0}
+
+
+@app.on("telemetry")
+def _on_telemetry(cpu, mem):
+    graph.append("cpu", cpu)
+    graph.append("mem", mem)
+    log_viewer.append(f"cpu={cpu:.0f}% mem={mem:.0f}%", "DEBUG")
+
+
+def _emit_tick():
+    _tick["n"] = (_tick["n"] + 7) % 100
+    app.emit("telemetry", 30 + (_tick["n"] % 60), 90 - (_tick["n"] % 70))
+
+
+btn_emit = iskg.Button(
+    parent=frm_charts,
+    text="Emit telemetry",
+    variant="primary",
+    command=_emit_tick,
+)
+tt(btn_emit, "Fires app.emit('telemetry') into the event bus")
+
+
+# Global shortcut (fires anywhere, no focus needed)
+@app.bind("<Control-t>")
+def _shortcut_tick(_data):
+    log_viewer.append("Ctrl+T shortcut", "INFO")
+    _emit_tick()
+
+
+# ════════════════════════════════════════════
+# ROW 5 — Clock, DatePicker, drag&drop bay
+# ════════════════════════════════════════════
+row5 = hrow(main)
+
+frm_clock = iskg.Frame(parent=row5, text="Clock", height_mode="auto")
+frm_clock.config(padding=8)
+iskg.Clock(parent=frm_clock, seconds=True, military=True)
+iskg.Clock(parent=frm_clock, seconds=False, military=False)
+
+frm_date = iskg.Frame(parent=row5, text="DatePicker", height_mode="auto")
+frm_date.config(padding=8)
+
+
+def _on_date(d):
+    log_viewer.append(f"Date picked: {d}", "INFO")
+
+
+iskg.DatePicker(parent=frm_date, date=date.today(), command=_on_date)
+
+frm_drag = iskg.Frame(parent=row5, text="Drag sources", height_mode="auto")
+_sources = {}
+
+
+def _mk_drag(source, variant):
+    b = iskg.Button(parent=frm_drag, text=source, draggable=True, variant=variant)
+    _sources[b._id] = source
+    return b
+
+
+_mk_drag("Radar", "caution")
+_mk_drag("IR Cam", "primary")
+_mk_drag("Laser", "danger")
+
+bay = iskg.Frame(parent=row5, text="Bay — drop here", direction="row", height_mode="auto")
+bay._config_dict["min-height"] = "64px"
+bay._config_dict["flex"] = "1 1 auto"
+bay._config_dict["gap"] = 6
+
+
+def _on_bay_drop(data):
+    sid = data.get("source", "")
+    px, py = data.get("x", 0), data.get("y", 0)
+    label = _sources.get(sid, sid)
+    colour = {"Radar B": "amber", "IR Cam": "cyan", "Laser": "red"}.get(label, "cyan")
+    app.execute_js(
+        f'(function(){{var el=document.getElementById("{bay._id}");'
+        f'if(!el)return;var h=document.createElement("div");'
+        f'h.className="iskg_mni";h.style.border="1px solid {colour}";h.style.color="{colour}";'
+        f'h.style.padding="2px 8px";h.style.borderRadius="3px";h.style.display="inline-block";'
+        f'h.style.font="10px var(--font-mono)";'
+        f'h.textContent="{label} @{px},{py}";el.appendChild(h);}})();'
+    )
+    app.execute_js(f'var s=document.getElementById("{sid}");if(s)s.style.display="none";')
+    log_viewer.append(f"{label} loaded @({px},{py})", "INFO")
+
+
+bay.bind("<<Drop>>", _on_bay_drop)
 
 # ════════════════════════════════════════════
 # Footer
