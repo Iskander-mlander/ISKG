@@ -53,6 +53,12 @@ version = {attr = "iskg._version.VERSION"}
 [tool.setuptools.packages.find]
 include = ["iskg*"]
 
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.package-data]
+iskg = ["themes/*.css", "**/*.css"]
+
 [tool.ruff]
 line-length = 99
 target-version = "py310"

@@ -1,5 +1,6 @@
 """Tests for theme resolution, JS generation, CSS generation, and available themes list."""
 
+from iskg.theme import IFAZ_CSS
 from iskg.themes import (
     THEMES,
     available_themes,
@@ -7,6 +8,14 @@ from iskg.themes import (
     theme_css,
     theme_js,
 )
+
+
+class TestBaseCss:
+    def test_ifaz_css_loads_from_asset(self):
+        assert isinstance(IFAZ_CSS, str)
+        assert len(IFAZ_CSS) > 1000
+        assert ":root" in IFAZ_CSS
+        assert ".iskg-btn" in IFAZ_CSS
 
 
 class TestResolveTheme:
