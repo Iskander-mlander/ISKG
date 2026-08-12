@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.4.3] — 2026-08-12
+
+### Fixed
+- **`command` recibe el payload del evento cuando el callback lo acepta**: antes
+  `command` solo se invocaba sin argumentos en `click`/`change`, así que callbacks
+  tipo `command=lambda idx: ...` (p. ej. el índice de un `ListBox`) fallaban. Ahora
+  los callbacks de 1 argumento reciben el dato del evento; los de 0 argumentos
+  (`lambda: ...`) siguen sin recibir nada (compatibilidad hacia atrás).
+- **`DropTarget` enruta el evento `drop` a `command`**: `command=lambda files: ...`
+  ahora funciona (antes el parámetro se ignoraba en silencio).
+- **`docs/conf.py`**: `release` refleja la versión real del paquete.
+
+### Added
+- **CI (`ci.yml`)**: job `examples` que importa los módulos de `examples/` en cada
+  push/PR, detectando drift de API en los demos sin abrirlos manualmente.
+
 ## [0.4.2] — 2026-08-12
 
 ### Added
