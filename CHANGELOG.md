@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.4.2] — 2026-08-12
+
+### Added
+- **`examples/theming_demo.py`**: demo ejecutable del cambio de tema en caliente
+  (`Application.set_theme`) con selector de los 13 temas registrados y botón
+  cíclico.
+- **`examples/data_widgets_demo.py`**: demo de `ListBox`, `DataGrid` (ordenable),
+  `TreeView` (jerárquico) y `DropTarget`, con selección reactiva vía
+  `bind("change", …)` / `bind("<<Drop>>", …)`.
+- **CI (`ci.yml`)**: nuevo job `docs` que instala Sphinx + extensiones y corre
+  `sphinx-build -b html docs docs/_build/html`, dejando el build de documentación
+  como check de CI en push/PR (además del deploy a Pages en `docs.yml`).
+
 ## [0.4.1] — 2026-08-12
 
 ### Changed
