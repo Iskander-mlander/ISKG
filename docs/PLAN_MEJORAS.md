@@ -243,3 +243,134 @@ cuáles solo en la creación. Eso obliga a leer `_render_update_js` de cada widg
 **Dónde:** docstrings de `iskg/widgets/*` (complementa el punto 2).
 
 **Aceptación:** la tabla de reactividad existe y es correcta frente al código.
+
+---
+
+# Roadmap de mejoras continuas (post-0.4.0)
+
+> Anotado 2026-08-12 a partir del repaso posterior al release `v0.4.0`. Se
+> aborda **de una en una**, en el orden marcado. Estado general:
+
+- [ ] 1. Seguridad del release (CI corre tests + chequeo de versión)
+- [ ] 2. README/PyPI (versión de instalación, imágenes, nota Arch)
+- [ ] 3. Cobertura de reactividad (`_render_update_js` en más widgets)
+- [ ] 4. CI multiplataforma (macOS/Windows)
+- [ ] 5. Error amigable si falta el backend (GTK/WebKit)
+- [ ] 6. Catálogo de API / docs / ejemplos
+
+## 1. Seguridad del release (`release.yml`)
+
+**Problema real:** el workflow dispara en `push: tags: ["v*"]` y hace
+`python -m build` + `pypa/gh-action-pypi-publish` **sin ejecutar la suite ni
+validar la versión**. Un tag roto (tests en rojo o versión descuadrada) se
+publica igual en PyPI.
+
+**Objetivo:** que ningún release se publique si los tests fallan o la versión
+no cuadra con el tag.
+
+**Dónde:** `.github/workflows/release.yml`.
+
+**Cambio propuesto:**
+- Añadir un paso que corra `pytest` (o `uv run pytest`) **antes** de
+  `pypa/gh-action-pypi-publish`.
+- Añadir un check que lea `iskg/_version.py` y lo compare con
+  `github.ref_name` (sin la `v`); fallar si difiere.
+- Opcional: exigir éxito de `ci.yml` (vía `workflow_run` o `needs`).
+
+**Aceptación:** al taggear `vX.Y.Z`, si los tests fallan o `VERSION != X.Y.Z`,
+el job de publicación se detiene y no sube a PyPI.
+
+## 2. README/PyPI (`README.md`)
+
+**Problema real:** la línea de instalación muestra una versión vieja; en PyPI
+las imágenes no se ven porque apuntan a rutas locales relativas. En Arch,
+`pip install iskg` necesita `--break-system-packages` o un venv/pipx, y eso no
+está documentado.
+
+**Objetivo:** README idéntico y correcto en GitHub y PyPI, con instrucciones de
+instalación precisas por plataforma.
+
+**Dónde:** `README.md`.
+
+**Cambio propuesto:**
+- Actualizar la línea de instalación a la versión actual
+  (`pip install iskg==X.Y.Z`).
+- Usar URLs absolutas
+  (`https://raw.githubusercontent.com/Iskander-mlander/ISKG/main/...`) en las
+  imágenes, o moverlas a `docs/`.
+- Añadir sección "Instalación" por SO: Linux/Arch (`venv` / `pipx` /
+  `--break-system-packages`), macOS, Windows; y las deps del backend
+  (GTK3 + WebKit2GTK + PyGObject en Linux).
+
+**Aceptación:** el README renderiza igual en GitHub y PyPI; `pip install iskg`
+queda documentado para cada plataforma.
+
+## 3. Cobertura de reactividad (`iskg/widgets/*`)
+
+**Problema real:** solo `ComboBox.values` e `IndicatorLED`
+(`color`/`active`/`size`/`label`) actualizan en caliente. El resto de widgets
+requiere `rerender()` si la prop no tiene `_render_update_js`, obligando a
+recrear el widget o a conocer el detalle de implementación.
+
+**Objetivo:** las props clave de cada widget se reflejen con
+`config()`/`prop = ...` sin necesidad de `rerender()`.
+
+**Dónde:** `iskg/widgets/*.py` (por widget).
+
+**Cambio propuesto:** por cada widget, añadir `_render_update_js` para las
+props más usadas (p. ej. `text`, `value`, `color`, `enabled`, etc.) y
+documentar en la docstring qué es reactivo. Mantener `rerender()` como escape
+hatch y la nota de diseño ya existente.
+
+**Aceptación:** tras `widget.config(prop=...)` el DOM cambia sin `rerender()`
+para las props cubiertas; tests por widget afectado.
+
+## 4. CI multiplataforma (`ci.yml`)
+
+**Problema real:** la CI solo corre en `ubuntu-latest`; los fallos de backend
+de pywebview en macOS/Windows no se detectan antes de un release.
+
+**Objetivo:** matriz de SO en los jobs de test.
+
+**Dónde:** `.github/workflows/ci.yml`.
+
+**Cambio propuesto:** matriz `ubuntu` / `macos` / `windows` con el setup de
+pywebview por plataforma (Linux instala GTK/WebKit vía apt; macOS/Windows usan
+Cocoa/Edge). Los tests headless (`test_loop`) no requieren display, así que
+deben pasar en las tres.
+
+**Aceptación:** la suite corre en las tres plataformas en cada PR/push.
+
+## 5. Error amigable si falta el backend (`iskg/app.py`)
+
+**Problema real:** en Linux, si faltan `gtk3` / `webkit2gtk` / `python-gobject`,
+`app.run()` falla con un traceback críptico de pywebview.
+
+**Objetivo:** detectar la carencia y dar instrucciones claras de instalación.
+
+**Dónde:** `iskg/app.py` (`run`) o un `_check_backend()`.
+
+**Cambio propuesto:** antes de `webview.start`, comprobar el import de
+`gi`/WebKit y, si falla, lanzar una excepción con el comando por distro
+(Arch: `sudo pacman -S gtk3 webkit2gtk-4.1 python-gobject`;
+Debian/Ubuntu: `sudo apt install python3-gi gir1.2-webkit2-4.1`).
+
+**Aceptación:** sin el backend, `run()` falla con un mensaje accionable, no con
+un traceback interno de pywebview.
+
+## 6. Catálogo de API / docs / ejemplos (`docs/`, `examples/`)
+
+**Problema real:** el catálogo de widgets/props/reactividad no está completo
+en `docs/api.rst`; solo hay `examples/widget_demo.py` y
+`examples/async_task.py`.
+
+**Objetivo:** docs navegables y ejemplos ejecutables por widget.
+
+**Dónde:** `docs/`, `examples/`, docstrings.
+
+**Cambio propuesto:** completar `docs/api.rst` con todos los widgets y su
+reactividad; añadir ejemplos (`layout_demo.py`, `theming_demo.py`,
+`data_widgets_demo.py`, `reactivity_demo.py`); verificar que el build de
+Sphinx pase.
+
+**Aceptación:** un agente externo puede usar ISKG leyendo solo `docs/`.
