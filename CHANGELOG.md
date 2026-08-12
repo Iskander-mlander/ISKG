@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.4.5] — 2026-08-12
+
+### Changed
+- **`docs/conf.py` deriva `release` de `iskg._version.VERSION`** (antes se
+  mantenía a mano y se desincronizaba; ver 0.4.2/0.4.3/0.4.4).
+- **API `command`**: el callback recibe el payload del evento cuando acepta 1
+  argumento (`command=lambda idx: ...`, `command=lambda files: ...`) y se llama
+  sin args si no lo acepta (`command=lambda: ...`). El despacho ya no usa
+  `inspect.signature`; hace fallback try/except (mismo comportamiento, más
+  simple y sin inspección).
+- **`theme.py`**: el CSS base deja de ser un string de ~1000 líneas y pasa a
+  `iskg/themes/ifaz.css` (cargado con `importlib.resources`). Mismo render; el
+  CSS ahora es editable como tal.
+
+### Added
+- **Aviso de typos en kwargs de widgets**: `__init__`/`config()` emiten
+  `UserWarning` cuando una clave desconocida es muy parecida a una propiedad
+  conocida (p. ej. `textt` → `text`, `widht` → `width`). No avisa para CSS
+  arbitrario ni para custom properties (`--x`).
+- **CI (`ci.yml`)**: job `examples` importa los módulos de `examples/`.
+- **Tests (`tests/test_examples_render.py`)**: renderizan `build_app()` de cada
+  ejemplo y verifican que el HTML contiene los ids de todos los widgets.
+
 ## [0.4.4] — 2026-08-12
 
 ### Fixed

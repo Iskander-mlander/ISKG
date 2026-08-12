@@ -414,11 +414,11 @@ ejecutables y se construyen sin error.
 > continuas") quedó en `[x]`; estos puntos son mejoras adicionales detectadas
 > durante el trabajo de mantenimiento. Se abordan **de una en una**, en orden.
 
-- [ ] 1. `docs/conf.py` auto-versionado desde `iskg._version.VERSION`
-- [ ] 2. Aviso de kwargs desconocidos en `__init__` de widgets
-- [ ] 3. Limpieza de la API `command` (eliminar el hack de `inspect.signature`)
-- [ ] 4. Tests de `examples` que rendericen el HTML (no solo import)
-- [ ] 5. Refactor de `theme.py` (CSS como asset, fuera del string)
+- [x] 1. `docs/conf.py` auto-versionado desde `iskg._version.VERSION`
+- [x] 2. Aviso de kwargs desconocidos en `__init__` de widgets
+- [x] 3. Limpieza de la API `command` (eliminar el hack de `inspect.signature`)
+- [x] 4. Tests de `examples` que rendericen el HTML (no solo import)
+- [x] 5. Refactor de `theme.py` (CSS como asset, fuera del string)
 
 ## 1. `docs/conf.py` auto-versionado (`docs/conf.py`)
 
