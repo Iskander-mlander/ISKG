@@ -398,11 +398,112 @@ accionable; tests en `tests/test_roadmap_improvements.py`
   `examples/layout_demo.py` (sidebar fijo con `Frame(flex=False)` y
   `PanedWindow(sash_pos=...)`). Ambos verificados construyendo el HTML sin
   abrir ventana.
-- Pendiente menor (no bloquea): ejemplos adicionales `theming_demo.py` /
-  `data_widgets_demo.py` y correr el build de Sphinx en CI.
+- Ejemplos adicionales `theming_demo.py` / `data_widgets_demo.py` y build de
+  Sphinx en CI: **COMPLETADO en 0.4.2** (job `docs` en `ci.yml` + deploy a
+  Pages en `docs.yml`).
 
 **Dónde:** `docs/api.rst`, `examples/`, docstrings.
 
 **Aceptación:** un agente externo puede entender la reactividad y el layout
 leyendo `docs/api.rst` (+ `PLAN_MEJORAS.md` punto 3); los ejemplos son
 ejecutables y se construyen sin error.
+
+# Roadmap post-0.4.4 (mejoras fuera del plan original)
+
+> Anotado 2026-08-12 tras el release `v0.4.4`. El roadmap anterior ("mejoras
+> continuas") quedó en `[x]`; estos puntos son mejoras adicionales detectadas
+> durante el trabajo de mantenimiento. Se abordan **de una en una**, en orden.
+
+- [ ] 1. `docs/conf.py` auto-versionado desde `iskg._version.VERSION`
+- [ ] 2. Aviso de kwargs desconocidos en `__init__` de widgets
+- [ ] 3. Limpieza de la API `command` (eliminar el hack de `inspect.signature`)
+- [ ] 4. Tests de `examples` que rendericen el HTML (no solo import)
+- [ ] 5. Refactor de `theme.py` (CSS como asset, fuera del string)
+
+## 1. `docs/conf.py` auto-versionado (`docs/conf.py`)
+
+**Problema real:** `release` en `conf.py` se mantiene a mano y se desincroniza
+del paquete (estuvo en `0.3.81` mientras el paquete iba en `0.4.2`+; se tuvo
+que corregir a mano en 0.4.2/0.4.3/0.4.4). Es un drift evitable.
+
+**Objetivo:** que `conf.py` derive `release` de `iskg._version.VERSION`, de modo
+que el versionado sea una sola fuente de verdad.
+
+**Dónde:** `docs/conf.py`.
+
+**Cambio propuesto:** sustituir `release = "X.Y.Z"` por
+`from iskg._version import VERSION; release = VERSION` (el `sys.path` ya
+incluye el padre de `docs/` en `conf.py`).
+
+**Aceptación:** cambiar `iskg/_version.py` refleja la versión en el build de
+Sphinx sin tocar `conf.py`.
+
+## 2. Aviso de kwargs desconocidos en `__init__` de widgets (`iskg/base.py`)
+
+**Problema real:** `Widget.__init__` acepta `**kwargs` y silencia cualquier
+clave no reconocida, así que typos como `textt=`, `widht=` o `fg_color=` se
+tragaban sin rastro. Clase entera de bugs silenciosos.
+
+**Objetivo:** emitir un `warnings.warn` (o log) cuando `__init__` recibe una
+propiedad que el widget no conoce, para que el desarrollador lo detecte.
+
+**Dónde:** `iskg/base.py` (`Widget.__init__` / gestión de `_config_dict`).
+
+**Cambio propuesto:** tras procesar `kwargs`, comparar las claves restantes con
+el conjunto de props conocidas del widget y avisar por las no reconocidas
+(respetando los kwargs de layout válidos: `parent`, `width`, etc.).
+
+**Aceptación:** `Button(parent=..., textt="x")` produce un warning accionable;
+`Button(parent=..., text="x")` no.
+
+## 3. Limpieza de la API `command` (`iskg/base.py`)
+
+**Problema real:** en 0.4.3 se hizo que `command` recibiera el payload cuando el
+callback acepta 1 arg, inspeccionando la aridad con `inspect.signature` en
+`_invoke_command`. Funciona, pero es un olor: el comportamiento depende de la
+firma del callback.
+
+**Objetivo:** una regla predecible y sin `inspect`.
+
+**Dónde:** `iskg/base.py` (`_handle_bridge_event` / `_invoke_command`).
+
+**Cambio propuesto (a debatir):** pasar siempre `event_data` a `command` y
+adaptar los ~5 callbacks de 0 args existentes (demos + `set_theme`) a
+`lambda _=None:` / `def cb(_=None):`, o bien documentar explícitamente que
+`command` recibe el dato del evento. Toca API pública → requiere release note.
+
+**Aceptación:** `command` tiene una sola semántica documentada; sin
+`inspect.signature` en el hot path.
+
+## 4. Tests de `examples` que rendericen el HTML (`tests/`)
+
+**Problema real:** el job `examples` de CI solo importa los módulos; no detecta
+que `build_app()` falle al construir el DOM (p. ej. un widget mal configurado).
+
+**Objetivo:** un test que llame `build_app()` y verifique que el HTML resultante
+contiene los ids de los widgets, sin abrir ventana.
+
+**Dónde:** `tests/` (nuevo `test_examples_render.py` o ampliación del smoke).
+
+**Cambio propuesto:** para cada `examples/*.py` con `build_app`, llamarlo y
+hacer `assert app._build_html()` contiene los `_id` de los widgets añadidos.
+`build_app()` no debe requerir display (ya no llama `run()`).
+
+**Aceptación:** un cambio que rompa el render de un demo falla en CI.
+
+## 5. Refactor de `theme.py` (CSS como asset) (`iskg/theme.py`)
+
+**Problema real:** `IFAZ_CSS` es un string de ~1000 líneas embebido en Python;
+difícil de mantener y de editar como CSS.
+
+**Objetivo:** mover el CSS a un asset (p. ej. `iskg/themes/ifaz.css`) cargado
+en runtime, dejando `theme.py` solo con la lógica de temas.
+
+**Dónde:** `iskg/theme.py`, `iskg/template.py` (dónde se inyecta el CSS).
+
+**Cambio propuesto:** externalizar el CSS a un recurso empaquetado
+(`importlib.resources`) y leerlo en `build_html`; `themes.py` sigue aportando
+los overrides por tema.
+
+**Aceptación:** el render es idéntico al actual; el CSS vive en un `.css`
+editable, no en un string Python.
