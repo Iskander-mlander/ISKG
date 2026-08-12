@@ -281,8 +281,9 @@ class TestBackendCheck:
 
     def test_linux_missing_backend_raises(self):
         app = Application()
-        with patch("sys.platform", "linux"), patch.object(
-            Application, "_import_gi_backend", side_effect=ImportError("no gi")
+        with (
+            patch("sys.platform", "linux"),
+            patch.object(Application, "_import_gi_backend", side_effect=ImportError("no gi")),
         ):
             try:
                 app._check_backend()
