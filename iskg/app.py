@@ -109,6 +109,7 @@ class Application:
         extra_css: str = "",
         stderr_log: str | None = None,
         font_ids: list[str] | None = None,
+        icon: str | None = None,
     ) -> None:
         self._title = title
         self._width = width
@@ -120,6 +121,7 @@ class Application:
         self._extra_css = extra_css
         self._stderr_log = stderr_log
         self._font_ids = font_ids
+        self._icon = icon
 
         self._root_widgets: list[Widget] = []
         self._running = False
@@ -131,6 +133,7 @@ class Application:
         self._sync_lock = threading.Lock()
         self._sync_batch_depth = 0
         self._global_key_bindings: list[dict[str, Any]] = []
+        self._timers: dict[str, Any] = {}
         _HANDLERS["__iskg_global__"] = self._handle_global_event
 
     def add(self, widget: Widget) -> Widget:
@@ -367,7 +370,7 @@ class Application:
             os.close(log_fd)
 
         try:
-            webview.start(private_mode=False, debug=False)
+            webview.start(private_mode=False, debug=False, icon=self._icon)
         except Exception as exc:
             os.dup2(saved, 2)
             self._saved_stderr = None
@@ -386,6 +389,70 @@ class Application:
             os.dup2(self._saved_stderr, 2)
             os.close(self._saved_stderr)
             self._saved_stderr = None
+
+    # ── Timers & async ──────────────────────────────────────────────
+
+    def after(self, ms: int, callback: Callable) -> Any:
+        """Schedule ``callback`` to run after ``ms`` milliseconds.
+
+        Unlike :class:`threading.Timer`, the callback runs on a daemon timer
+        thread and may safely mutate widgets (updates are marshalled through
+        the app's sync queue). Returns a handle with ``.cancel()`` / ``.running``.
+
+        Args:
+            ms: delay in milliseconds.
+            callback: zero-argument callable.
+
+        Returns:
+            A timer handle (``Widget._Timer``-compatible) with ``.cancel()``.
+        """
+        import threading
+
+        timer_id = f"t{id(callback)}_{id(self)}"
+        t = threading.Timer(ms / 1000, callback)
+        t.daemon = True
+        timer = Widget._Timer(timer_id, t)
+        self._timers[timer_id] = timer
+        t.start()
+        return timer
+
+    def after_cancel(self, timer_id: str) -> None:
+        """Cancel a timer previously created with :meth:`after`."""
+        timers = self._timers
+        t = timers.pop(timer_id, None)
+        if t:
+            t.cancel()
+
+    def run_async(self, coro: Any, then: Callable | None = None) -> Any:
+        """Run a coroutine in a background thread with its own event loop.
+
+        Useful for long-running tasks (e.g. network/HTTP calls) without
+        blocking the UI. When the coroutine finishes, ``then(result)`` is
+        scheduled on the app via :meth:`after` (``result`` is the return value,
+        or the raised exception if it failed).
+
+        Args:
+            coro: a coroutine (e.g. ``some_async_fn()``).
+            then: optional callback ``then(result)`` invoked on completion.
+
+        Returns:
+            The background :class:`threading.Thread` (daemon).
+        """
+        import asyncio
+        import threading
+
+        def _worker() -> None:
+            loop = asyncio.new_event_loop()
+            try:
+                result = loop.run_until_complete(coro)
+            except Exception as exc:  # noqa: BLE001
+                result = exc
+            if then is not None:
+                self.after(0, lambda: then(result))
+
+        th = threading.Thread(target=_worker, daemon=True)
+        th.start()
+        return th
 
     def _build_html(self, extra_js: str = "") -> str:
         extra_js = self._render_global_keys_js() + extra_js

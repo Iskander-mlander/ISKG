@@ -412,6 +412,16 @@ class ComboBox(Widget):
         return vals[idx] if 0 <= idx < len(vals) else ""
 
     @property
+    def values(self) -> list[str]:
+        """The list of selectable options (read-only snapshot)."""
+        return list(self._config_dict.get("values", []))
+
+    @values.setter
+    def values(self, vals: list[str]) -> None:
+        self._config_dict["values"] = list(vals or [])
+        self._sync()
+
+    @property
     def editable(self) -> bool:
         return self._config_dict.get("editable", False)
 
@@ -541,10 +551,16 @@ document.addEventListener("click",function(e){{
         cur = self._config_dict.get("current", 0)
         vals = self._config_dict.get("values", [])
         cur_text = vals[cur] if vals and 0 <= cur < len(vals) else ""
+        # Rebuild the option list so changes to `values` are reflected live.
+        items_html = "".join(
+            f'<div class="iskg-cb-item" data-idx="{i}">{v}</div>' for i, v in enumerate(vals)
+        )
         return f'''var t=document.getElementById("{self._id}-text");
-if(t)t.innerText="{cur_text}";
+if(t)t.innerText={json.dumps(cur_text)};
 var inp=document.getElementById("{self._id}-input");
-if(inp)inp.value="{cur_text}";
+if(inp)inp.value={json.dumps(cur_text)};
+var drop=document.getElementById("{self._id}-drop");
+if(drop){{drop.innerHTML={json.dumps(items_html)};}}
 var items=document.querySelectorAll("#{self._id}-drop .iskg-cb-item");
 items.forEach(function(x,i){{x.classList.toggle("iskg-cb-sel",i=={cur});}});'''
 

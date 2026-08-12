@@ -51,10 +51,12 @@ class Frame(Widget):
         self,
         parent: Widget | None = None,
         text: str = "",
+        flex: bool = True,
         **kwargs: Any,
     ) -> None:
         super().__init__(parent, **kwargs)
         self._config_dict["text"] = text
+        self._config_dict["flex"] = flex
         self._pack_layout = None
         self._grid_layout = None
         self._grid_column_weights: dict[int, tuple[float, int]] = {}
@@ -162,7 +164,7 @@ class Frame(Widget):
         container = self._get_cfg("container", True)
         if container:
             h_mode = self._get_cfg("height-mode", "flex")
-            h_fill = "flex:1;" if h_mode == "flex" and "flex" not in self._config_dict else ""
+            h_fill = "flex:1;" if h_mode == "flex" and self._config_dict.get("flex", True) else ""
             style += f"display:flex;flex-direction:column;min-height:0;{h_fill}"
 
         return f'''<div id="{self._id}" class="iskg-frame" style="{style}">
@@ -290,9 +292,17 @@ class PanedWindow(Widget):
         if n == 0:
             return f'<div id="{self._id}" class="iskg-panedwindow" style="{style}{flex_dir}display:flex;flex:1;min-height:0;min-width:0;"></div>'
 
+        sash_pos = self._config_dict.get("_sash_pos", 0.5)
         children_html = ""
         for idx, pane in enumerate(panes):
-            children_html += f'<div style="display:flex;flex-direction:column;flex:1;min-{size_prop}:{minsize}px;">{pane._render()}</div>'
+            if n == 2 and sash_pos is not None:
+                if idx == 0:
+                    flex_val = max(0.05, min(0.95, float(sash_pos)))
+                else:
+                    flex_val = max(0.05, 1.0 - min(0.95, float(sash_pos)))
+            else:
+                flex_val = 1
+            children_html += f'<div style="display:flex;flex-direction:column;flex:{flex_val};min-{size_prop}:{minsize}px;">{pane._render()}</div>'
             if idx < n - 1:
                 children_html += f'<div id="{self._id}-sash-{idx}" class="iskg-sash" style="{sash_cursor}{sash_style}background:var(--border);flex-shrink:0;"></div>'
 

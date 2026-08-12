@@ -277,6 +277,24 @@ class IndicatorLED(Widget):
         self._config_dict["active"] = bool(v)
         self._sync()
 
+    @property
+    def color(self) -> str:
+        return self._config_dict.get("color", "green")
+
+    @color.setter
+    def color(self, value: str) -> None:
+        self._config_dict["color"] = str(value)
+        self._sync()
+
+    def _col_map(self) -> dict[str, str]:
+        return {
+            "green": "#4ade80",
+            "red": "#ef4444",
+            "amber": "#f59e0b",
+            "cyan": "#22d3ee",
+            "blue": "#60a5fa",
+        }
+
     def _render(self) -> str:
         size = self._config_dict.get("size", 8)
         color = self._config_dict.get("color", "green")
@@ -301,10 +319,19 @@ class IndicatorLED(Widget):
 
     def _render_update_js(self) -> str:
         active = self._config_dict.get("active", True)
+        color = self._config_dict.get("color", "green")
+        size = self._config_dict.get("size", 8)
+        label = self._config_dict.get("label", "")
         on_cls = "iskg-indicator-on" if active else "iskg-indicator-off"
+        col_map = self._col_map()
+        col = col_map.get(color, "#4ade80")
+        shadow = f"0 0 {size}px {col}" if active else "none"
+
         return f'''var el=document.getElementById("{self._id}");
 if(el){{var d=el.querySelector(".iskg-indicator-dot");
-d.className="iskg-indicator-dot {on_cls}";}}'''
+if(d){{d.className="iskg-indicator-dot {on_cls}";d.style.width="{size}px";d.style.height="{size}px";d.style.background="{col}";d.style.boxShadow="{shadow}";}}
+var lbl=el.querySelector(".iskg-indicator-label");
+if(lbl){{lbl.innerText={json.dumps(label)};}}}}'''
 
 
 class RadialGauge(Widget):

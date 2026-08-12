@@ -417,6 +417,8 @@ el.onmouseleave=function(){{clearTimeout(timer);tip.style.display="none";}};
                     v._widgets.append(self)
                 self._variable = v
                 self._config_dict["variable"] = v
+            elif key == "flex":
+                self._config_dict["flex"] = bool(v)
             elif key == "tooltip":
                 self._config_dict["tooltip"] = str(v) if v else ""
                 self._eval_js(self._render_tooltip_js())
@@ -651,6 +653,31 @@ el.onmouseleave=function(){{clearTimeout(timer);tip.style.display="none";}};
     def update(self) -> None:
         """Force a sync update of this widget's rendering."""
         self._sync()
+
+    def _build_rerender_js(self) -> str:
+        import json as _json
+
+        html = self._render()
+        js = f'iskg_replace_widget("{self._id}", {_json.dumps(html)});'
+        init_js = self._render_js()
+        if init_js:
+            js += init_js
+        return js
+
+    def rerender(self) -> None:
+        """Replace the widget's rendered DOM with a fresh :meth:`_render`.
+
+        Useful for properties that have no incremental update path
+        (e.g. a dropdown's option list). After swapping the element, the
+        widget's init JS is re-run so event bindings are restored.
+
+        No-op when the app is not running or the widget is destroyed.
+        """
+        if self._destroyed or not (self._app and self._app._running):
+            return
+        js = self._build_rerender_js()
+        self._last_sync_js = js
+        self._app._defer_sync(js)
 
     @staticmethod
     def _parse_key_event(spec: str) -> dict[str, Any] | None:

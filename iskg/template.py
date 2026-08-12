@@ -37,6 +37,17 @@ BRIDGE_JS = """
         if (el) el.innerHTML = html;
     };
 
+    // Replace a widget's outer element (by id) with fresh rendered HTML,
+    // preserving the same id so subsequent JS bindings re-attach correctly.
+    window.iskg_replace_widget = function(id, html) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        var tmp = document.createElement('div');
+        tmp.innerHTML = html;
+        var neu = tmp.firstElementChild;
+        if (neu) el.replaceWith(neu);
+    };
+
     window.iskg_set_value = function(id, value) {
         var el = document.getElementById(id);
         if (el) {

@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.4.0] — 2026-08-12
+
+### Added
+- **`Application.after(ms, cb)` / `after_cancel(id)`**: scheduler con timers daemon
+  para polling/animaciones sin hilos manuales; devuelve un handle cancelable.
+- **`Widget.rerender()`**: escape hatch que reemplaza el DOM y re-engancha el JS de
+  inicialización para props sin camino incremental (helper JS `iskg_replace_widget`).
+- **`ComboBox.values` actualizable en caliente**: el dropdown se reconstruye al cambiar
+  la lista en runtime (p. ej. tras consultar `/v1/models`).
+- **`IndicatorLED.color`/`active`/`size`/`label` reactivos en caliente** vía
+  `_render_update_js` (antes solo la clase on/off).
+- **Layout**: `Frame(flex=False, width=...)` para sidebars de ancho fijo, y
+  `PanedWindow` respeta `sash_pos` inicial (p. ej. `sash_pos=0.75`).
+- **`Application(icon=...)`**: guarda el icono y lo inyecta en `webview.start`,
+  ocultando el acoplamiento a pywebview.
+- **`Application.run_async(coro, then=...)`**: corre corutinas en un loop propio fuera
+  del hilo UI; `then(result)` recibe el valor o la excepción.
+- **Docs**: type hints + docstrings en los widgets tocados; semántica de reactividad
+  documentada en `docs/PLAN_MEJORAS.md` (qué props son reactivas vs requieren
+  `rerender()`).
+- **`examples/async_task.py`**: ejemplo ejecutable de tarea larga que refresca la UI
+  sin bloquear.
+- **`tests/test_roadmap_improvements.py`**: 23 tests cubren los puntos anteriores.
+
 ## [0.3.81] — 2026-08-08
 
 ### Fixed
