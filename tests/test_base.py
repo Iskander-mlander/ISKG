@@ -1,9 +1,11 @@
 """Tests for iskg.base — Widget base class and layout engines."""
 
+import warnings
 from unittest.mock import Mock, patch
 
 import pytest
 
+from iskg import Button, Slider
 from iskg.base import Widget, _new_id, _validate_css_value
 
 # ── Helper: concrete widget for testing ─────────────────────────────
@@ -975,6 +977,31 @@ class TestEventGenerate:
         w._config_dict["command"] = cmd
         w._handle_bridge_event("drop", "a.txt")
         cmd.assert_not_called()
+
+
+class TestUnknownConfigKey:
+    def test_typo_key_warns_with_suggestion(self):
+        with pytest.warns(UserWarning, match="did you mean 'text'?"):
+            Button(parent=None, textt="x")
+
+    def test_another_typo_warns(self):
+        with pytest.warns(UserWarning, match="did you mean 'width'?"):
+            Button(parent=None, widht=10)
+
+    def test_valid_key_no_warning(self):
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            Button(parent=None, text="x", bg="#fff", width=100)
+
+    def test_intentional_underscore_key_no_warning(self):
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            Slider(parent=None, from_=0, to=100)
+
+    def test_custom_css_var_no_warning(self):
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            Button(parent=None, **{"--my-var": "1"})
 
 
 # ── destroy ──────────────────────────────────────────────────────────

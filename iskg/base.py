@@ -4,6 +4,7 @@ style rendering, and widget tree management."""
 from __future__ import annotations
 
 import contextlib
+import difflib
 import inspect
 import json
 import warnings
@@ -102,6 +103,114 @@ def _validate_css_value(key: str, val: Any) -> None:
             )
 
 
+# Canonical config keys used across widgets, for typo detection in
+# ``__init__`` / ``config()`` (see ``_warn_unknown_config_key``).
+_WIDGET_CONFIG_KEYS = frozenset(
+    {
+        "active",
+        "anchor",
+        "autoscroll",
+        "checked",
+        "class",
+        "color",
+        "columns",
+        "command",
+        "current",
+        "cursor",
+        "date",
+        "delay",
+        "digits",
+        "disabled",
+        "editable",
+        "expand",
+        "fit",
+        "flex",
+        "font",
+        "font-family",
+        "font-size",
+        "font-weight",
+        "format",
+        "foreground",
+        "from",
+        "gridlines",
+        "group",
+        "height",
+        "hidden",
+        "icon",
+        "icon_size",
+        "id",
+        "items",
+        "justify",
+        "label",
+        "max",
+        "maxlength",
+        "max_lines",
+        "max_pts",
+        "menu",
+        "military",
+        "min",
+        "name",
+        "orient",
+        "padding",
+        "placeholder",
+        "propagate",
+        "readonly",
+        "rows",
+        "seconds",
+        "sections",
+        "selected",
+        "show_timestamp",
+        "show_toolbar",
+        "show_value",
+        "size",
+        "smooth",
+        "src",
+        "state",
+        "step",
+        "style",
+        "takefocus",
+        "text",
+        "textvariable",
+        "to",
+        "tooltip",
+        "units",
+        "value",
+        "values",
+        "variable",
+        "visible",
+        "width",
+        "wrap",
+        "wraplength",
+        "y_max",
+        "y_min",
+    }
+)
+
+_KNOWN_CONFIG_KEYS = frozenset({css_k for css_k, _, _ in _CONFIG_TO_CSS} | _WIDGET_CONFIG_KEYS)
+
+
+def _warn_unknown_config_key(k: str, key: str) -> None:
+    """Warn when a config key looks like a typo of a known widget property.
+
+    ISKG intentionally accepts any key (for flexible inline CSS), so we only
+    warn for *unknown* keys that are very close to a known property (e.g.
+    ``textt`` -> ``text``, ``widht`` -> ``width``), never for arbitrary CSS.
+    """
+    if key.startswith("--"):
+        return
+    candidate = key[:-1] if key.endswith("-") else key
+    if candidate in _KNOWN_CONFIG_KEYS:
+        return
+    if "-" in key:
+        return
+    matches = difflib.get_close_matches(candidate, _KNOWN_CONFIG_KEYS, n=1, cutoff=0.8)
+    if matches:
+        warnings.warn(
+            f"Unknown widget config key {k!r}; did you mean {matches[0]!r}?",
+            stacklevel=3,
+        )
+
+
 class Widget:
     """Base class for all ISKG widgets.
 
@@ -157,6 +266,7 @@ class Widget:
             elif key == "tooltip":
                 self._config_dict["tooltip"] = str(v) if v else ""
             else:
+                _warn_unknown_config_key(k, key)
                 _validate_config_type(k, v)
                 self._config_dict[key] = v
 
@@ -424,6 +534,7 @@ el.onmouseleave=function(){{clearTimeout(timer);tip.style.display="none";}};
                 self._config_dict["tooltip"] = str(v) if v else ""
                 self._eval_js(self._render_tooltip_js())
             else:
+                _warn_unknown_config_key(k, key)
                 if "-" in key and not key.startswith("--"):
                     known = {css_k for css_k, _, _ in _CONFIG_TO_CSS}
                     if key not in known:
