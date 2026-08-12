@@ -1008,3 +1008,37 @@ class TestBuildHtmlIntegration:
         app = Application(extra_css=".x{color:green}")
         html = app._build_html()
         assert ".x{color:green}" in html
+
+
+# ── backend import (GTK3 pinning) ──────────────────────────────────────
+
+
+class TestBackendImport:
+    def test_import_gi_backend_pins_gtk3(self):
+        """An unversioned ``from gi.repository import Gtk`` resolves to the
+        highest installed GTK (4.0 when both are present), which then clashes
+        with WebKit2GTK (GTK3-only). ``_import_gi_backend`` must pin GTK3 so the
+        backend loads reliably on systems that have GTK3 *and* GTK4 installed.
+
+        Regression test for the ACE-Step break: ``gui_app.py`` failed with
+        "Requiring namespace 'Gtk' version '3.0', but '4.0' is already loaded".
+        """
+        pytest.importorskip("gi")
+        import gi
+
+        try:
+            gi.require_version("Gtk", "3.0")
+            from gi.repository import Gtk  # noqa: F401
+        except (ImportError, ValueError):
+            pytest.skip("GTK 3.0 no disponible")
+
+        from iskg.app import Application
+
+        try:
+            Application._import_gi_backend()
+        except Exception as exc:  # WebKit2GTK missing, etc.
+            pytest.skip(f"backend GI no disponible: {exc}")
+
+        from gi.repository import Gtk as GtkLoaded
+
+        assert GtkLoaded._version == "3.0"

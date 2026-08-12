@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.4.4] — 2026-08-12
+
+### Fixed
+- **Backend GTK en Linux**: `_import_gi_backend` fijaba la versión de GTK
+  explícitamente (`Gtk 3.0` + `WebKit2 4.1`/4.0) antes de importar. Antes la
+  importación sin versión resolvía a la GTK más alta instalada (4.0 cuando
+  GTK3 y GTK4 coexisten), chocando con WebKit2GTK (solo GTK3) y rompiendo apps
+  que usan iskg en ese entorno (p. ej. `ACE-Step/gui_app.py`: *"Requiring
+  namespace 'Gtk' version '3.0', but '4.0' is already loaded"*).
+
 ## [0.4.3] — 2026-08-12
 
 ### Fixed

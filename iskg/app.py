@@ -344,6 +344,17 @@ class Application:
 
     @staticmethod
     def _import_gi_backend() -> None:
+        import gi
+
+        # Pin GTK3 explicitly. An unversioned ``from gi.repository import Gtk``
+        # resolves to the highest installed GTK (4.0 when both are present),
+        # which then conflicts with WebKit2GTK (GTK3-only) and raises
+        # "Requiring namespace 'Gtk' version '3.0', but '4.0' is already loaded".
+        gi.require_version("Gtk", "3.0")
+        try:
+            gi.require_version("WebKit2", "4.1")
+        except ValueError:
+            gi.require_version("WebKit2", "4.0")
         from gi.repository import Gtk, WebKit2  # noqa: F401
 
     @staticmethod
