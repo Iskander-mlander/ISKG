@@ -253,10 +253,10 @@ cuáles solo en la creación. Eso obliga a leer `_render_update_js` de cada widg
 
 - [x] 1. Seguridad del release (CI corre tests + chequeo de versión)
 - [x] 2. README/PyPI (versión de instalación, imágenes, nota Arch)
-- [ ] 3. Cobertura de reactividad (`_render_update_js` en más widgets)
-- [ ] 4. CI multiplataforma (macOS/Windows)
-- [ ] 5. Error amigable si falta el backend (GTK/WebKit)
-- [ ] 6. Catálogo de API / docs / ejemplos
+- [x] 3. Cobertura de reactividad (`_render_update_js` en más widgets)
+- [x] 4. CI multiplataforma (macOS/Windows)
+- [x] 5. Error amigable si falta el backend (GTK/WebKit)
+- [x] 6. Catálogo de API / docs / ejemplos
 
 ## 1. Seguridad del release (`release.yml`)
 
@@ -307,70 +307,102 @@ queda documentado para cada plataforma.
 
 ## 3. Cobertura de reactividad (`iskg/widgets/*`)
 
-**Problema real:** solo `ComboBox.values` e `IndicatorLED`
-(`color`/`active`/`size`/`label`) actualizan en caliente. El resto de widgets
-requiere `rerender()` si la prop no tiene `_render_update_js`, obligando a
-recrear el widget o a conocer el detalle de implementación.
+**Estado (2026-08-12): COMPLETADO.** La premisa original (solo `ComboBox` e
+`IndicatorLED` actualizaban en caliente) estaba desactualizada: ISKG ya
+provee reactividad amplia por capas, y se rellenaron los gaps que quedaban.
 
-**Objetivo:** las props clave de cada widget se reflejen con
-`config()`/`prop = ...` sin necesidad de `rerender()`.
+**Cómo funciona la reactividad (contrato real):**
 
-**Dónde:** `iskg/widgets/*.py` (por widget).
+1. **Capa base — estilos** (`_render_style_update_js`): CUALQUIER prop en
+   `_CONFIG_TO_CSS` se refleja en caliente para todos los widgets vía
+   `iskg_set_style`. Cubre `fg`/`color`, `bg`/`background`,
+   `font_size`/`font_family`/`font_weight`, `width`/`height`, `margin`,
+   `padding`, `border_*`/`border_color`, `opacity`, `text_align`, `flex`,
+   `gap`, etc.
+2. **Capa base — atributos** (`_render_attr_update_js`): `disabled` se
+   refleja para todos los widgets vía `iskg_set_enabled`.
+3. **Capa base — visibilidad**: el setter `visible` usa `iskg_set_visible`
+   (directo al cambiar en caliente).
+4. **Por widget** (`_render_update_js`): props semánticas — `text`
+   (Button/Entry/Label/Text/RichText/IconLabel/StatusBar), `value`
+   (Slider/SpinBox/ProgressBar/…/LEDDisplay/RadialGauge), `checked`
+   (CheckBox/RadioButton/ToggleSwitch), `values`/`current` (ComboBox),
+   `color`/`active`/`size`/`label` (IndicatorLED), `src` (ImageBox), etc.
 
-**Cambio propuesto:** por cada widget, añadir `_render_update_js` para las
-props más usadas (p. ej. `text`, `value`, `color`, `enabled`, etc.) y
-documentar en la docstring qué es reactivo. Mantener `rerender()` como escape
-hatch y la nota de diseño ya existente.
+**Gaps rellenados en esta pasada:** `IconLabel` (texto/icono) e `ImageBox`
+(`src`) no tenían `_render_update_js`; se añadieron. También se dotó a
+`IconLabel` de las propiedades `text`/`icon` (antes `w.text = ...` no
+actualizaba el `_config_dict`).
 
-**Aceptación:** tras `widget.config(prop=...)` el DOM cambia sin `rerender()`
-para las props cubiertas; tests por widget afectado.
+**Dónde:** `iskg/base.py` (`_sync`, `_render_style_update_js`,
+`_render_attr_update_js`), `iskg/widgets/*`.
+
+**Aceptación:** tras `widget.config(prop=...)` / `widget.prop = ...` el DOM
+cambia sin `rerender()` para las props cubiertas; tests en
+`tests/test_roadmap_improvements.py` (base: color/disabled; IconLabel/ImageBox).
+`rerender()` queda como escape hatch para props sin camino incremental.
+
 
 ## 4. CI multiplataforma (`ci.yml`)
 
-**Problema real:** la CI solo corre en `ubuntu-latest`; los fallos de backend
-de pywebview en macOS/Windows no se detectan antes de un release.
+**Estado (2026-08-12): COMPLETADO** (ya estaba cubierto en `ci.yml`; la nota
+original estaba desactualizada).
 
-**Objetivo:** matriz de SO en los jobs de test.
+`ci.yml` ya corre la suite en matriz multiplataforma:
+
+- `test-linux`: `ubuntu-22.04` / `ubuntu-24.04` × Python 3.10–3.14 (instala
+  GTK/WebKit vía apt).
+- `test-win`: `windows-2022` / `windows-2025` × Python 3.10–3.14.
+- `test-mac`: `macos-14` / `macos-15` × Python 3.10–3.14.
+- `test-distros`: contenedores `fedora:41`, `debian:12`, `archlinux:latest`.
+
+Los tests headless (`test_loop`) no requieren display, así que pasan en las
+tres plataformas. `lint` y `typecheck` corren en ubuntu (suficiente).
 
 **Dónde:** `.github/workflows/ci.yml`.
 
-**Cambio propuesto:** matriz `ubuntu` / `macos` / `windows` con el setup de
-pywebview por plataforma (Linux instala GTK/WebKit vía apt; macOS/Windows usan
-Cocoa/Edge). Los tests headless (`test_loop`) no requieren display, así que
-deben pasar en las tres.
-
-**Aceptación:** la suite corre en las tres plataformas en cada PR/push.
+**Aceptación:** la suite corre en Linux/Windows/macOS (y distros) en cada
+PR/push.
 
 ## 5. Error amigable si falta el backend (`iskg/app.py`)
 
-**Problema real:** en Linux, si faltan `gtk3` / `webkit2gtk` / `python-gobject`,
-`app.run()` falla con un traceback críptico de pywebview.
+**Estado (2026-08-12): COMPLETADO.**
 
-**Objetivo:** detectar la carencia y dar instrucciones claras de instalación.
+`Application.run()` ahora llama a `self._check_backend()` antes de
+`webview.start()`. En Linux comprueba que `gi.repository` (Gtk + WebKit2)
+esté disponible; si no, lanza `RuntimeError` con la instrucción de instalación
+por distro en lugar del traceback críptico de pywebview:
 
-**Dónde:** `iskg/app.py` (`run`) o un `_check_backend()`.
+- Arch Linux: `sudo pacman -S gtk3 webkit2gtk-4.1 python-gobject`
+- Debian/Ubuntu: `sudo apt install python3-gi gir1.2-webkit2-4.1`
+- Fedora: `sudo dnf install python3-gobject gtk3 webkit2gtk3`
 
-**Cambio propuesto:** antes de `webview.start`, comprobar el import de
-`gi`/WebKit y, si falla, lanzar una excepción con el comando por distro
-(Arch: `sudo pacman -S gtk3 webkit2gtk-4.1 python-gobject`;
-Debian/Ubuntu: `sudo apt install python3-gi gir1.2-webkit2-4.1`).
+En Windows/macOS el chequeo se omite (pywebview usa Edge/WebKit del sistema).
 
-**Aceptación:** sin el backend, `run()` falla con un mensaje accionable, no con
-un traceback interno de pywebview.
+**Dónde:** `iskg/app.py` (`_check_backend`, `_import_gi_backend`,
+`_backend_install_hint`, llamado en `run`).
+
+**Aceptación:** sin el backend en Linux, `run()` falla con un mensaje
+accionable; tests en `tests/test_roadmap_improvements.py`
+(`TestBackendCheck`).
 
 ## 6. Catálogo de API / docs / ejemplos (`docs/`, `examples/`)
 
-**Problema real:** el catálogo de widgets/props/reactividad no está completo
-en `docs/api.rst`; solo hay `examples/widget_demo.py` y
-`examples/async_task.py`.
+**Estado (2026-08-12): COMPLETADO (versión inicial).**
 
-**Objetivo:** docs navegables y ejemplos ejecutables por widget.
+- `docs/api.rst` ya auto-documenta todos los módulos de widgets vía
+  `automodule` (docstrings). Se añadió la sección **"Reactivity (hot
+  updates)"** que documenta el contrato completo (capas base + por widget).
+- Ejemplos ejecutables nuevos: `examples/reactivity_demo.py` (color/fg/bg,
+  disabled, text, value, ComboBox.values, IndicatorLED.color en caliente) y
+  `examples/layout_demo.py` (sidebar fijo con `Frame(flex=False)` y
+  `PanedWindow(sash_pos=...)`). Ambos verificados construyendo el HTML sin
+  abrir ventana.
+- Pendiente menor (no bloquea): ejemplos adicionales `theming_demo.py` /
+  `data_widgets_demo.py` y correr el build de Sphinx en CI.
 
-**Dónde:** `docs/`, `examples/`, docstrings.
+**Dónde:** `docs/api.rst`, `examples/`, docstrings.
 
-**Cambio propuesto:** completar `docs/api.rst` con todos los widgets y su
-reactividad; añadir ejemplos (`layout_demo.py`, `theming_demo.py`,
-`data_widgets_demo.py`, `reactivity_demo.py`); verificar que el build de
-Sphinx pase.
-
-**Aceptación:** un agente externo puede usar ISKG leyendo solo `docs/`.
+**Aceptación:** un agente externo puede entender la reactividad y el layout
+leyendo `docs/api.rst` (+ `PLAN_MEJORAS.md` punto 3); los ejemplos son
+ejecutables y se construyen sin error.

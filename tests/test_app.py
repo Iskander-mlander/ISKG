@@ -909,6 +909,7 @@ class TestRunStderr:
             with (
                 patch("webview.create_window"),
                 patch("webview.start", side_effect=RuntimeError("boom")),
+                patch.object(app, "_check_backend", lambda: None),
                 pytest.raises(SystemExit),
             ):
                 app.run()
@@ -933,6 +934,7 @@ class TestRunStderr:
             with (
                 patch("webview.create_window", return_value=MagicMock()),
                 patch("webview.start", side_effect=_noisy_start),
+                patch.object(app, "_check_backend", lambda: None),
                 pytest.raises(SystemExit),
             ):
                 app.run()

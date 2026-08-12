@@ -505,6 +505,24 @@ class IconLabel(Widget):
         self._config_dict["icon"] = icon
         self._config_dict["icon_size"] = icon_size
 
+    @property
+    def text(self) -> str:
+        return self._config_dict.get("text", "")
+
+    @text.setter
+    def text(self, value: str) -> None:
+        self._config_dict["text"] = str(value)
+        self._sync()
+
+    @property
+    def icon(self) -> str:
+        return self._config_dict.get("icon", "")
+
+    @icon.setter
+    def icon(self, value: str) -> None:
+        self._config_dict["icon"] = str(value)
+        self._sync()
+
     def _render(self) -> str:
         text = self._config_dict.get("text", "")
         icon = self._config_dict.get("icon", "")
@@ -518,8 +536,32 @@ class IconLabel(Widget):
                 icon_html = f'<span class="iskg-icon" style="font-size:{icon_size}px;width:{icon_size}px;height:{icon_size}px;">{icon}</span>'
         return f'''<span id="{self._id}" class="iskg-iconlabel" style="{style}">
   {icon_html}
-  <span>{text}</span>
+  <span class="iskg-iconlabel-text">{text}</span>
 </span>'''
+
+    def _render_update_js(self) -> str:
+        text = self._config_dict.get("text", "")
+        icon = self._config_dict.get("icon", "")
+        icon_size = self._get_cfg("icon-size", 14)
+        if icon:
+            if icon.startswith("<"):
+                icon_html = (
+                    f'<span class="iskg-icon" style="width:{icon_size}px;'
+                    f'height:{icon_size}px;">{icon}</span>'
+                )
+            else:
+                icon_html = (
+                    f'<span class="iskg-icon" style="font-size:{icon_size}px;'
+                    f'width:{icon_size}px;height:{icon_size}px;">{icon}</span>'
+                )
+        else:
+            icon_html = ""
+        return f'''var el=document.getElementById("{self._id}");
+if(el){{var t=el.querySelector(".iskg-iconlabel-text");
+if(t)t.innerText={json.dumps(text)};
+var ic=el.querySelector(".iskg-icon");
+if(ic)ic.outerHTML={json.dumps(icon_html)};
+else if({json.dumps(bool(icon))})el.insertAdjacentHTML("afterbegin",{json.dumps(icon_html)});}}'''
 
 
 class ImageBox(Widget):
@@ -556,6 +598,10 @@ class ImageBox(Widget):
 
     def _handle_bridge_event(self, event_name: str, event_data: Any) -> str | None:
         return super()._handle_bridge_event(event_name, event_data)
+
+    def _render_update_js(self) -> str:
+        src = self._config_dict.get("src", "")
+        return f'var el=document.getElementById("{self._id}");if(el){{var img=el.querySelector("img");if(img)img.src={json.dumps(src)};}}'
 
     def _render_js(self) -> str:
         cmd = self._config_dict.get("command")

@@ -16,7 +16,17 @@ import contextlib
 import time
 from unittest.mock import MagicMock, patch
 
-from iskg import Application, ComboBox, Frame, IndicatorLED, PanedWindow, Widget
+from iskg import (
+    Application,
+    Button,
+    ComboBox,
+    Frame,
+    IconLabel,
+    ImageBox,
+    IndicatorLED,
+    PanedWindow,
+    Widget,
+)
 
 
 # ── 1. Application.after / after_cancel ────────────────────────────
@@ -66,6 +76,7 @@ class TestAppIcon:
         with (
             patch("webview.create_window", return_value=MagicMock()),
             patch("webview.start") as st,
+            patch.object(app, "_check_backend", lambda: None),
         ):
             with contextlib.suppress(SystemExit):
                 app.run()
@@ -221,3 +232,63 @@ class TestFrameFlex:
         f = Frame(direction="column", width=240)
         f.config(flex=False)
         assert "flex:1" not in f._render()
+
+
+# ── 10. IconLabel / ImageBox live update ───────────────────────────
+class TestDisplayReactivity:
+    def test_iconlabel_text_updates(self):
+        app = Application()
+        w = IconLabel(text="hi", icon="\u2605")
+        app.add(w)
+        loop = app.test_loop()
+        w.text = "bye"
+        joined = "".join(loop.js_calls)
+        assert "iskg-iconlabel-text" in joined
+        assert "bye" in joined
+        loop.stop()
+
+    def test_imagebox_src_updates(self):
+        app = Application()
+        w = ImageBox(src="a.png")
+        app.add(w)
+        loop = app.test_loop()
+        w.config(src="b.png")
+        joined = "".join(loop.js_calls)
+        assert 'img.src="b.png"' in joined
+        loop.stop()
+
+    def test_base_reactivity_color_and_disabled(self):
+        # Cobertura amplia vía capa base: color/fg y disabled son reactivos
+        # para CUALQUIER widget sin código por-widget.
+        app = Application()
+        b = Button(text="x")
+        app.add(b)
+        loop = app.test_loop()
+        b.config(fg="red")
+        b.config(disabled=True)
+        joined = "".join(loop.js_calls)
+        assert "color:red" in joined
+        assert "iskg_set_enabled" in joined
+        loop.stop()
+
+
+# ── 11. Backend check (error amigable si falta GTK/WebKit) ─────────
+class TestBackendCheck:
+    def test_non_linux_skips(self):
+        app = Application()
+        with patch("sys.platform", "win32"):
+            assert app._check_backend() is None
+
+    def test_linux_missing_backend_raises(self):
+        app = Application()
+        with patch("sys.platform", "linux"), patch.object(
+            Application, "_import_gi_backend", side_effect=ImportError("no gi")
+        ):
+            try:
+                app._check_backend()
+            except RuntimeError as exc:
+                msg = str(exc)
+                assert "Arch Linux" in msg
+                assert "webkit2gtk" in msg.lower()
+            else:
+                raise AssertionError("expected RuntimeError for missing backend")

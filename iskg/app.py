@@ -326,6 +326,36 @@ class Application:
 
     _saved_stderr: int | None = None
 
+    def _check_backend(self) -> None:
+        """Ensure the native webview backend is available before opening a window.
+
+        On Linux, pywebview needs GTK3 + WebKit2GTK. If they are missing the
+        later ``webview.start()`` fails with a cryptic traceback; this surfaces
+        a clear, distro-specific install hint instead.
+        """
+        import sys
+
+        if sys.platform != "linux":
+            return
+        try:
+            self._import_gi_backend()
+        except Exception as exc:  # gi missing or typelib not installed
+            raise RuntimeError(self._backend_install_hint()) from exc
+
+    @staticmethod
+    def _import_gi_backend() -> None:
+        from gi.repository import Gtk, WebKit2  # noqa: F401
+
+    @staticmethod
+    def _backend_install_hint() -> str:
+        return (
+            "ISKG no pudo cargar el backend de escritorio (GTK3 + WebKit2GTK).\n"
+            "Instálalo según tu distribución y vuelve a ejecutar la app:\n"
+            "  Arch Linux   : sudo pacman -S gtk3 webkit2gtk-4.1 python-gobject\n"
+            "  Debian/Ubuntu: sudo apt install python3-gi gir1.2-webkit2-4.1\n"
+            "  Fedora       : sudo dnf install python3-gobject gtk3 webkit2gtk3\n"
+        )
+
     def run(self, extra_js: str = "") -> None:
         """Open the window and start the application main loop.
 
@@ -348,6 +378,8 @@ class Application:
             os.environ.setdefault("WEBKIT_DISABLE_COMPOSITING_MODE", "1")
 
         import webview
+
+        self._check_backend()
 
         self._running = True
         html = self._build_html(extra_js)

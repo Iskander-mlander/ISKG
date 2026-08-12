@@ -33,7 +33,7 @@ def main() -> None:
     side = Frame(app, direction="column", gap=6, text="Canciones", flex=False, width=240)
 
     status = Label(main_col, text="Pulsa 'Generar'...")
-    btn = Button(
+    Button(
         main_col,
         text="Generar",
         command=lambda: app.run_async(
