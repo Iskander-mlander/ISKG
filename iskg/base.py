@@ -4,6 +4,7 @@ style rendering, and widget tree management."""
 from __future__ import annotations
 
 import contextlib
+import inspect
 import json
 import warnings
 from collections.abc import Callable
@@ -908,9 +909,33 @@ el.onmouseleave=function(){{clearTimeout(timer);tip.style.display="none";}};
             if result == "break":
                 return "break"
         cmd = self._config_dict.get("command")
-        if cmd and event_name in ("click", "change"):
-            cmd()
+        if cmd and event_name in ("click", "change", "drop"):
+            self._invoke_command(cmd, event_data)
         return None
+
+    def _invoke_command(self, cmd: Callable, event_data: Any) -> None:
+        """Invoke a user ``command`` callback with the right arity.
+
+        Callbacks that take no arguments (e.g. ``lambda: ...``) are called with
+        no args for backward compatibility. Callbacks that accept one argument
+        receive the event payload (e.g. the selected index for a ``ListBox``
+        ``change`` or the file list for a ``DropTarget`` ``drop``).
+        """
+        try:
+            params = list(inspect.signature(cmd).parameters.values())
+        except (ValueError, TypeError):
+            params = []
+        positional = [
+            p
+            for p in params
+            if p.kind
+            in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
+        ]
+        kinds = [p.kind for p in params]
+        if inspect.Parameter.VAR_POSITIONAL in kinds or len(positional) >= 1:
+            cmd(event_data)
+        else:
+            cmd()
 
     def destroy(self) -> None:
         """Destroy this widget and all its children."""

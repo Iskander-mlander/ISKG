@@ -936,6 +936,46 @@ class TestEventGenerate:
         w._handle_bridge_event("click", None)
         cmd.assert_called_once()
 
+    def test_command_no_arg_called_without_payload(self):
+        w = _ConcreteWidget()
+        captured: list[bool] = []
+
+        def no_arg() -> None:
+            captured.append(True)
+
+        w._config_dict["command"] = no_arg
+        w._handle_bridge_event("change", "some-data")
+        assert captured == [True]
+
+    def test_command_one_arg_receives_payload(self):
+        w = _ConcreteWidget()
+        received: list = []
+        w._config_dict["command"] = lambda data: received.append(data)
+        w._handle_bridge_event("change", 3)
+        assert received == [3]
+
+    def test_command_varargs_receives_payload(self):
+        w = _ConcreteWidget()
+        received: list = []
+        w._config_dict["command"] = lambda *args: received.append(args)
+        w._handle_bridge_event("change", "x")
+        assert received == [("x",)]
+
+    def test_command_on_drop_without_binding(self):
+        w = _ConcreteWidget()
+        received: list = []
+        w._config_dict["command"] = lambda files: received.append(files)
+        w._handle_bridge_event("drop", "a.txt,b.txt")
+        assert received == ["a.txt,b.txt"]
+
+    def test_command_not_called_on_drop_with_dnd_binding(self):
+        w = _ConcreteWidget()
+        w._bindings["<<Drop>>"] = Mock(return_value=None)
+        cmd = Mock()
+        w._config_dict["command"] = cmd
+        w._handle_bridge_event("drop", "a.txt")
+        cmd.assert_not_called()
+
 
 # ── destroy ──────────────────────────────────────────────────────────
 
