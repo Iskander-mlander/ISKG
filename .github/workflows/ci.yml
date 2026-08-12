@@ -39,6 +39,26 @@ jobs:
       - run: pip install -e .
       - run: sphinx-build -b html docs docs/_build/html
 
+  examples:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+      - run: pip install -e .
+      - name: Smoke-test example modules import
+        run: |
+          python -c "
+          import glob, importlib, os
+          for f in sorted(glob.glob('examples/*.py')):
+              name = 'examples.' + os.path.splitext(os.path.basename(f))[0]
+              mod = importlib.import_module(name)
+              if hasattr(mod, 'build_app'):
+                  assert callable(mod.build_app), name
+          print('examples import OK')
+          "
+
   test-linux:
     runs-on: ${{ matrix.os }}
     strategy:
