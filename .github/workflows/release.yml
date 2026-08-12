@@ -16,6 +16,18 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.14"
+      - run: pip install . pytest pytest-cov
+      - name: Check version matches tag
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          PKG=$(python -c "import iskg._version as v; print(v.VERSION)")
+          echo "tag=$TAG package=$PKG"
+          if [ "$TAG" != "$PKG" ]; then
+            echo "::error::Version mismatch: tag v$TAG != package $PKG"
+            exit 1
+          fi
+      - name: Run test suite
+        run: pytest -q -m "not stress and not benchmark"
       - run: pip install build
       - run: python -m build --outdir dist
       - uses: softprops/action-gh-release@v2

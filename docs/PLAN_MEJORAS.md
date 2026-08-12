@@ -251,8 +251,8 @@ cuáles solo en la creación. Eso obliga a leer `_render_update_js` de cada widg
 > Anotado 2026-08-12 a partir del repaso posterior al release `v0.4.0`. Se
 > aborda **de una en una**, en el orden marcado. Estado general:
 
-- [ ] 1. Seguridad del release (CI corre tests + chequeo de versión)
-- [ ] 2. README/PyPI (versión de instalación, imágenes, nota Arch)
+- [x] 1. Seguridad del release (CI corre tests + chequeo de versión)
+- [x] 2. README/PyPI (versión de instalación, imágenes, nota Arch)
 - [ ] 3. Cobertura de reactividad (`_render_update_js` en más widgets)
 - [ ] 4. CI multiplataforma (macOS/Windows)
 - [ ] 5. Error amigable si falta el backend (GTK/WebKit)

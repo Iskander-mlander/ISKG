@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="iskg/examples/icon.png" width="80" alt="ISKG logo"/>
+  <img src="https://raw.githubusercontent.com/Iskander-mlander/ISKG/main/iskg/examples/icon.png" width="80" alt="ISKG logo"/>
   <h1>ISKG</h1>
   <p><b>IFAZ Widget Toolkit</b> — Python GUI framework ligero</p>
 
@@ -41,7 +41,7 @@ No browser, no HTTP server — just a Python process and a lightweight WebView.
 pip install iskg
 
 # from GitHub Releases
-pip install https://github.com/Iskander-mlander/ISKG/releases/download/v0.3.81/iskg-0.3.81-py3-none-any.whl
+pip install https://github.com/Iskander-mlander/ISKG/releases/download/v0.4.0/iskg-0.4.0-py3-none-any.whl
 ```
 
 ```python
@@ -101,7 +101,32 @@ app.add(root)
 app.run()
 ```
 
-![ISKG Dashboard](examples/Cap.png)
+## Installation
+
+```bash
+pip install iskg          # desde PyPI (Python 3.10+)
+```
+
+**Linux — dependencias del backend (pywebview):** ISKG usa WebKit2GTK, así que
+instala las librerías del sistema antes de `app.run()`:
+
+- Arch Linux: `sudo pacman -S gtk3 webkit2gtk-4.1 python-gobject`
+- Debian/Ubuntu: `sudo apt install python3-gi gir1.2-webkit2-4.1`
+
+**Arch Linux — PEP 668:** el entorno de Python es *externally-managed*, por lo
+que `pip install iskg` falla. Opciones:
+
+- Entorno virtual: `python -m venv .venv && .venv/bin/pip install iskg`
+- [pipx](https://pipx.pypa.io): `pipx install iskg`
+- Global para el usuario: `pip install --break-system-packages --user iskg`
+
+**Desde el código fuente:**
+
+```bash
+pip install git+https://github.com/Iskander-mlander/ISKG.git
+```
+
+![ISKG Dashboard](https://raw.githubusercontent.com/Iskander-mlander/ISKG/main/examples/Cap.png)
 
 ## Documentation
 

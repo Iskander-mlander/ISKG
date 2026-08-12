@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.4.1] — 2026-08-12
+
+### Changed
+- **CI de release (`release.yml`)**: ahora corre la suite (`pytest`) y valida que
+  la versión del paquete coincida con el tag (`vX.Y.Z` == `iskg._version.VERSION`)
+  **antes** de publicar en PyPI, para no soltar releases rotos.
+- **README**: línea de instalación actualizada a la versión actual; imágenes con
+  URLs absolutas de raw GitHub (se ven igual en GitHub y PyPI); sección
+  "Installation" con deps del backend por distro y nota de Arch (PEP 668:
+  venv / pipx / `--break-system-packages`).
+
 ## [0.4.0] — 2026-08-12
 
 ### Added
