@@ -749,7 +749,7 @@ class TestAfter:
         w = _ConcreteWidget()
         timer = w.after(100, lambda: None)
         assert timer.running is True
-        assert timer._id.startswith("t")
+        assert timer._id.startswith("wt")
 
     def test_after_cancel_by_obj(self):
         w = _ConcreteWidget()
@@ -1313,6 +1313,9 @@ class TestSync:
         w._app = Mock()
         w._app._running = True
         w._config_dict["fg"] = "red"
+        # The style cache is primed via Application.add(); if the test
+        # sets the style after constructing the widget, the first sync
+        # emits the JS for the actual change.
         w._sync()
         w._app._defer_sync.assert_called_once()
 

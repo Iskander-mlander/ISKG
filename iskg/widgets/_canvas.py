@@ -215,6 +215,41 @@ class Knob(Widget):
         self._config_dict["value"] = float(v)
         self._sync()
 
+    @property
+    def from_(self) -> float:
+        return self._config_dict.get("from", 0)
+
+    @from_.setter
+    def from_(self, v: float) -> None:
+        self._config_dict["from"] = float(v)
+        self._sync()
+
+    @property
+    def to(self) -> float:
+        return self._config_dict.get("to", 100)
+
+    @to.setter
+    def to(self, v: float) -> None:
+        self._config_dict["to"] = float(v)
+        self._sync()
+
+    @property
+    def color(self) -> str:
+        return self._config_dict.get("color", "cyan")
+
+    @color.setter
+    def color(self, v: str) -> None:
+        self._config_dict["color"] = str(v)
+        self._sync()
+
+    @property
+    def enabled(self) -> bool:
+        return not self._config_dict.get("disabled", False)
+
+    @enabled.setter
+    def enabled(self, value: bool) -> None:
+        self._set_state("normal" if value else "disabled")
+
     def _render(self) -> str:
         size = self._get_cfg("size", 60)
         show_val = self._get_cfg("show-value", True)
@@ -307,3 +342,14 @@ class Knob(Widget):
         val = self._config_dict.get("value", 0)
         return f"""var fn=window.iskg_knob_{self._id};
 if(fn)fn({val});"""
+
+    def destroy(self) -> None:
+        try:
+            if self._app and self._app._running:
+                self._eval_js(
+                    f"if(window._iskg_knobHandlers){{delete window._iskg_knobHandlers['{self._id}'];}}"
+                    f"if(window.iskg_knob_{self._id}){{delete window.iskg_knob_{self._id};}}"
+                )
+        except Exception:
+            pass
+        super().destroy()

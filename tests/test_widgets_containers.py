@@ -227,13 +227,13 @@ class TestPanedWindow:
 
     def test_sash_pos(self):
         pw = PanedWindow()
-        pw.sash_pos(0.75)
-        assert pw._config_dict.get("_sash_pos") == 0.75
+        pw.sash_pos = 0.75
+        assert pw.sash_pos == 0.75
 
     def test_sash_pos_clamped(self):
         pw = PanedWindow()
-        pw.sash_pos(1.5)
-        assert pw._config_dict.get("_sash_pos") == 1.0
+        pw.sash_pos = 1.5
+        assert pw.sash_pos == 1.0
 
     def test_render_html(self):
         pw = PanedWindow()

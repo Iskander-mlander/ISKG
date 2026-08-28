@@ -1,0 +1,16 @@
+# {{ name }}
+
+A two-pane file viewer: a `FileBrowser` on the left and a preview on the
+right. The preview switches between `MarkdownViewer` and plain `Text`
+based on the file extension.
+
+## Run
+
+```bash
+iskg run app.py
+```
+
+## Extensions handled
+
+* `.md` / `.markdown` → rendered Markdown.
+* everything else → plain `Text`.

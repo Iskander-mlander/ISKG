@@ -12,6 +12,16 @@ from typing import Any
 
 _counter: list[int] = [0]
 
+# Stack of active layout containers (Box/HBox/VBox entered via ``with``). When a
+# widget is created without an explicit ``parent``, it is automatically parented
+# to the top of this stack. This enables a declarative, indentation-based layout
+# style without passing ``parent=`` everywhere.
+_LAYOUT_STACK: list = []
+
+
+def current_layout() -> Any | None:
+    return _LAYOUT_STACK[-1] if _LAYOUT_STACK else None
+
 
 def _new_id() -> str:
     _counter[0] += 1
@@ -224,9 +234,21 @@ class Widget:
     ``padding``, ``margin``, ``flex``, ``overflow``, etc.) from
     ``_CONFIG_TO_CSS`` are automatically mapped to inline styles. Keys starting
     with ``--`` are treated as CSS custom properties.
+
+    Subclasses that take a ``text`` (or comparable) parameter as the
+    second positional argument may set the class attribute
+    ``_FIRST_POSITIONAL_AS_TEXT = True`` to opt into the
+    ``Label("text")``-style call: any first positional string is moved
+    into ``text="..."`` automatically. Subclasses that genuinely need a
+    different first-positional contract (e.g. ``Container`` widgets with
+    ``text`` as a frame title) should leave it as ``False``.
     """
 
+    _FIRST_POSITIONAL_AS_TEXT = False
+
     def __init__(self, parent: Widget | None = None, **kwargs: Any) -> None:
+        # Inherit / set up state before normal param processing so
+        # ``__init_subclass__`` hooks (if any) can override behaviour.
         self._id: str = _new_id()
         self._parent: Widget | None = None
         self._children: list[Widget] = []
@@ -240,7 +262,7 @@ class Widget:
         self._textvariable: Any = None
         self._variable: Any = None
         self._last_sync_js: str = ""
-        self._last_style_css: str = ""
+        self._last_style_css: str | None = None
         self._context_menu: Any = None
         self._context_show: bool = False
         self._dnd_target: bool = False
@@ -269,8 +291,26 @@ class Widget:
                 _validate_config_type(k, v)
                 self._config_dict[key] = v
 
+        if parent is None and _LAYOUT_STACK:
+            parent = _LAYOUT_STACK[-1]
         if parent is not None:
             parent.add(self)
+
+    @classmethod
+    def _swap_first_positional_str(
+        cls, args: tuple[Any, ...], kwargs: dict[str, Any]
+    ) -> tuple[tuple[Any, ...], dict[str, Any]]:
+        """Detect the common tkinter/Qt ``Label("text")`` / ``Button("text")``
+        call style and reorder the first positional string into
+        ``text="..."``.
+
+        Subclasses with a different first-positional contract should
+        override ``__init__`` and avoid invoking this helper.
+        """
+        if args and isinstance(args[0], str) and "text" not in kwargs:
+            kwargs = {**kwargs, "text": args[0]}
+            args = args[1:]
+        return args, kwargs
 
     @property
     def widget_id(self) -> str:
@@ -732,10 +772,16 @@ el.onmouseleave=function(){{clearTimeout(timer);tip.style.display="none";}};
             """Cancel this timer. No-op if already fired or cancelled."""
             if self.running:
                 self.running = False
-                self._timer.cancel()
+                if self._timer is not None:
+                    self._timer.cancel()
+            self.cancelled = True
 
     def after(self, ms: int, callback: Callable) -> _Timer:
         """Schedule a function to run after *ms* milliseconds.
+
+        Delegates to :meth:`Application.after` so callbacks are serialized
+        on the same worker thread. If the widget isn't attached to an
+        app yet, falls back to a one-shot :class:`threading.Timer`.
 
         Args:
             ms: delay in milliseconds.
@@ -746,13 +792,31 @@ el.onmouseleave=function(){{clearTimeout(timer);tip.style.display="none";}};
         """
         import threading
 
-        timer_id = f"t{id(callback)}_{id(self)}"
-        t = threading.Timer(ms / 1000, callback)
+        timer_id = f"wt{id(callback)}_{id(self)}"
+        app = self.app
+        if app is not None:
+            return app.after(ms, callback)
+        # Standalone widget (no app yet): use a one-shot timer.
+        handle = self._Timer(timer_id, None)
+        handle.cancelled = False  # type: ignore[attr-defined]
+
+        def _fire() -> None:
+            if getattr(handle, "cancelled", False):
+                return
+            try:
+                callback()
+            except Exception:
+                if app and app._debug:
+                    import traceback
+
+                    traceback.print_exc()
+
+        t = threading.Timer(ms / 1000, _fire)
         t.daemon = True
-        timer_obj = self._Timer(timer_id, t)
-        self._config_dict.setdefault("_timers", {})[timer_id] = timer_obj
+        handle._timer = t  # type: ignore[attr-defined]
+        self._config_dict.setdefault("_timers", {})[timer_id] = handle
         t.start()
-        return timer_obj
+        return handle
 
     def after_cancel(self, timer_id: str) -> None:
         """Cancel a timer by its string ID (legacy)."""
@@ -1059,17 +1123,16 @@ el.onmouseleave=function(){{clearTimeout(timer);tip.style.display="none";}};
     def _sync(self) -> None:
         if self._destroyed or not (self._app and self._app._running):
             return
-        parts: list[str] = []
-        js = self._render_update_js()
-        if js:
-            parts.append(js)
+        # Each helper tracks its own dedup; an empty string means "no JS
+        # to send for this slot". The combined JS is the concatenation of
+        # the *non-empty* parts, and the dedup compares against the
+        # concatenation emitted last time. Because individual helpers
+        # skip when their slice hasn't changed, a no-op _sync() produces
+        # exactly the same combined JS and is short-circuited.
+        update_js = self._render_update_js()
         style_js = self._render_style_update_js()
-        if style_js:
-            parts.append(style_js)
         attr_js = self._render_attr_update_js()
-        if attr_js:
-            parts.append(attr_js)
-        combined = ";".join(parts) if parts else ""
+        combined = ";".join(p for p in (update_js, style_js, attr_js) if p)
         if combined and combined != self._last_sync_js:
             self._last_sync_js = combined
             self._app._defer_sync(combined)
@@ -1114,10 +1177,20 @@ el.onmouseleave=function(){{clearTimeout(timer);tip.style.display="none";}};
 
     def _render_style_update_js(self) -> str:
         css = self._render_style_css()
+        # _last_style_css is primed by Application.add() (called once when
+        # the widget is mounted). If a widget is mutated before being added
+        # to an app, the first sync after mount will emit the style as a
+        # one-shot reconciliation.
         if css and css != self._last_style_css:
             self._last_style_css = css
             return f'iskg_set_style("{self._id}",{json.dumps(css)});'
         return ""
+
+    def _prime_style_cache(self) -> None:
+        """Snapshot the initial CSS so the first post-mount _sync() does
+        not re-emit bytes that are already in the initial HTML."""
+        if self._last_style_css is None:
+            self._last_style_css = self._render_style_css()
 
     _ARIA_ROLE: str = ""
 
@@ -1148,6 +1221,13 @@ el.onmouseleave=function(){{clearTimeout(timer);tip.style.display="none";}};
             attrs += ' draggable="true"'
         if self._config_dict.get("takefocus", self._default_takefocus()):
             attrs += ' tabindex="0"'
+        # Validation state → CSS class so invalid/intermediate styling applies.
+        vstate = self._config_dict.get("validation_state")
+        if vstate == "invalid":
+            attrs += ' class="iskg-invalid"'
+            attrs += ' aria-invalid="true"'
+        elif vstate == "intermediate":
+            attrs += ' aria-invalid="false"'
         attrs += self._render_aria_attrs()
         return attrs
 

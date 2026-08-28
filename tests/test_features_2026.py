@@ -138,6 +138,33 @@ def test_logviewer_append_levels_and_clear():
     loop.stop()
 
 
+def test_logviewer_timestamp_dedupes_repeated_appends():
+    """Regression test: a show_timestamp=True LogViewer used to recompute
+    datetime.now() on every render, breaking the per-widget _sync dedup and
+    flooding the JS queue. The timestamp must be frozen per line at append
+    time so that two identical re-renders produce identical HTML and the
+    _last_sync_js dedup short-circuits the second sync call."""
+    app = Application("t")
+    lv = LogViewer(parent=None, show_timestamp=True)
+    app.add(lv)
+    loop = app.test_loop()
+    loop.js_calls.clear()
+
+    lv.append("line A")
+    # The first append produces one JS update; capture it and force a
+    # re-sync without changing any state. The second sync must NOT
+    # produce a JS update because the HTML is byte-for-byte identical.
+    n_after_first = len(loop.js_calls)
+    lv._sync()  # force re-render with no state change
+    n_after_second = len(loop.js_calls)
+    new_calls = loop.js_calls[n_after_first:n_after_second]
+    assert not new_calls, (
+        f"a no-op _sync() emitted {len(new_calls)} extra JS call(s) — "
+        f"timestamp is leaking into render and breaking dedup: {new_calls}"
+    )
+    loop.stop()
+
+
 # ── Clock / DatePicker ───────────────────────────────────────────────────────
 
 

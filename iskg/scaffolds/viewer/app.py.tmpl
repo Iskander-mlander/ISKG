@@ -1,0 +1,70 @@
+"""ISKG viewer scaffold.
+
+A file browser on the left, a preview pane on the right. The preview
+pane auto-switches between Markdown rendering and plain text depending
+on the selected file extension.
+
+Run with::
+
+    iskg run app.py
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+from iskg import (
+    Application,
+    FileBrowser,
+    HBox,
+    Label,
+    MarkdownViewer,
+    Text,
+)
+
+
+def main() -> None:
+    app = Application(title="{{ name }}", width=1100, height=700)
+
+    root = HBox(app, gap=6, padding=8)
+    root.fill = "both"
+    root.expand = True
+
+    # Left: file browser.
+    browser = FileBrowser(root, root=str(Path.cwd()))
+    browser.fill = "y"
+
+    # Right: preview.
+    right = root
+
+    Label(right, text="Preview", style="h2")
+
+    preview_md = MarkdownViewer(right, source="*Select a file on the left.*")
+    preview_md.fill = "both"
+    preview_md.expand = True
+    preview_md.visible = False
+
+    preview_txt = Text(right, text="", readonly=True)
+    preview_txt.fill = "both"
+    preview_txt.expand = True
+    preview_txt.visible = True
+
+    def on_select(path: str) -> None:
+        p = Path(path)
+        if not p.is_file():
+            return
+        if p.suffix.lower() in {".md", ".markdown"}:
+            preview_md.source = p.read_text(encoding="utf-8", errors="replace")
+            preview_md.visible = True
+            preview_txt.visible = False
+        else:
+            preview_txt.text = p.read_text(encoding="utf-8", errors="replace")
+            preview_md.visible = False
+            preview_txt.visible = True
+
+    browser.command = on_select
+    app.run()
+
+
+if __name__ == "__main__":
+    main()

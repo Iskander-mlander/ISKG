@@ -16,17 +16,27 @@ class Button(Widget):
     (``"sm"``, ``"lg"``), plus all CSS properties from ``_CONFIG_TO_CSS``.
     """
 
+    _FIRST_POSITIONAL_AS_TEXT = True
+
     def __init__(
         self,
+        *args: Any,
         parent: Widget | None = None,
         text: str = "",
         command: Callable | None = None,
         **kwargs: Any,
     ) -> None:
+        args, kwargs = self._swap_first_positional_str(args, kwargs)
+        if args:
+            parent = args[0]
         if command:
             kwargs["command"] = command
+        if "text" in kwargs and text == "":
+            text = kwargs.pop("text")
         super().__init__(parent, **kwargs)
         self._config_dict["text"] = text
+        if command is not None:
+            self._config_dict["command"] = command
 
     @property
     def text(self) -> str:
@@ -36,6 +46,29 @@ class Button(Widget):
     def text(self, value: str) -> None:
         self._config_dict["text"] = str(value)
         self._sync()
+
+    @property
+    def command(self) -> Callable | None:
+        return self._config_dict.get("command")
+
+    @command.setter
+    def command(self, fn: Callable | None) -> None:
+        self._config_dict["command"] = fn
+
+    @property
+    def enabled(self) -> bool:
+        return not self._config_dict.get("disabled", False)
+
+    @enabled.setter
+    def enabled(self, value: bool) -> None:
+        self._set_state("normal" if value else "disabled")
+
+    def _handle_bridge_event(self, event_name: str, event_data: Any) -> None:
+        # The base class already invokes the configured ``command`` callback
+        # for "click", "change" and "drop" events; this override exists so
+        # subclassing keeps the same public contract, but no extra work is
+        # needed here.
+        super()._handle_bridge_event(event_name, event_data)
 
     def _render(self) -> str:
         text = self._config_dict.get("text", "")
@@ -77,15 +110,22 @@ class Entry(Widget):
     """
 
     _ARIA_ROLE = "textbox"
+    _FIRST_POSITIONAL_AS_TEXT = True
 
     def __init__(
         self,
+        *args: Any,
         parent: Widget | None = None,
         text: str = "",
         justify: str = "",
         maxlength: int | None = None,
         **kwargs: Any,
     ) -> None:
+        args, kwargs = self._swap_first_positional_str(args, kwargs)
+        if args:
+            parent = args[0]
+        if "text" in kwargs and text == "":
+            text = kwargs.pop("text")
         super().__init__(parent, **kwargs)
         self._config_dict["text"] = (
             self._textvariable.get() if self._textvariable is not None else str(text)
@@ -124,6 +164,40 @@ class Entry(Widget):
         else:
             self._config_dict.pop("maxlength", None)
         self._sync()
+
+    @property
+    def placeholder(self) -> str:
+        return self._config_dict.get("placeholder", "")
+
+    @placeholder.setter
+    def placeholder(self, value: str) -> None:
+        self._config_dict["placeholder"] = str(value)
+        self._sync()
+
+    @property
+    def password(self) -> bool:
+        return self._config_dict.get("password", False)
+
+    @password.setter
+    def password(self, value: bool) -> None:
+        self._config_dict["password"] = bool(value)
+        self._sync()
+
+    @property
+    def readonly(self) -> bool:
+        return self._config_dict.get("state") == "readonly"
+
+    @readonly.setter
+    def readonly(self, value: bool) -> None:
+        self._set_state("readonly" if value else "normal")
+
+    @property
+    def enabled(self) -> bool:
+        return not self._config_dict.get("disabled", False)
+
+    @enabled.setter
+    def enabled(self, value: bool) -> None:
+        self._set_state("normal" if value else "disabled")
 
     def _render(self) -> str:
         val = self._config_dict.get("text", "")
@@ -185,6 +259,7 @@ class CheckBox(Widget):
     """A toggleable check box with label."""
 
     _ARIA_ROLE = "checkbox"
+    _FIRST_POSITIONAL_AS_TEXT = True
 
     def _render_aria_attrs(self) -> str:
         checked = self._config_dict.get("checked", False)
@@ -195,17 +270,25 @@ class CheckBox(Widget):
 
     def __init__(
         self,
+        *args: Any,
         parent: Widget | None = None,
         text: str = "",
         checked: bool = False,
         command: Callable | None = None,
         **kwargs: Any,
     ) -> None:
+        args, kwargs = self._swap_first_positional_str(args, kwargs)
+        if args:
+            parent = args[0]
         if command:
             kwargs["command"] = command
+        if "text" in kwargs and text == "":
+            text = kwargs.pop("text")
         super().__init__(parent, **kwargs)
         self._config_dict["text"] = text
         self._config_dict["checked"] = checked
+        if command is not None:
+            self._config_dict["command"] = command
 
     @property
     def checked(self) -> bool:
@@ -225,6 +308,28 @@ class CheckBox(Widget):
         self._config_dict["text"] = str(value)
         self._sync()
 
+    @property
+    def enabled(self) -> bool:
+        return not self._config_dict.get("disabled", False)
+
+    @enabled.setter
+    def enabled(self, value: bool) -> None:
+        self._set_state("normal" if value else "disabled")
+
+    def _var_updated(self, var: Any) -> None:
+        if var is self._variable:
+            self._config_dict["checked"] = var.get()
+            self._sync()
+
+    def _handle_bridge_event(self, event_name: str, event_data: Any) -> None:
+        if event_name == "change":
+            self._config_dict["checked"] = event_data == "true"
+            cmd = self._config_dict.get("command")
+            if cmd is not None:
+                with contextlib.suppress(Exception):
+                    cmd(self.checked)
+        super()._handle_bridge_event(event_name, event_data)
+
     def _render(self) -> str:
         text = self._config_dict.get("text", "")
         checked = self._config_dict.get("checked", False)
@@ -238,16 +343,6 @@ class CheckBox(Widget):
   <span class="{check_cls}"></span>
   <span>{text}</span>
 </label>'''
-
-    def _var_updated(self, var: Any) -> None:
-        if var is self._variable:
-            self._config_dict["checked"] = var.get()
-            self._sync()
-
-    def _handle_bridge_event(self, event_name: str, event_data: Any) -> None:
-        if event_name == "change":
-            self._config_dict["checked"] = event_data == "true"
-        super()._handle_bridge_event(event_name, event_data)
 
     def _render_js(self) -> str:
         return f'''document.getElementById("{self._id}").onclick=function(){{
@@ -268,6 +363,7 @@ class RadioButton(Widget):
     """A radio button for single-selection within a group."""
 
     _ARIA_ROLE = "radio"
+    _FIRST_POSITIONAL_AS_TEXT = True
 
     def _render_aria_attrs(self) -> str:
         sel = self._config_dict.get("selected", False)
@@ -278,6 +374,7 @@ class RadioButton(Widget):
 
     def __init__(
         self,
+        *args: Any,
         parent: Widget | None = None,
         text: str = "",
         group: str = "default",
@@ -287,12 +384,19 @@ class RadioButton(Widget):
         selected: bool = False,
         **kwargs: Any,
     ) -> None:
+        args, kwargs = self._swap_first_positional_str(args, kwargs)
+        if args:
+            parent = args[0]
         if command:
             kwargs["command"] = command
+        if "text" in kwargs and text == "":
+            text = kwargs.pop("text")
         super().__init__(parent, variable=variable, **kwargs)
         self._config_dict["text"] = text
         self._config_dict["value"] = value
         self._config_dict["group"] = group
+        if command is not None:
+            self._config_dict["command"] = command
         if selected:
             self._config_dict["selected"] = True
             if self._variable:
@@ -314,6 +418,16 @@ class RadioButton(Widget):
     @value.setter
     def value(self, v: Any) -> None:
         self._config_dict["value"] = v
+        self._sync()
+
+    @property
+    def group(self) -> str:
+        return self._config_dict.get("group", "default")
+
+    @group.setter
+    def group(self, v: str) -> None:
+        self._config_dict["group"] = str(v)
+        self._sync()
 
     @property
     def selected(self) -> bool:
@@ -328,14 +442,27 @@ class RadioButton(Widget):
             self._variable.set(self.value)
         self._sync()
 
+    @property
+    def enabled(self) -> bool:
+        return not self._config_dict.get("disabled", False)
+
+    @enabled.setter
+    def enabled(self, value: bool) -> None:
+        self._set_state("normal" if value else "disabled")
+
     def _var_updated(self, var: Any) -> None:
         if var is self._variable:
             self._sync()
 
     def _handle_bridge_event(self, event_name: str, event_data: Any) -> None:
-        if event_name == "change" and self._variable is not None:
-            self._variable_handled = True
-            self._variable.set(self.value, _from_widget=self)
+        if event_name == "change":
+            if self._variable is not None:
+                self._variable_handled = True
+                self._variable.set(self.value, _from_widget=self)
+            cmd = self._config_dict.get("command")
+            if cmd is not None:
+                with contextlib.suppress(Exception):
+                    cmd(self.value)
         super()._handle_bridge_event(event_name, event_data)
         self._variable_handled = False
 
@@ -411,6 +538,15 @@ class ComboBox(Widget):
         idx = self._config_dict.get("current", 0)
         return vals[idx] if 0 <= idx < len(vals) else ""
 
+    @value.setter
+    def value(self, v: str) -> None:
+        vals = self._config_dict.get("values", [])
+        if v in vals:
+            self.current = vals.index(v)
+        else:
+            # Try to match by string equality; fall back to -1.
+            self._config_dict["_pending_value"] = v
+
     @property
     def values(self) -> list[str]:
         """The list of selectable options (read-only snapshot)."""
@@ -419,6 +555,10 @@ class ComboBox(Widget):
     @values.setter
     def values(self, vals: list[str]) -> None:
         self._config_dict["values"] = list(vals or [])
+        # Re-apply pending value if any
+        pending = self._config_dict.pop("_pending_value", None)
+        if pending is not None and pending in self._config_dict["values"]:
+            self._config_dict["current"] = self._config_dict["values"].index(pending)
         self._sync()
 
     @property
@@ -429,6 +569,14 @@ class ComboBox(Widget):
     def editable(self, value: bool) -> None:
         self._config_dict["editable"] = bool(value)
         self._sync()
+
+    @property
+    def enabled(self) -> bool:
+        return not self._config_dict.get("disabled", False)
+
+    @enabled.setter
+    def enabled(self, value: bool) -> None:
+        self._set_state("normal" if value else "disabled")
 
     def _var_updated(self, var: Any) -> None:
         if var is self._textvariable:
@@ -538,6 +686,31 @@ drop.onclick=function(e){{var item=e.target.closest(".iskg-cb-item");
     iskg_bridge_event("{self._id}","change",idx);
   }}
 }};
+{
+            (
+                """if(inp){{
+  inp.addEventListener("input",function(){{
+    var q=inp.value.toLowerCase();
+    var all=drop.querySelectorAll(".iskg-cb-item");
+    var visible=0;
+    all.forEach(function(it){{
+      var m=it.innerText.toLowerCase().indexOf(q)>=0;
+      it.style.display=m?"":"none";
+      if(m)visible++;
+    }});
+    if(visible>0)openDrop();else closeDrop();
+  }});
+  inp.addEventListener("keydown",function(e){{
+    if(e.key==="Enter"&&drop.style.display==="block"){{
+      var first=drop.querySelector(".iskg-cb-item:not([style*='display: none'])");
+      if(first){{first.click();e.preventDefault();}}
+    }}
+  }});
+}}"""
+            )
+            if editable
+            else ""
+        }
 window.addEventListener("resize",function(){{if(drop.style.display=="block")placeDrop();}});
 document.addEventListener("click",function(e){{
   if(!wrap.contains(e.target))closeDrop();
@@ -618,6 +791,62 @@ class Slider(Widget):
     def value(self, v: float) -> None:
         self._config_dict["value"] = float(v)
         self._sync()
+
+    @property
+    def from_(self) -> float:
+        return self._config_dict.get("from", 0)
+
+    @from_.setter
+    def from_(self, v: float) -> None:
+        self._config_dict["from"] = float(v)
+        self._sync()
+
+    @property
+    def to(self) -> float:
+        return self._config_dict.get("to", 100)
+
+    @to.setter
+    def to(self, v: float) -> None:
+        self._config_dict["to"] = float(v)
+        self._sync()
+
+    @property
+    def step(self) -> float | None:
+        return self._config_dict.get("step")
+
+    @step.setter
+    def step(self, v: float | None) -> None:
+        if v is not None:
+            self._config_dict["step"] = float(v)
+        else:
+            self._config_dict.pop("step", None)
+        self._sync()
+
+    @property
+    def orient(self) -> str:
+        return self._config_dict.get("orient", "horizontal")
+
+    @orient.setter
+    def orient(self, v: str) -> None:
+        self._config_dict["orient"] = str(v)
+        self._sync()
+
+    @property
+    def show_value(self) -> bool:
+        return self._get_cfg("show-value", True)
+
+    @show_value.setter
+    def show_value(self, v: bool) -> None:
+        self._config_dict["show-value"] = bool(v)
+        self._sync()
+
+    @property
+    def enabled(self) -> bool:
+        return not self._config_dict.get("disabled", False)
+
+    @enabled.setter
+    def enabled(self, value: bool) -> None:
+        self._set_state("normal" if value else "disabled")
 
     def _render(self) -> str:
         lo = self._config_dict.get("from", 0)
@@ -746,6 +975,59 @@ class SpinBox(Widget):
         self._config_dict["value"] = int(v)
         self._sync()
 
+    @property
+    def from_(self) -> int:
+        return self._config_dict.get("from", 0)
+
+    @from_.setter
+    def from_(self, v: int) -> None:
+        self._config_dict["from"] = int(v)
+        self._sync()
+
+    @property
+    def to(self) -> int:
+        return self._config_dict.get("to", 100)
+
+    @to.setter
+    def to(self, v: int) -> None:
+        self._config_dict["to"] = int(v)
+        self._sync()
+
+    @property
+    def min_value(self) -> int:
+        return self._config_dict.get("from", 0)
+
+    @min_value.setter
+    def min_value(self, v: int) -> None:
+        self._config_dict["from"] = int(v)
+        self._sync()
+
+    @property
+    def max_value(self) -> int:
+        return self._config_dict.get("to", 100)
+
+    @max_value.setter
+    def max_value(self, v: int) -> None:
+        self._config_dict["to"] = int(v)
+        self._sync()
+
+    @property
+    def step(self) -> int:
+        return self._config_dict.get("step", 1)
+
+    @step.setter
+    def step(self, v: int) -> None:
+        self._config_dict["step"] = max(1, int(v))
+        self._sync()
+
+    @property
+    def enabled(self) -> bool:
+        return not self._config_dict.get("disabled", False)
+
+    @enabled.setter
+    def enabled(self, value: bool) -> None:
+        self._set_state("normal" if value else "disabled")
+
     def _render(self) -> str:
         val = self._config_dict.get("value", 0)
         style = self._render_style()
@@ -793,6 +1075,33 @@ document.getElementById("{self._id}-dn").onclick=function(){{
 class Scale(Slider):
     """A range slider with min/max labels."""
 
+    @property
+    def from_(self) -> float:
+        return self._config_dict.get("from", 0)
+
+    @from_.setter
+    def from_(self, v: float) -> None:
+        self._config_dict["from"] = float(v)
+        self._sync()
+
+    @property
+    def to(self) -> float:
+        return self._config_dict.get("to", 1)
+
+    @to.setter
+    def to(self, v: float) -> None:
+        self._config_dict["to"] = float(v)
+        self._sync()
+
+    @property
+    def orient(self) -> str:
+        return self._config_dict.get("orient", "horizontal")
+
+    @orient.setter
+    def orient(self, v: str) -> None:
+        self._config_dict["orient"] = str(v)
+        self._sync()
+
     def __init__(
         self,
         parent: Widget | None = None,
@@ -809,8 +1118,8 @@ class Scale(Slider):
 
     def _render(self) -> str:
         lo = self._config_dict.get("from", 0)
-        hi = self._config_dict.get("to", 100)
-        val = self._config_dict.get("value", 0)
+        hi = self._config_dict.get("to", 1)
+        val = self._config_dict.get("value", 0.5)
         orient = self._config_dict.get("orient", "horizontal")
         style = self._render_style()
         width = self._config_dict.get("width", 200)
@@ -831,11 +1140,25 @@ class Scale(Slider):
   <span>{lo}</span>
 </div>'''
 
+    def _render_update_js(self) -> str:
+        """Update the slider value AND the min/max labels so they stay in sync."""
+        val = self._config_dict.get("value", 0)
+        lo = self._config_dict.get("from", 0)
+        hi = self._config_dict.get("to", 1)
+        return f'''var el=document.getElementById("{self._id}");
+if(el){{el.value={val};
+var wrap=el.closest(".iskg-scale-wrap");
+if(wrap){{
+  var labels=wrap.querySelectorAll(".iskg-scale-labels span");
+  if(labels.length>=2){{labels[0].innerText={lo};labels[1].innerText={hi};}}
+}}}}'''
+
 
 class ToggleSwitch(Widget):
     """A toggle switch akin to a checkbox with slider appearance."""
 
     _ARIA_ROLE = "switch"
+    _FIRST_POSITIONAL_AS_TEXT = True
 
     def _render_aria_attrs(self) -> str:
         checked = self._config_dict.get("checked", False)
@@ -846,6 +1169,7 @@ class ToggleSwitch(Widget):
 
     def __init__(
         self,
+        *args: Any,
         parent: Widget | None = None,
         text: str = "",
         active: bool | None = None,
@@ -853,11 +1177,18 @@ class ToggleSwitch(Widget):
         checked: bool = False,
         **kwargs: Any,
     ) -> None:
+        args, kwargs = self._swap_first_positional_str(args, kwargs)
+        if args:
+            parent = args[0]
         if command:
             kwargs["command"] = command
+        if "text" in kwargs and text == "":
+            text = kwargs.pop("text")
         super().__init__(parent, **kwargs)
         self._config_dict["text"] = text
         self._config_dict["checked"] = checked if active is None else active
+        if command is not None:
+            self._config_dict["command"] = command
 
     @property
     def checked(self) -> bool:
@@ -868,6 +1199,23 @@ class ToggleSwitch(Widget):
         self._config_dict["checked"] = bool(v)
         self._sync()
 
+    @property
+    def text(self) -> str:
+        return self._config_dict.get("text", "")
+
+    @text.setter
+    def text(self, value: str) -> None:
+        self._config_dict["text"] = str(value)
+        self._sync()
+
+    @property
+    def enabled(self) -> bool:
+        return not self._config_dict.get("disabled", False)
+
+    @enabled.setter
+    def enabled(self, value: bool) -> None:
+        self._set_state("normal" if value else "disabled")
+
     def _var_updated(self, var: Any) -> None:
         if var is self._variable:
             self._config_dict["checked"] = var.get()
@@ -876,6 +1224,10 @@ class ToggleSwitch(Widget):
     def _handle_bridge_event(self, event_name: str, event_data: Any) -> None:
         if event_name == "change":
             self._config_dict["checked"] = event_data == "true"
+            cmd = self._config_dict.get("command")
+            if cmd is not None:
+                with contextlib.suppress(Exception):
+                    cmd(self.checked)
         super()._handle_bridge_event(event_name, event_data)
 
     def _render(self) -> str:

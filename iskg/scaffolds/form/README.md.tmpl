@@ -1,0 +1,24 @@
+# {{ name }}
+
+A validated form built with ISKG. Demonstrates `Form`, the validator
+set, the `Toast` helper, and several input widgets.
+
+## Run
+
+```bash
+iskg run app.py
+```
+
+## Validators used
+
+* `RequiredValidator` — non-empty.
+* `LengthValidator(min, max)` — string length.
+* `EmailValidator` — RFC-5322-ish pattern.
+* `RangeValidator(min, max)` — numeric range.
+
+## Add your own
+
+* `URLValidator`
+* `PatternValidator(regex)`
+* `NumberValidator`
+* `CustomValidator(fn)` — your own predicate.

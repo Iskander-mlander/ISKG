@@ -1,0 +1,14 @@
+{
+  "_meta": {
+    "name": "tool",
+    "description": "Small command-driven utility: inputs on top, log at the bottom, primary action button.",
+    "tags": ["tool", "cli-style", "batch"],
+    "files": [
+      "app.py",
+      "README.md",
+      "requirements.txt",
+      "assets/README.md",
+      "themes/README.md"
+    ]
+  }
+}

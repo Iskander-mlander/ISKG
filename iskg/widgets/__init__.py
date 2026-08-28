@@ -1,7 +1,16 @@
 """All widget classes re-exported for convenient access via ``iskg.widgets``."""
 
+from ._advanced import (
+    CommandPalette,
+    GraphicsView,
+    MarkdownViewer,
+    PropertyGrid,
+    render_markdown,
+)
+from ._calendar import Calendar, DateTimePicker, TimePicker
 from ._canvas import Canvas, Knob
 from ._charts import Sparkline, TimeSeriesGraph
+from ._charts2 import BarChart, Heatmap, PieChart, ScatterPlot
 from ._containers import Frame, Notebook, PanedWindow, ScrollBar, ScrolledFrame, Separator, Spacer
 from ._controls import (
     Button,
@@ -34,10 +43,34 @@ from ._display import (
     RadialGauge,
     StatusBar,
 )
+from ._extras import ColorPicker, Modal, RangeSlider, TabBar
+from ._files import FileBrowser
+from ._layout import Box, HBox, VBox
 from ._logview import LogViewer
 from ._menus import Menu, MenuBar, MenuItem
 from ._misc import Tooltip
+from ._pickers import (
+    Avatar,
+    Badge,
+    Carousel,
+    DirectoryPicker,
+    FontPicker,
+    ImagePicker,
+    ProgressCircle,
+    SearchCtrl,
+    Spinner,
+    Toast,
+)
 from ._text import RichText, Text
+from ._toolbar import (
+    MdiArea,
+    MdiSubWindow,
+    SetAttrCommand,
+    SystemTray,
+    ToolBar,
+    UndoCommand,
+    UndoStack,
+)
 
 __all__ = [
     "Label",
@@ -87,4 +120,41 @@ __all__ = [
     "LogViewer",
     "Clock",
     "DatePicker",
+    "Box",
+    "HBox",
+    "VBox",
+    "ColorPicker",
+    "Modal",
+    "TabBar",
+    "RangeSlider",
+    "FileBrowser",
+    "FontPicker",
+    "DirectoryPicker",
+    "ImagePicker",
+    "SearchCtrl",
+    "Carousel",
+    "Avatar",
+    "Badge",
+    "Spinner",
+    "ProgressCircle",
+    "Toast",
+    "BarChart",
+    "PieChart",
+    "ScatterPlot",
+    "Heatmap",
+    "Calendar",
+    "TimePicker",
+    "DateTimePicker",
+    "ToolBar",
+    "MdiArea",
+    "MdiSubWindow",
+    "SystemTray",
+    "UndoStack",
+    "UndoCommand",
+    "SetAttrCommand",
+    "PropertyGrid",
+    "CommandPalette",
+    "MarkdownViewer",
+    "GraphicsView",
+    "render_markdown",
 ]

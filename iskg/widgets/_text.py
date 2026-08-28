@@ -9,13 +9,20 @@ class Text(Widget):
     """A multi-line text input area."""
 
     _ARIA_ROLE = "textbox"
+    _FIRST_POSITIONAL_AS_TEXT = True
 
     def __init__(
         self,
+        *args: Any,
         parent: Widget | None = None,
         text: str = "",
         **kwargs: Any,
     ) -> None:
+        args, kwargs = self._swap_first_positional_str(args, kwargs)
+        if args:
+            parent = args[0]
+        if "text" in kwargs and text == "":
+            text = kwargs.pop("text")
         super().__init__(parent, **kwargs)
         self._config_dict["text"] = (
             self._textvariable.get() if self._textvariable is not None else str(text)
@@ -29,6 +36,22 @@ class Text(Widget):
     def text(self, val: str) -> None:
         self._config_dict["text"] = str(val)
         self._sync()
+
+    @property
+    def readonly(self) -> bool:
+        return self._config_dict.get("state") == "readonly"
+
+    @readonly.setter
+    def readonly(self, value: bool) -> None:
+        self._set_state("readonly" if value else "normal")
+
+    @property
+    def enabled(self) -> bool:
+        return not self._config_dict.get("disabled", False)
+
+    @enabled.setter
+    def enabled(self, value: bool) -> None:
+        self._set_state("normal" if value else "disabled")
 
     def append(self, text: str) -> None:
         self._config_dict["text"] += str(text)
@@ -79,19 +102,43 @@ class RichText(Widget):
     """A rich text editor with formatting toolbar."""
 
     _ARIA_ROLE = "textbox"
+    _FIRST_POSITIONAL_AS_TEXT = True
 
     def __init__(
         self,
+        *args: Any,
         parent: Widget | None = None,
         text: str = "",
         height: int = 150,
         show_toolbar: bool = True,
         **kwargs: Any,
     ) -> None:
+        args, kwargs = self._swap_first_positional_str(args, kwargs)
+        if args:
+            parent = args[0]
+        if "text" in kwargs and text == "":
+            text = kwargs.pop("text")
         super().__init__(parent, **kwargs)
         self._config_dict["text"] = text
         self._config_dict["height"] = height
         self._config_dict["show_toolbar"] = show_toolbar
+
+    @property
+    def text(self) -> str:
+        return self._config_dict.get("text", "")
+
+    @text.setter
+    def text(self, value: str) -> None:
+        self._config_dict["text"] = str(value)
+        self._sync()
+
+    @property
+    def enabled(self) -> bool:
+        return not self._config_dict.get("disabled", False)
+
+    @enabled.setter
+    def enabled(self, value: bool) -> None:
+        self._set_state("normal" if value else "disabled")
 
     def _render(self) -> str:
         text = self._config_dict.get("text", "")

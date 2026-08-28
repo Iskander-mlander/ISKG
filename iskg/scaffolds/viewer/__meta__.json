@@ -1,0 +1,8 @@
+{
+  "_meta": {
+    "name": "viewer",
+    "description": "Two-pane file viewer: file browser on the left, Markdown or text preview on the right.",
+    "tags": ["viewer", "browser", "preview"],
+    "files": ["app.py", "README.md", "requirements.txt"]
+  }
+}

@@ -1,0 +1,28 @@
+# {{ name }}
+
+A small ISKG tool: input fields on top, a log on the bottom, and a Run button.
+
+## Run
+
+```bash
+iskg run app.py
+```
+
+or, without the CLI:
+
+```bash
+python app.py
+```
+
+## Layout
+
+* `app.py` — the application entry point.
+* `assets/` — drop icons, images, and other static files here.
+* `themes/` — custom CSS overrides.
+* `i18n/` — translation catalogues (`en.json`, `es.json`, …).
+
+## Next steps
+
+1. Replace the `on_run` stub with your real work.
+2. Use `app.run_async(...)` if the work blocks the UI thread.
+3. Wire validation: see `ValidationResult` and `Form` in the API docs.

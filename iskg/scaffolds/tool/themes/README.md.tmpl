@@ -1,0 +1,13 @@
+# {{ name }} — themes
+
+Place a custom CSS file here and load it from `app.py`:
+
+```python
+from pathlib import Path
+app = Application(
+    title="{{ name }}",
+    css=Path(__file__).parent / "themes" / "custom.css",
+)
+```
+
+You can also use `app.inject_css("body { background: #000; }")` at runtime.

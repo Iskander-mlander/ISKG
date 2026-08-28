@@ -5,6 +5,7 @@ from __future__ import annotations
 import contextlib
 import json
 import os
+import queue
 import threading
 import time
 from collections.abc import Callable
@@ -31,12 +32,47 @@ class _JSAPI:
     _DEBOUNCE_MS = 50
     _last_event: dict[tuple[str, str], tuple[float, str | None]] = {}
 
+    # Event names that represent a deliberate user action and must NEVER
+    # be debounced: deduping them silently drops the second click of a
+    # double-click, the second keypress of a held key, etc. Anything not
+    # in this set is high-frequency (mouse-move, scroll, resize) and is
+    # debounced per (widget_id, event_name, payload) so legitimate distinct
+    # events with the same key still pass.
+    _NON_DEBOUNCED = frozenset(
+        {
+            "click",
+            "doubleclick",
+            "change",
+            "submit",
+            "select",
+            "focus",
+            "blur",
+            "keypress",
+            "keyrelease",
+            "key",
+            "global",
+            "contextmenu",
+            "contextcmd",
+            "drop",
+        }
+    )
+
     def on_event(
         self,
         widget_id: str,
         event_name: str,
         event_data_json: str | None,
     ) -> None:
+        if event_name in self._NON_DEBOUNCED:
+            handler = _HANDLERS.get(widget_id)
+            if handler is None:
+                return
+            try:
+                data: Any = json.loads(event_data_json) if event_data_json else None
+            except json.JSONDecodeError:
+                data = event_data_json
+            handler(event_name, data)
+            return
         key = (widget_id, event_name)
         now = time.time()
         with _LOCK:
@@ -51,7 +87,7 @@ class _JSAPI:
         handler = _HANDLERS.get(widget_id)
         if handler:
             try:
-                data: Any = json.loads(event_data_json) if event_data_json else None
+                data = json.loads(event_data_json) if event_data_json else None
             except json.JSONDecodeError:
                 data = event_data_json
             handler(event_name, data)
@@ -134,6 +170,15 @@ class Application:
         self._sync_batch_depth = 0
         self._global_key_bindings: list[dict[str, Any]] = []
         self._timers: dict[str, Any] = {}
+        # Single daemon worker that fires after-callbacks. Sharing one
+        # thread (instead of one threading.Timer per callback) serialises
+        # the callback execution so two timers firing at the same
+        # millisecond can never race on _deferred_sync or widget state.
+        self._after_queue: queue.PriorityQueue = queue.PriorityQueue()
+        self._after_thread = threading.Thread(
+            target=self._after_worker, daemon=True, name="iskg-after"
+        )
+        self._after_thread.start()
         _HANDLERS["__iskg_global__"] = self._handle_global_event
 
     def add(self, widget: Widget) -> Widget:
@@ -148,6 +193,10 @@ class Application:
                 w._app = self
                 if isinstance(w, Widget):
                     _HANDLERS[w._id] = w._handle_bridge_event
+                    # Prime the per-widget style cache from the initial
+                    # HTML so the first _sync() after mount does not
+                    # re-emit bytes that are already in the DOM.
+                    w._prime_style_cache()
             self.emit("widget-created", widget._id)
         return widget
 
@@ -438,9 +487,12 @@ class Application:
     def after(self, ms: int, callback: Callable) -> Any:
         """Schedule ``callback`` to run after ``ms`` milliseconds.
 
-        Unlike :class:`threading.Timer`, the callback runs on a daemon timer
-        thread and may safely mutate widgets (updates are marshalled through
-        the app's sync queue). Returns a handle with ``.cancel()`` / ``.running``.
+        All timer callbacks share a single daemon worker thread fed by a
+        priority queue, so callbacks from different timers are serialized
+        and never run concurrently. This avoids races when two timers
+        both call ``_sync()`` and both append to ``_deferred_sync`` at
+        the same instant. Returns a handle with ``.cancel()`` /
+        ``.running``.
 
         Args:
             ms: delay in milliseconds.
@@ -449,22 +501,54 @@ class Application:
         Returns:
             A timer handle (``Widget._Timer``-compatible) with ``.cancel()``.
         """
-        import threading
+        timer_id = f"t{id(callback)}_{id(self)}_{ms}_{len(self._timers)}"
+        handle = Widget._Timer(timer_id, None)
+        handle.cancelled = False  # type: ignore[attr-defined]
+        fire_at = time.monotonic() + ms / 1000
+        # (fire_at, counter, callback) — counter breaks ties so equal
+        # fire_at values don't compare callbacks against each other.
+        counter = self._after_counter = getattr(self, "_after_counter", 0) + 1
+        self._after_queue.put((fire_at, counter, timer_id, callback))
+        self._timers[timer_id] = handle
+        return handle
 
-        timer_id = f"t{id(callback)}_{id(self)}"
-        t = threading.Timer(ms / 1000, callback)
-        t.daemon = True
-        timer = Widget._Timer(timer_id, t)
-        self._timers[timer_id] = timer
-        t.start()
-        return timer
+    def _after_worker(self) -> None:
+        """Drain the after-queue: pop the next callback whose delay has
+        elapsed, sleep until then, then run it. Serialises every timer
+        callback on this single thread."""
+        while True:
+            try:
+                fire_at, _counter, timer_id, callback = self._after_queue.get()
+            except Exception:
+                continue
+            now = time.monotonic()
+            delay = fire_at - now
+            if delay > 0:
+                time.sleep(delay)
+            handle = self._timers.pop(timer_id, None)
+            if handle is None or getattr(handle, "cancelled", False):
+                continue
+            try:
+                callback()
+            except Exception as exc:
+                if self._debug:
+                    import traceback
+
+                    traceback.print_exc()
+                else:
+                    import sys
+
+                    print(
+                        f"[ISKG:after] callback raised: {type(exc).__name__}: {exc}",
+                        file=sys.stderr,
+                    )
 
     def after_cancel(self, timer_id: str) -> None:
         """Cancel a timer previously created with :meth:`after`."""
-        timers = self._timers
-        t = timers.pop(timer_id, None)
-        if t:
-            t.cancel()
+        handle = self._timers.pop(timer_id, None)
+        if handle is not None:
+            handle.cancelled = True  # type: ignore[attr-defined]
+            handle.cancel()
 
     def run_async(self, coro: Any, then: Callable | None = None) -> Any:
         """Run a coroutine in a background thread with its own event loop.
@@ -518,10 +602,18 @@ class Application:
             try:
                 self._window.evaluate_js(js)
             except Exception as exc:
-                if self._debug:
-                    import sys
+                # Always surface the failure so a silent UI freeze is at
+                # least diagnosable. Debug mode adds a full traceback.
+                import sys
 
-                    print(f"[ISKG:js] {exc}", file=sys.stderr)
+                print(
+                    f"[ISKG:js] evaluate_js failed: {type(exc).__name__}: {exc}",
+                    file=sys.stderr,
+                )
+                if self._debug:
+                    import traceback
+
+                    traceback.print_exc(file=sys.stderr)
 
     # ── Sync batching (opt-in) ────────────────────────────────────────
     # Multiple rapid `_sync()` calls (e.g. a progress pipeline that ticks at
@@ -545,10 +637,32 @@ class Application:
         with self._sync_lock:
             if not self._deferred_sync:
                 return
-            js = ";".join(self._deferred_sync)
-            self._deferred_sync.clear()
-        if js:
-            self._eval_js(js)
+            chunks_in = self._deferred_sync
+            self._deferred_sync = []
+        # Group JS statements into chunks no larger than MAX_CHUNK_BYTES
+        # before forwarding to webview: a single evaluate_js() of many MB
+        # of concatenated statements can stall the JS thread and trip a
+        # console-level warning. Splitting at statement boundaries keeps
+        # each round-trip cheap and matches the per-eval cost of a
+        # single statement.
+        MAX_CHUNK = 64 * 1024
+        current: list[str] = []
+        current_size = 0
+        for js in chunks_in:
+            piece_size = len(js) + 1  # +1 for the trailing ";"
+            if current and current_size + piece_size > MAX_CHUNK:
+                joined = ";".join(current)
+                if joined:
+                    self._eval_js(joined)
+                current = [js]
+                current_size = piece_size
+            else:
+                current.append(js)
+                current_size += piece_size
+        if current:
+            joined = ";".join(current)
+            if joined:
+                self._eval_js(joined)
 
     def _begin_sync_batch(self) -> None:
         with self._sync_lock:
@@ -625,6 +739,28 @@ class Application:
     def execute_js(self, js_code: str) -> Application:
         """Execute arbitrary JavaScript in the webview window."""
         self._eval_js(js_code)
+        return self
+
+    def inject_css(self, css: str) -> Application:
+        """Inject a CSS string at runtime (after the app has started).
+
+        The CSS is appended inside a ``<style id="iskg-user-css">`` tag
+        so the user can call this multiple times without losing the
+        previous injection. Useful for theme overrides and
+        app-specific styling.
+
+        Args:
+            css: a raw CSS string (e.g. ``"body { background: #000; }"``).
+        """
+        escaped = css.replace("</style>", "<\\/style>")
+        self._eval_js(
+            "(function(){"
+            "var s=document.getElementById('iskg-user-css');"
+            "if(!s){s=document.createElement('style');s.id='iskg-user-css';"
+            "document.head.appendChild(s);}"
+            "s.textContent+=" + json.dumps(escaped) + ";"
+            "})();"
+        )
         return self
 
     def _fire_close_callbacks(self) -> None:
@@ -718,15 +854,23 @@ class Application:
         deadlocks or crashes WebKit. Runs inline on the main thread and
         otherwise marshals through ``GLib.idle_add`` + a semaphore, mirroring
         pywebview's own ``create_file_dialog`` implementation.
+
+        If GLib is not importable we **raise** instead of silently running
+        the callback on the worker thread — that path used to deadlock
+        WebKit, and "GTK silently off-main-thread" is a much worse failure
+        mode than a clear exception the caller can handle.
         """
         if threading.current_thread() is threading.main_thread():
             fn()
             return
         try:
             from gi.repository import GLib  # type: ignore[import-untyped]
-        except (ImportError, ValueError):
-            fn()
-            return
+        except (ImportError, ValueError) as exc:
+            raise RuntimeError(
+                f"Cannot run GTK modal from a worker thread: {exc}. "
+                "Ensure gi.repository.GLib is importable, or invoke the "
+                "dialog from the main thread (e.g. via app.after(0, ...))."
+            ) from exc
         done = threading.Event()
 
         def _dispatch() -> bool:

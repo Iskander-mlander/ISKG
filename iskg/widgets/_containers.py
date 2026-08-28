@@ -47,13 +47,21 @@ class Frame(Widget):
       ``"auto"``. Default ``"flex"``.
     """
 
+    _FIRST_POSITIONAL_AS_TEXT = True
+
     def __init__(
         self,
+        *args: Any,
         parent: Widget | None = None,
         text: str = "",
         flex: bool = True,
         **kwargs: Any,
     ) -> None:
+        args, kwargs = self._swap_first_positional_str(args, kwargs)
+        if args:
+            parent = args[0]
+        if "text" in kwargs and text == "":
+            text = kwargs.pop("text")
         super().__init__(parent, **kwargs)
         self._config_dict["text"] = text
         self._config_dict["flex"] = flex
@@ -61,6 +69,15 @@ class Frame(Widget):
         self._grid_layout = None
         self._grid_column_weights: dict[int, tuple[float, int]] = {}
         self._grid_row_weights: dict[int, tuple[float, int]] = {}
+
+    @property
+    def text(self) -> str:
+        return self._config_dict.get("text", "")
+
+    @text.setter
+    def text(self, value: str) -> None:
+        self._config_dict["text"] = str(value)
+        self._sync()
 
     def grid_columnconfigure(self, column: int, weight: float = 0, minsize: int = 0) -> None:
         if weight == 0 and minsize == 0:
@@ -262,8 +279,13 @@ class PanedWindow(Widget):
         self._config_dict["_minsize"] = minsize
         self._config_dict["_sash_width"] = sash_width
 
+    @property
+    def sash_pos(self) -> float:
+        return self._config_dict.get("_sash_pos", 0.5)
+
+    @sash_pos.setter
     def sash_pos(self, pos: float) -> None:
-        self._config_dict["_sash_pos"] = max(0.0, min(1.0, pos))
+        self._config_dict["_sash_pos"] = max(0.0, min(1.0, float(pos)))
         self._sync()
 
     def _render(self) -> str:
@@ -364,16 +386,47 @@ class Notebook(Widget):
         self.add(widget)
         return widget
 
+    def remove_tab(self, idx: int) -> bool:
+        """Remove a tab by index. Returns True if removed."""
+        if 0 <= idx < len(self._tabs):
+            tab = self._tabs.pop(idx)
+            self._children = [c for c in self._children if c is not tab["widget"]]
+            self._config_dict["active"] = max(0, min(idx - 1, len(self._tabs) - 1))
+            self._sync()
+            return True
+        return False
+
+    def set_active(self, idx: int) -> bool:
+        """Set the active tab by index. Returns True if changed."""
+        if 0 <= idx < len(self._tabs) and self._config_dict.get("active") != idx:
+            self._config_dict["active"] = idx
+            self._sync()
+            return True
+        return False
+
+    @property
+    def current_tab(self) -> int:
+        return self._config_dict.get("active", 0)
+
+    @current_tab.setter
+    def current_tab(self, idx: int) -> None:
+        self.set_active(idx)
+
+    @property
+    def tab_count(self) -> int:
+        return len(self._tabs)
+
     def _render(self) -> str:
         style = self._render_style()
         attrs = self._render_attrs()
+        active = self._config_dict.get("active", 0)
         tabs_html = ""
         pages_html = ""
         for i, tab in enumerate(self._tabs):
-            active = " active" if i == 0 else ""
-            tabs_html += f'<div class="iskg-tab{active}" data-idx="{i}">{tab["title"]}</div>'
+            tab_active = " active" if i == active else ""
+            tabs_html += f'<div class="iskg-tab{tab_active}" data-idx="{i}">{tab["title"]}</div>'
             page_style = (
-                "display:block;overflow:auto;" if i == 0 else "display:none;overflow:auto;"
+                "display:block;overflow:auto;" if i == active else "display:none;overflow:auto;"
             )
             pages_html += f'<div class="iskg-tabpage" id="{self._id}-page-{i}" style="{page_style}">{tab["widget"]._render()}</div>'
         return f'''<div id="{self._id}" class="iskg-notebook" style="{style}" {attrs}>

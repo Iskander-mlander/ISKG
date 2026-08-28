@@ -1,0 +1,89 @@
+"""ISKG tool scaffold.
+
+A small command-driven utility: input fields at the top, an output log at the
+bottom, and a primary action button. Ideal for batch generators, converters,
+and other "process many files" tools.
+
+Run with::
+
+    iskg run app.py
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+from iskg import (
+    Application,
+    Button,
+    DirectoryPicker,
+    Entry,
+    FileBrowser,
+    Frame,
+    HBox,
+    Label,
+    LogViewer,
+    ProgressBar,
+    VBox,
+)
+
+
+def main() -> None:
+    app = Application(title="{{ name }}", width=900, height=600)
+
+    root = VBox(app, gap=8, padding=12)
+    root.fill = "both"
+    root.expand = True
+
+    # Header.
+    Label(root, text="{{ name }}", style="h1")
+    Label(
+        root,
+        text="A small ISKG tool. Fill the inputs and press Run.",
+        style="muted",
+    )
+
+    # Input row.
+    inputs = Frame(root, direction="column", gap=6, text="Inputs")
+
+    in_dir = DirectoryPicker(inputs, label="Input folder", value=str(Path.cwd()))
+    out_dir = DirectoryPicker(inputs, label="Output folder", value=str(Path.cwd() / "out"))
+    pattern = Entry(inputs, label="File pattern", value="*.txt")
+
+    # Action row.
+    actions = HBox(root, gap=6)
+    progress = ProgressBar(actions, value=0, maximum=100)
+    progress.fill = "x"
+    progress.expand = True
+    run_btn = Button(actions, text="Run")
+
+    # Output log.
+    log = LogViewer(root, text="")
+    log.fill = "both"
+    log.expand = True
+
+    # Side: file browser showing the input folder.
+    side = VBox(root, gap=6)
+    side.fill = "y"
+
+    browser = FileBrowser(side, root=in_dir.value)
+    browser.fill = "both"
+    browser.expand = True
+
+    def on_run() -> None:
+        log.clear()
+        log.write(f"Input:  {in_dir.value}\n")
+        log.write(f"Output: {out_dir.value}\n")
+        log.write(f"Pattern: {pattern.value}\n")
+        log.write("---\n")
+        log.write("Done. (Replace this stub with your real work.)\n")
+        progress.value = 100
+
+    run_btn.command = on_run
+    in_dir.command = lambda v: setattr(browser, "root", v)
+
+    app.run()
+
+
+if __name__ == "__main__":
+    main()

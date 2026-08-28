@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import contextlib
 import json
+from collections.abc import Callable
 from typing import Any
 
 from ..base import Widget
@@ -15,8 +16,11 @@ class Label(Widget):
     ``font_size``, ``padding``, etc.).
     """
 
+    _FIRST_POSITIONAL_AS_TEXT = True
+
     def __init__(
         self,
+        *args: Any,
         parent: Widget | None = None,
         text: str = "",
         wraplength: int | None = None,
@@ -24,6 +28,15 @@ class Label(Widget):
         justify: str = "",
         **kwargs: Any,
     ) -> None:
+        args, kwargs = self._swap_first_positional_str(args, kwargs)
+        if args:
+            parent = args[0]
+        # ``text`` was already keyword-bound by Python; if the swap helper
+        # promoted a positional string into ``kwargs['text']`` we need to
+        # read it back from kwargs (Python's parameter binding only goes
+        # one way: explicit ``text=`` wins, otherwise kwargs is the source).
+        if "text" in kwargs and text == "":
+            text = kwargs.pop("text")
         super().__init__(parent, **kwargs)
         self._config_dict["text"] = (
             self._textvariable.get() if self._textvariable is not None else text
@@ -150,6 +163,32 @@ class ProgressBar(Widget):
         self._config_dict["value"] = float(v)
         self._sync()
 
+    @property
+    def max_(self) -> float:
+        return self._config_dict.get("max", 100)
+
+    @max_.setter
+    def max_(self, v: float) -> None:
+        self._config_dict["max"] = float(v)
+        self._sync()
+
+    @property
+    def show_text(self) -> bool:
+        return self._get_cfg("show-text", False)
+
+    @show_text.setter
+    def show_text(self, v: bool) -> None:
+        self._config_dict["show-text"] = bool(v)
+        self._sync()
+
+    @property
+    def enabled(self) -> bool:
+        return not self._config_dict.get("disabled", False)
+
+    @enabled.setter
+    def enabled(self, value: bool) -> None:
+        self._set_state("normal" if value else "disabled")
+
     def _render(self) -> str:
         val = self._config_dict.get("value", 0)
         mx = self._config_dict.get("max", 100)
@@ -224,6 +263,33 @@ class LEDDisplay(Widget):
         self._config_dict["value"] = v
         self._sync()
 
+    @property
+    def digits(self) -> int:
+        return self._config_dict.get("digits", 4)
+
+    @digits.setter
+    def digits(self, v: int) -> None:
+        self._config_dict["digits"] = max(1, int(v))
+        self._sync()
+
+    @property
+    def color(self) -> str:
+        return self._config_dict.get("color", "green")
+
+    @color.setter
+    def color(self, v: str) -> None:
+        self._config_dict["color"] = str(v)
+        self._sync()
+
+    @property
+    def label(self) -> str:
+        return self._config_dict.get("label", "")
+
+    @label.setter
+    def label(self, v: str) -> None:
+        self._config_dict["label"] = str(v)
+        self._sync()
+
     def _render(self) -> str:
         digits = self._config_dict.get("digits", 4)
         val = self._config_dict.get("value", 0)
@@ -284,6 +350,24 @@ class IndicatorLED(Widget):
     @color.setter
     def color(self, value: str) -> None:
         self._config_dict["color"] = str(value)
+        self._sync()
+
+    @property
+    def label(self) -> str:
+        return self._config_dict.get("label", "")
+
+    @label.setter
+    def label(self, v: str) -> None:
+        self._config_dict["label"] = str(v)
+        self._sync()
+
+    @property
+    def size(self) -> int:
+        return self._config_dict.get("size", 8)
+
+    @size.setter
+    def size(self, v: int) -> None:
+        self._config_dict["size"] = int(v)
         self._sync()
 
     def _col_map(self) -> dict[str, str]:
@@ -363,6 +447,42 @@ class RadialGauge(Widget):
     @value.setter
     def value(self, v: float) -> None:
         self._config_dict["value"] = float(v)
+        self._sync()
+
+    @property
+    def from_(self) -> int:
+        return self._config_dict.get("from", 0)
+
+    @from_.setter
+    def from_(self, v: int) -> None:
+        self._config_dict["from"] = int(v)
+        self._sync()
+
+    @property
+    def to(self) -> int:
+        return self._config_dict.get("to", 100)
+
+    @to.setter
+    def to(self, v: int) -> None:
+        self._config_dict["to"] = int(v)
+        self._sync()
+
+    @property
+    def label(self) -> str:
+        return self._config_dict.get("label", "")
+
+    @label.setter
+    def label(self, v: str) -> None:
+        self._config_dict["label"] = str(v)
+        self._sync()
+
+    @property
+    def units(self) -> str:
+        return self._config_dict.get("units", "")
+
+    @units.setter
+    def units(self, v: str) -> None:
+        self._config_dict["units"] = str(v)
         self._sync()
 
     def _render(self) -> str:
@@ -453,11 +573,24 @@ class StatusBar(Widget):
 
     @text.setter
     def text(self, value: str) -> None:
-        sections = self._config_dict.get("sections", [])
+        # Build a new sections list (no in-place mutation of the existing
+        # list, so callers can keep their own reference and watch for
+        # changes).
+        sections = list(self._config_dict.get("sections", []))
         if sections:
-            sections[0]["text"] = str(value)
+            sections[0] = {**sections[0], "text": str(value)}
         else:
-            self._config_dict["sections"] = [{"text": str(value)}]
+            sections = [{"text": str(value)}]
+        self._config_dict["sections"] = sections
+        self._sync()
+
+    @property
+    def sections(self) -> list:
+        return list(self._config_dict.get("sections", []))
+
+    @sections.setter
+    def sections(self, value: list) -> None:
+        self._config_dict["sections"] = list(value or [])
         self._sync()
 
     def _render(self) -> str:
@@ -492,14 +625,22 @@ class StatusBar(Widget):
 class IconLabel(Widget):
     """A label with an inline icon."""
 
+    _FIRST_POSITIONAL_AS_TEXT = True
+
     def __init__(
         self,
+        *args: Any,
         parent: Widget | None = None,
         text: str = "",
         icon: str = "",
         icon_size: int = 14,
         **kwargs: Any,
     ) -> None:
+        args, kwargs = self._swap_first_positional_str(args, kwargs)
+        if args:
+            parent = args[0]
+        if "text" in kwargs and text == "":
+            text = kwargs.pop("text")
         super().__init__(parent, **kwargs)
         self._config_dict["text"] = text
         self._config_dict["icon"] = icon
@@ -521,6 +662,15 @@ class IconLabel(Widget):
     @icon.setter
     def icon(self, value: str) -> None:
         self._config_dict["icon"] = str(value)
+        self._sync()
+
+    @property
+    def icon_size(self) -> int:
+        return self._config_dict.get("icon_size", 14)
+
+    @icon_size.setter
+    def icon_size(self, value: int) -> None:
+        self._config_dict["icon_size"] = int(value)
         self._sync()
 
     def _render(self) -> str:
@@ -567,6 +717,8 @@ else if({json.dumps(bool(icon))})el.insertAdjacentHTML("afterbegin",{json.dumps(
 class ImageBox(Widget):
     """A widget that displays an image."""
 
+    _VALID_FITS = {"contain", "cover", "fill", "none", "scale-down"}
+
     def __init__(
         self,
         parent: Widget | None = None,
@@ -574,13 +726,44 @@ class ImageBox(Widget):
         width: int | str = 100,
         height: int | str = 100,
         fit: str = "contain",
+        command: Callable | None = None,
         **kwargs: Any,
     ) -> None:
+        if fit not in self._VALID_FITS:
+            raise ValueError(
+                f"ImageBox.fit must be one of {sorted(self._VALID_FITS)}, got {fit!r}"
+            )
+        if command:
+            kwargs["command"] = command
         super().__init__(parent, **kwargs)
         self._config_dict["src"] = src
         self._config_dict["width"] = width
         self._config_dict["height"] = height
         self._config_dict["fit"] = fit
+        if command is not None:
+            self._config_dict["command"] = command
+
+    @property
+    def src(self) -> str:
+        return self._config_dict.get("src", "")
+
+    @src.setter
+    def src(self, value: str) -> None:
+        self._config_dict["src"] = str(value)
+        self._sync()
+
+    @property
+    def fit(self) -> str:
+        return self._config_dict.get("fit", "contain")
+
+    @fit.setter
+    def fit(self, value: str) -> None:
+        if value not in self._VALID_FITS:
+            raise ValueError(
+                f"ImageBox.fit must be one of {sorted(self._VALID_FITS)}, got {value!r}"
+            )
+        self._config_dict["fit"] = str(value)
+        self._sync()
 
     def _render(self) -> str:
         src = self._config_dict.get("src", "")
@@ -597,6 +780,11 @@ class ImageBox(Widget):
 </div>'''
 
     def _handle_bridge_event(self, event_name: str, event_data: Any) -> str | None:
+        if event_name == "click":
+            cmd = self._config_dict.get("command")
+            if cmd is not None:
+                with contextlib.suppress(Exception):
+                    cmd()
         return super()._handle_bridge_event(event_name, event_data)
 
     def _render_update_js(self) -> str:

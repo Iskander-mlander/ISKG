@@ -67,14 +67,27 @@ class TestJSAPI:
         _HANDLERS.pop("test_bad", None)
 
     def test_debounce_drops_duplicate_within_window(self):
+        # UI events (click, change, etc.) bypass the debounce so a
+        # double-click is never lost. Use a non-UI event name here.
         api = _JSAPI()
         api._last_event.clear()
         calls = []
         _HANDLERS["debounce_w"] = lambda name, data: calls.append((name, data))
-        api.on_event("debounce_w", "click", None)
-        api.on_event("debounce_w", "click", None)
+        api.on_event("debounce_w", "mousemove", None)
+        api.on_event("debounce_w", "mousemove", None)
         assert len(calls) == 1
         _HANDLERS.pop("debounce_w", None)
+
+    def test_ui_events_never_debounced(self):
+        # A second click in <50ms must NOT be dropped.
+        api = _JSAPI()
+        api._last_event.clear()
+        calls = []
+        _HANDLERS["ui_w"] = lambda name, data: calls.append((name, data))
+        api.on_event("ui_w", "click", None)
+        api.on_event("ui_w", "click", None)
+        assert len(calls) == 2
+        _HANDLERS.pop("ui_w", None)
 
     def test_different_events_not_debounced(self):
         api = _JSAPI()
@@ -97,12 +110,14 @@ class TestJSAPI:
         _HANDLERS.pop("debounce_data", None)
 
     def test_debounce_drops_same_event_same_data(self):
+        # High-frequency non-UI events with the same payload are still
+        # debounced; UI events are not (see test_ui_events_never_debounced).
         api = _JSAPI()
         api._last_event.clear()
         calls = []
         _HANDLERS["debounce_dup"] = lambda name, data: calls.append((name, data))
-        api.on_event("debounce_dup", "change", '"x"')
-        api.on_event("debounce_dup", "change", '"x"')
+        api.on_event("debounce_dup", "scroll", '"x"')
+        api.on_event("debounce_dup", "scroll", '"x"')
         assert len(calls) == 1
         _HANDLERS.pop("debounce_dup", None)
 

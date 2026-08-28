@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import html as _html
+from datetime import datetime
 from typing import Any
 
 from ..base import Widget
@@ -26,8 +27,10 @@ class LogViewer(Widget):
         parent: parent widget (optional).
         height: visible height in px.
         max_lines: max lines kept before trimming.
-        show_timestamp: prefix each line with an ISO timestamp
-            (default ``False``).
+        show_timestamp: prefix each line with an ISO timestamp captured at
+            append time (default ``False``). The timestamp is frozen per line
+            so that the rendered HTML is stable across re-renders, allowing
+            the per-widget JS-update dedup to short-circuit no-op syncs.
         autoscroll: always keep the view scrolled to the newest line
             (default ``True``).
         kwargs: forwarded to :class:`~iskg.base.Widget`.
@@ -49,12 +52,12 @@ class LogViewer(Widget):
         self._config_dict["max_lines"] = max_lines
         self._config_dict["show_timestamp"] = show_timestamp
         self._config_dict["autoscroll"] = autoscroll
-        self._lines: list[tuple[str, str]] = []
+        self._lines: list[tuple[str, str, str]] = []
 
     @property
     def lines(self) -> list[tuple[str, str]]:
-        """(severity, text) pairs currently shown."""
-        return list(self._lines)
+        """``(severity, text)`` pairs currently shown."""
+        return [(lvl, msg) for lvl, msg, _ in self._lines]
 
     def append(self, text: str, level: str = "INFO") -> LogViewer:
         """Append a line to the log.
@@ -68,10 +71,13 @@ class LogViewer(Widget):
             self (for chaining).
         """
         level = level.upper()
+        ts = ""
+        if self._config_dict.get("show_timestamp"):
+            ts = datetime.now().isoformat(timespec="seconds")
         for part in str(text).split("\n"):
             if part == "":
                 continue
-            self._lines.append((level, part))
+            self._lines.append((level, part, ts))
         max_lines = int(self._config_dict.get("max_lines", 500))
         if len(self._lines) > max_lines:
             del self._lines[: len(self._lines) - max_lines]
@@ -86,17 +92,13 @@ class LogViewer(Widget):
 
     def _line_html(self) -> str:
         out: list[str] = []
-        for level, msg in self._lines:
+        for level, msg, ts in self._lines:
             color = LEVEL_COLORS.get(level, "#c8d6e5")
-            ts = ""
-            if self._config_dict.get("show_timestamp"):
-                from datetime import datetime
-
-                ts = f'<span class="iskg-log-ts">{datetime.now().isoformat(timespec="seconds")}</span>'
+            ts_html = f'<span class="iskg-log-ts">{_html.escape(ts)}</span>' if ts else ""
             out.append(
                 f'<div class="iskg-log-line" data-level="{level}">'
                 f'<span class="iskg-log-badge" style="color:{color}">[{level}]</span> '
-                f"{ts}<span>{_html.escape(msg)}</span></div>"
+                f"{ts_html}<span>{_html.escape(msg)}</span></div>"
             )
         return "".join(out)
 

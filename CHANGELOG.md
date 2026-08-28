@@ -1,6 +1,215 @@
 # Changelog
 
-## [0.4.5] — 2026-08-12
+## [0.4.8] — 2026-08-28
+
+### CLI and project packaging
+- **New `iskg` console script** (PEP 621 `[project.scripts]`):
+  `iskg --version`, `iskg info`, `iskg widgets`, `iskg themes`,
+  `iskg run <script>`, `iskg check <script>`,
+  `iskg new <name> [--template tool|dashboard|form|viewer]`,
+  `iskg bundle <script> --standalone|--exe`.
+- **Scaffolds** (`iskg/scaffolds/<name>/*.tmpl`):
+  * `tool` — input form + log + action button (PBRMatGen-style).
+  * `dashboard` — metric cards + progress + sparkline + time-series.
+  * `form` — validated form with `Form` and 4 validators.
+  * `viewer` — `FileBrowser` + `MarkdownViewer` two-pane viewer.
+- **`iskg._platform`** — cross-platform helpers: `IS_WINDOWS` /
+  `IS_MACOS` / `IS_LINUX` / `IS_BSD` / `IS_POSIX` constants, `OS_NAME`,
+  `user_config_dir()` / `user_data_dir()` / `user_cache_dir()` (XDG on
+  Linux, `~/Library/Application Support` on macOS, `%APPDATA%` on
+  Windows), `native_line_ending()` for cross-platform text files.
+- **`pyproject.toml`**: full PEP 621 metadata, PEP 639-compliant
+  license expression, OS classifiers (Windows / macOS / Linux / BSD),
+  `optional-dependencies = { dev, docs, bundle }`.
+- **29 new tests** (`tests/test_cli.py`) for every CLI subcommand and
+  the `_platform` module.
+
+### Statistics
+- **854 tests** passing (was 825, +29 new).
+- **`pip install iskg` works** on any platform that has Python 3.10+.
+- **`iskg` is a real console script** on `PATH` after install.
+
+## [0.4.7] — 2026-08-27 (Phases E-I from comparative audit)
+
+### Phase E (Polish)
+- **Form validation** (`iskg.validation`): QValidator-style
+  ``RequiredValidator``/``RangeValidator``/``LengthValidator``/
+  ``PatternValidator``/``EmailValidator``/``URLValidator``/
+  ``NumberValidator``/``CustomValidator`` + aggregator ``Form`` with
+  per-field error rendering.
+- **DataGrid cell types**: ``column_types`` list (``text``/``number``/
+  ``bool``/``check``/``choice``/``date``), inline cell editing, focused
+  cell outline, ``set_cell``/``get_cell``/``selected_col``/``editable``
+  properties, ``command(row, col, value)`` callback.
+- **I18n / L10n** (``iskg.i18n``): ``tr()``/``_()``, ``set_language()``,
+  ``get_language()``, ``available_languages()``, ``use_language()`` ctx
+  manager, ``Translator`` (loads JSON or ``.mo`` catalogues),
+  ``format_number``/``format_date`` locale-aware helpers.
+- **Theming**: 4 new themes (``high-contrast``, ``solarized``, ``sepia``).
+  ``app.inject_css(css)`` for runtime CSS injection.
+- **Pickers**: ``FontPicker`` (family + preview), ``DirectoryPicker``
+  (path + Browse), ``ImagePicker`` (preview + Browse).
+- **Display widgets**: ``Avatar``, ``Badge``, ``Spinner`` (animated),
+  ``ProgressCircle``.
+- **Charts**: ``BarChart``, ``PieChart``, ``ScatterPlot`` (with trend
+  line), ``Heatmap`` (4 colormaps).
+- **Utilities**: ``Carousel`` (autoplay + dots), ``SearchCtrl`` (composite
+  with clear), ``Toast`` (non-modal notifications).
+
+### Phase F (Advanced)
+- **Calendar** widget (full month grid, navigation, day-of-week option).
+- **TimePicker / DateTimePicker** (spinbox-style HH:MM:SS).
+- **ToolBar** with ``add_action``/``add_separator``/``set_active``.
+- **MdiArea / MdiSubWindow** (movable draggable subwindows,
+  ``tile()``/``cascade()`` layouts).
+- **SystemTray** (notification-area icon with menu and notify()).
+- **UndoStack / UndoCommand / SetAttrCommand** (Qt-style undo/redo).
+- **PropertyGrid** (object-attribute editor with type-driven editors).
+- **CommandPalette** (VSCode-style Ctrl+Shift+P).
+
+### Phase G (Tools / Debug)
+- **Debug** (``iskg.debug``): ``qDebug``/``qInfo``/``qWarning``/
+  ``qCritical`` print helpers and a ``Logger`` with level filtering and
+  rolling history.
+- **WidgetInspector** (click-to-inspect overlay, Alt+I toggle).
+- **fps_meter** (frame-rate measurement).
+- **enable_hot_reload** (CSS file watcher).
+
+### Phase H (Graphics)
+- **GraphicsView** (SVG canvas with hit-test items, ``add_item``
+  rect/ellipse/text, click selection).
+
+### Phase I (Long tail)
+- **MarkdownViewer** + ``render_markdown()`` (headings, bold/italic,
+  code, lists, links, blockquotes, hr).
+
+### Statistics
+- **72 widgets** (was 49 in 0.4.6).
+- **825 tests** passing (was 770, +55 new).
+
+## [0.4.7] — 2026-08-27
+
+### Widgets
+- **ColorPicker** — selector de color HSV/RGB/HEX con swatch, sliders y
+  entrada de texto. Acepta `#rrggbb` y `rrggbb`. Property `color`.
+- **FileBrowser** — árbol de directorios read-only con selección y
+  comando. Métodos `refresh()`, property `root`, `selected_path`.
+- **Modal** — diálogo overlay con backdrop, título, botón cerrar y eventos
+  `on_close`. Métodos `show()`, `hide()` y property `visible`.
+- **TabBar** — barra de tabs sin páginas (vs. Notebook). Métodos
+  `add_tab()`, `remove_tab()`, property `current_tab`, `tab_count`.
+- **RangeSlider** — slider de dos handles (low/high) con clamping
+  automático. Property `range` como tupla.
+
+### API consistency
+- **`enabled` property** añadida a todos los widgets interactivos
+  (Button, CheckBox, RadioButton, ToggleSwitch, Entry, ComboBox,
+  Slider, SpinBox, ProgressBar, ListBox, DataGrid, TreeView, Knob).
+- **`readonly` property** añadida a Entry y Text.
+- **Reactive `from_`/`to`/`step`/`orient`/`show_value`** en Slider, SpinBox,
+  Scale, Knob.
+- **Reactive `min_value`/`max_value`** alias en SpinBox.
+- **Reactive `selected_index`** en ListBox, **`selected_row`** en
+  DataGrid, **`selected_path`** en TreeView.
+- **`ComboBox.value` writable** — ahora `cb.value = "foo"` selecciona
+  el item por string.
+- **`ListBox`, `DataGrid`, `TreeView`** con API runtime completa:
+  `add`/`append`/`insert`/`delete`/`clear`/`remove`/`append_row`/
+  `remove_row`/`add_node`. Para TreeView, `add(string_or_dict, parent_path=...)`
+  soporta el formato `node/child/grandchild`.
+- **Notebook runtime**: `remove_tab()`, `set_active()`,
+  `current_tab` property, `tab_count`.
+- **PanedWindow.sash_pos como property** (antes era método).
+- **Frame.text como property** reactivo.
+- **ImageBox.fit validado** contra
+  `{"contain", "cover", "fill", "none", "scale-down"}`.
+- **DatePicker.date_format** como property pública limpia
+  (almacenada como `date_format`, alias interno `format` para
+  retrocompatibilidad).
+- **IconLabel.icon/icon_size, ProgressBar.max_/show_text, Knob.from_/to/color**,
+  **Clock.seconds/military** ahora son properties reactivas.
+- **IndicatorLED, LEDDisplay, RadialGauge, StatusBar** con properties
+  para `color`, `label`, `size`, `digits`, `units`, `sections`.
+
+### Bug fixes
+- **LogViewer** (from 0.4.6) — re-render por timestamp.
+- **`_handle_bridge_event` en Button ya no duplica el command** (la
+  base class lo invoca automáticamente).
+- **ListBox preserva selección** al refrescar items
+  (`_render_update_js` ahora emite el `selected` class).
+- **ListBox.command** ahora pasa `idx:text` (no solo idx) para que el
+  callback reciba el texto seleccionado.
+- **Scale._render_update_js** ahora actualiza también las labels
+  min/max cuando cambia el rango.
+- **Clock.stop()/start()** — el interval se puede cancelar y reiniciar;
+  `destroy()` lo limpia automáticamente.
+- **Knob.destroy()** — limpia `window._iskg_knobHandlers[id]` y
+  `window.iskg_knob_{id}` para evitar memory leaks.
+- **StatusBar.text setter** no muta in-place la lista de sections
+  (sin side-effects para callers que retienen referencias).
+- **ComboBox editable** ahora implementa filtrado en tiempo real
+  (autocomplete) y selección por Enter.
+- **TreeView.add** ahora detecta si el argumento es un nodo (dict/str)
+  o un Widget, llamando a `add_node` o al `Widget.add` original
+  respectivamente.
+- **API posicional `("text")`** ahora soportado en CheckBox,
+  RadioButton, ToggleSwitch, Text, RichText, IconLabel, Frame (todos
+  con `_FIRST_POSITIONAL_AS_TEXT = True`).
+
+### Statistics
+- **51 widgets** exportados (era 47).
+- **770 tests passing**, 2 skipped, 0 failing.
+
+## [0.4.6] — 2026-08-27
+
+### Fixed
+- **LogViewer re-renders every append when `show_timestamp=True`**: a
+  `datetime.now()` call inside `_line_html()` produced a fresh ISO string
+  on every render, defeating the per-widget `_last_sync_js` dedup and
+  flooding the webview with hundreds of `innerHTML` updates per second
+  (visible as audio feedback in some webkit2gtk setups). The timestamp
+  is now frozen at `append()` time and stored alongside each line, so
+  the rendered HTML is stable across no-op syncs.
+- **`_render_style_update_js` re-emitted the same CSS on every sync**:
+  the style cache started as an empty string, so the first sync always
+  emitted `iskg_set_style` bytes that were already in the initial HTML,
+  which broke the `_last_sync_js` dedup on the second sync. The cache
+  is now primed once in `Application.add()` (`_prime_style_cache`),
+  mirroring how the widget's initial render is already in the DOM.
+- **`_JSAPI` debounce silently dropped user actions** (clicks, keypresses,
+  changes, submits, etc.) when the same event fired twice within 50 ms,
+  which is exactly what happens during a double-click. Events are now
+  classified; UI events bypass the debounce and only high-frequency
+  events (mousemove, scroll, resize) are debounced by payload.
+- **`_flush_sync` joined every queued JS statement with `;` and emitted
+  one giant `evaluate_js`**: a busy `LogViewer` could push several MB
+  into a single call and stall the JS thread. Statements are now
+  chunked at 64 KB.
+- **`_eval_js` swallowed all `evaluate_js` exceptions** unless
+  `debug=True`. The exception is now always printed to stderr; debug
+  mode adds a full traceback.
+- **`_run_gtk_modal` silently ran dialogs on the worker thread** when
+  GLib wasn't importable, deadlocking WebKit. The fallback path now
+  raises a `RuntimeError` with a clear remediation message.
+
+### Changed
+- **`HBox` / `VBox` are now proper subclasses of `Box`** instead of
+  factory functions, so `isinstance(w, HBox)` works and
+  `widget.__class__.__name__ == "HBox"` is reliable.
+- **First-positional-string constructors**: `Label("text")`,
+  `Button("text")`, and `Entry("text")` now work the way every other
+  toolkit does (tkinter, Qt, wx). Subclasses opt in via the class flag
+  `_FIRST_POSITIONAL_AS_TEXT = True` and call the
+  `_swap_first_positional_str()` helper from their `__init__`.
+- **`Application.after` uses a single daemon worker thread + priority
+  queue** instead of one `threading.Timer` per callback, so concurrent
+  timer callbacks can no longer race on `_deferred_sync` or widget
+  state. `Widget.after` now delegates to `Application.after` when the
+  widget is attached to an app, and falls back to a one-shot timer
+  otherwise.
+- **`_Timer.cancel()` is safe to call on a handle whose backing timer
+  was already None** (e.g. timers created by the new app-level worker).
+
 
 ### Changed
 - **`docs/conf.py` deriva `release` de `iskg._version.VERSION`** (antes se

@@ -1,0 +1,108 @@
+"""ISKG dashboard scaffold.
+
+A grid of cards, each card showing a key metric. Good for monitoring
+dashboards, status pages, and admin panels.
+
+Run with::
+
+    iskg run app.py
+"""
+
+from __future__ import annotations
+
+import random
+
+from iskg import (
+    Application,
+    BarChart,
+    Frame,
+    HBox,
+    Label,
+    ProgressCircle,
+    Sparkline,
+    TimeSeriesGraph,
+    VBox,
+    qInfo,
+)
+
+
+def make_card(parent: Frame, title: str, accent: str = "#7aa2f7") -> VBox:
+    card = VBox(parent, gap=4, padding=12)
+    card.fill = "both"
+    card.expand = True
+    Label(card, text=title, style="muted")
+    big = Label(card, text="—", style="h1")
+    big.style_data = {"color": accent}
+    sub = Label(card, text="", style="muted")
+    return card
+
+
+def main() -> None:
+    app = Application(title="{{ name }}", width=1100, height=720)
+
+    root = VBox(app, gap=8, padding=12)
+    root.fill = "both"
+    root.expand = True
+
+    Label(root, text="{{ name }}", style="h1")
+
+    # Top row: 3 metric cards.
+    top = HBox(root, gap=8)
+    top.fill = "x"
+
+    c1 = make_card(top, "CPU", "#9ece6a")
+    c2 = make_card(top, "Memory", "#e0af68")
+    c3 = make_card(top, "Disk", "#f7768e")
+    cpu_lbl = c1.children[1]
+    mem_lbl = c2.children[1]
+    disk_lbl = c3.children[1]
+
+    # Middle row: progress + sparkline.
+    mid = HBox(root, gap=8)
+    mid.fill = "x"
+
+    cpu_gauge = ProgressCircle(mid, value=42, maximum=100, size=120, label="CPU")
+    cpu_gauge.fill = "both"
+    cpu_gauge.expand = True
+
+    spark = Sparkline(mid, values=[1, 4, 2, 7, 5, 9, 6, 8], height=120)
+    spark.fill = "both"
+    spark.expand = True
+
+    # Bottom row: charts.
+    bottom = HBox(root, gap=8)
+    bottom.fill = "both"
+    bottom.expand = True
+
+    series = TimeSeriesGraph(
+        bottom,
+        series=[{"name": "RPS", "points": [(i, random.randint(20, 80)) for i in range(60)]}],
+        height=240,
+    )
+    series.fill = "both"
+    series.expand = True
+
+    bar = BarChart(
+        bottom,
+        values=[("Mon", 12), ("Tue", 18), ("Wed", 9), ("Thu", 24), ("Fri", 17)],
+        height=240,
+    )
+    bar.fill = "both"
+    bar.expand = True
+
+    def tick() -> None:
+        cpu = random.randint(10, 95)
+        mem = random.randint(30, 80)
+        disk = random.randint(40, 90)
+        cpu_lbl.text = f"{cpu}%"
+        mem_lbl.text = f"{mem}%"
+        disk_lbl.text = f"{disk}%"
+        cpu_gauge.value = cpu
+        qInfo(f"tick cpu={cpu} mem={mem} disk={disk}")
+
+    app.after(1000, tick)
+    app.run()
+
+
+if __name__ == "__main__":
+    main()

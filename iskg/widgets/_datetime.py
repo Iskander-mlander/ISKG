@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 from datetime import date as _date
 from typing import Any
@@ -75,6 +76,47 @@ class Clock(Widget):
         self._config_dict["military"] = military
         if command is not None:
             self._config_dict["command"] = command
+        self._interval_id: int | None = None
+
+    @property
+    def seconds(self) -> bool:
+        return self._config_dict.get("seconds", True)
+
+    @seconds.setter
+    def seconds(self, v: bool) -> None:
+        self._config_dict["seconds"] = bool(v)
+        self._sync()
+
+    @property
+    def military(self) -> bool:
+        return self._config_dict.get("military", True)
+
+    @military.setter
+    def military(self, v: bool) -> None:
+        self._config_dict["military"] = bool(v)
+        self._sync()
+
+    def stop(self) -> None:
+        """Stop the clock from ticking. The widget can be re-started with
+        :meth:`start`."""
+        if self._interval_id is not None and self._app and self._app._running:
+            self._eval_js(
+                f"if(window._iskg_clock_{self._id}){{clearInterval(window._iskg_clock_{self._id});window._iskg_clock_{self._id}=null;}}"
+            )
+        self._interval_id = None
+
+    def start(self) -> None:
+        """Restart the clock after a previous :meth:`stop`."""
+        if self._app and self._app._running:
+            self._eval_js(
+                f"if(!window._iskg_clock_{self._id}){{window._iskg_clock_{self._id}=setInterval(function(){{iskg_run_clock_{self._id}();}},1000);}}"
+            )
+            self._interval_id = 1  # Just a marker that the interval is live
+
+    def destroy(self) -> None:
+        with contextlib.suppress(Exception):
+            self.stop()
+        super().destroy()
 
     def _render(self) -> str:
         style = self._render_style()
@@ -89,7 +131,7 @@ class Clock(Widget):
 var el=document.getElementById("{self._id}");
 if(!el)return;
 function pad(n){{return n<10?"0"+n:""+n;}}
-function tick(){{
+window.iskg_run_clock_{self._id}=function(){{
   var now=new Date();
   var h=now.getHours(), ampm="";
   if({mil}==false){{
@@ -99,9 +141,9 @@ function tick(){{
   if({secs})t+=":"+pad(now.getSeconds());
   el.innerText=t+ampm;
   if({cmd})iskg_bridge_event("{self._id}","tick",t);
-}}
-tick();
-setInterval(tick,1000);
+}};
+window.iskg_run_clock_{self._id}();
+window._iskg_clock_{self._id}=setInterval(window.iskg_run_clock_{self._id},1000);
 }})();"""
 
 
@@ -133,9 +175,14 @@ class DatePicker(Widget):
         **kwargs: Any,
     ) -> None:
         super().__init__(parent, **kwargs)
+        # ``format_`` (with trailing underscore) is the public constructor
+        # kwarg, stored as ``format`` (no underscore) for backward
+        # compatibility with the existing ``_render_update_js`` etc. The
+        # public ``date_format`` property uses the cleaner name.
         self._config_dict["width"] = width
         self._config_dict["date"] = date or _date.today()
         self._config_dict["format"] = format_
+        self._config_dict["date_format"] = format_
         if command is not None:
             self._config_dict["command"] = command
 
@@ -150,9 +197,28 @@ class DatePicker(Widget):
         self._sync()
 
     @property
+    def date(self) -> _date:
+        return self.value
+
+    @date.setter
+    def date(self, d: _date) -> None:
+        self.value = d
+
+    @property
     def iso(self) -> str:
         """The selected date as an ISO string (``YYYY-MM-DD``)."""
         return self.value.isoformat()
+
+    @property
+    def date_format(self) -> str:
+        """strftime-style format for the field label."""
+        return self._config_dict.get("date_format", "%Y-%m-%d")
+
+    @date_format.setter
+    def date_format(self, fmt: str) -> None:
+        self._config_dict["date_format"] = str(fmt)
+        self._config_dict["format"] = str(fmt)  # Backward compat
+        self._sync()
 
     def _render(self) -> str:
         width = int(self._config_dict.get("width", 120))

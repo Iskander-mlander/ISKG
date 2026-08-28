@@ -1,0 +1,100 @@
+"""ISKG form scaffold.
+
+A validated form with several field types: text, email, number, choice,
+checkbox, and a date picker. On submit the form runs validators and shows
+either a success toast or per-field error messages.
+
+Run with::
+
+    iskg run app.py
+"""
+
+from __future__ import annotations
+
+from iskg import (
+    Application,
+    Button,
+    CheckBox,
+    ComboBox,
+    DatePicker,
+    EmailValidator,
+    Entry,
+    Form,
+    Frame,
+    HBox,
+    Label,
+    RangeValidator,
+    RequiredValidator,
+    SpinBox,
+    Toast,
+    VBox,
+)
+
+
+def main() -> None:
+    app = Application(title="{{ name }}", width=720, height=560)
+
+    root = VBox(app, gap=10, padding=16)
+    root.fill = "both"
+    root.expand = True
+
+    Label(root, text="{{ name }}", style="h1")
+    Label(
+        root,
+        text="A validated form. Press Submit to validate.",
+        style="muted",
+    )
+
+    form_box = VBox(root, gap=8)
+    form_box.fill = "x"
+
+    name = Entry(form_box, label="Full name", value="")
+    email = Entry(form_box, label="Email", value="")
+    age = SpinBox(form_box, label="Age", from_=0, to=120, value=18)
+    role = ComboBox(
+        form_box,
+        label="Role",
+        values=["User", "Admin", "Auditor"],
+        value="User",
+    )
+    birth = DatePicker(form_box, label="Date of birth", value="1990-01-01")
+    agree = CheckBox(form_box, text="I agree to the terms", value=False)
+
+    actions = HBox(root, gap=6)
+    submit = Button(actions, text="Submit", variant="primary")
+    reset = Button(actions, text="Reset")
+
+    # --- Validation -------------------------------------------------------
+    form = Form()
+    form.add_field("name", name, RequiredValidator(), LengthValidator(min=2, max=80))
+    form.add_field("email", email, RequiredValidator(), EmailValidator())
+    form.add_field("age", age, RequiredValidator(), RangeValidator(min=13, max=120))
+    form.add_field("role", role, RequiredValidator())
+    form.add_field("birth", birth, RequiredValidator())
+    form.add_field("agree", agree, RequiredValidator(message="Please accept the terms"))
+
+    def do_submit() -> None:
+        if form.validate():
+            Toast.show(app, f"Welcome, {name.value}!", variant="success")
+        else:
+            first = next(iter(form.errors))
+            err = form.errors[first][0]
+            Toast.show(app, f"{first}: {err}", variant="error")
+
+    def do_reset() -> None:
+        name.value = ""
+        email.value = ""
+        age.value = 18
+        role.value = "User"
+        birth.value = "1990-01-01"
+        agree.value = False
+        form.clear()
+
+    submit.command = do_submit
+    reset.command = do_reset
+
+    app.run()
+
+
+if __name__ == "__main__":
+    main()
