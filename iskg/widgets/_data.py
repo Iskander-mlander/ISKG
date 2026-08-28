@@ -560,7 +560,10 @@ class TreeView(Widget):
             item = {"text": item}
         item = dict(item)
         item.setdefault("text", "")
-        item.setdefault("children", [])
+        if not isinstance(item.get("children"), list):
+            # ``dict(item)`` widens to ``dict[str, str]`` after the
+            # setdefault above; re-assert the value type for assignment.
+            item["children"] = []  # type: ignore[assignment]
         items = self._config_dict["items"]
         if parent_path is None:
             items.append(item)
@@ -572,7 +575,7 @@ class TreeView(Widget):
                 items.append(item)
         self._sync()
 
-    def remove(self, path: str) -> bool:
+    def remove_node(self, path: str) -> bool:
         items = self._config_dict["items"]
         node, parent_list = self._find_node_with_parent(items, path)
         if parent_list is not None and node is not None:

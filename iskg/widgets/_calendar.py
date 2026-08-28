@@ -57,7 +57,10 @@ class Calendar(Widget):
         d = self._config_dict.get("date")
         if isinstance(d, dict):
             return _dict_to_date(d)
-        return d
+        if isinstance(d, _dt.date):
+            return d
+        # Fallback: today.
+        return _dt.date.today()
 
     @date.setter
     def date(self, v: _dt.date) -> None:
@@ -222,7 +225,10 @@ class TimePicker(Widget):
 
     @property
     def time(self) -> _dt.time:
-        return self._config_dict.get("time")
+        t = self._config_dict.get("time")
+        if isinstance(t, _dt.time):
+            return t
+        return _dt.datetime.now().time()
 
     @time.setter
     def time(self, v: _dt.time) -> None:
@@ -287,7 +293,10 @@ class DateTimePicker(Widget):
 
     @property
     def datetime(self) -> _dt.datetime:
-        return self._config_dict.get("datetime")
+        d = self._config_dict.get("datetime")
+        if isinstance(d, _dt.datetime):
+            return d
+        return _dt.datetime.now()
 
     @datetime.setter
     def datetime(self, v: _dt.datetime) -> None:
@@ -295,7 +304,7 @@ class DateTimePicker(Widget):
         self._sync()
 
     def _render(self) -> str:
-        from ._datetime import DatePicker, TimePicker
+        from ._datetime import DatePicker
 
         date_widget = DatePicker(date=self.datetime.date())
         time_widget = TimePicker(

@@ -225,7 +225,14 @@ class Modal(Widget):
 
     @property
     def visible(self) -> bool:
-        return self._config_dict.get("visible", False)
+        return bool(self._config_dict.get("visible", False))
+
+    @visible.setter
+    def visible(self, value: bool) -> None:
+        if value:
+            self.show()
+        else:
+            self.hide()
 
     def on_close(self, callback: Callable) -> None:
         self._on_close = callback

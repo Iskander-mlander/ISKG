@@ -72,10 +72,10 @@ class BarChart(Widget):
             return []
         out: list[tuple[str, float]] = []
         for i, item in enumerate(data):
-            if isinstance(item, tuple) and len(item) == 2:
-                out.append((str(item[0]), float(item[1])))
-            else:
+            if not isinstance(item, tuple):
                 out.append((f"#{i + 1}", float(item)))
+            elif len(item) == 2:
+                out.append((str(item[0]), float(item[1])))
         return out
 
     @property

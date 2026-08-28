@@ -393,7 +393,7 @@ class Application:
 
     @staticmethod
     def _import_gi_backend() -> None:
-        import gi
+        import gi  # type: ignore[import-not-found]
 
         # Pin GTK3 explicitly. An unversioned ``from gi.repository import Gtk``
         # resolves to the highest installed GTK (4.0 when both are present),
@@ -404,7 +404,7 @@ class Application:
             gi.require_version("WebKit2", "4.1")
         except ValueError:
             gi.require_version("WebKit2", "4.0")
-        from gi.repository import Gtk, WebKit2  # noqa: F401
+        from gi.repository import Gtk, WebKit2  # type: ignore[import-not-found]  # noqa: F401
 
     @staticmethod
     def _backend_install_hint() -> str:
@@ -569,13 +569,14 @@ class Application:
         import threading
 
         def _worker() -> None:
+            _then = then
             loop = asyncio.new_event_loop()
             try:
                 result = loop.run_until_complete(coro)
             except Exception as exc:  # noqa: BLE001
                 result = exc
-            if then is not None:
-                self.after(0, lambda: then(result))
+            if _then is not None:
+                self.after(0, lambda r=result, cb=_then: cb(r))
 
         th = threading.Thread(target=_worker, daemon=True)
         th.start()

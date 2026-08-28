@@ -72,20 +72,20 @@ def _detect_backends() -> list[str]:
     except Exception:
         pass
     try:
-        import gi  # noqa: F401
+        import gi  # type: ignore[import-not-found]  # noqa: F401
 
         found.append("gtk-webkit2")
     except Exception:
         pass
     try:
-        import objc  # noqa: F401
-        from Foundation import NSObject  # noqa: F401
+        import objc  # type: ignore[import-not-found]  # noqa: F401
+        from Foundation import NSObject  # type: ignore[import-not-found]  # noqa: F401
 
         found.append("pyobjc-webkit")
     except Exception:
         pass
     try:
-        import win32gui  # noqa: F401
+        import win32gui  # type: ignore[import-not-found]  # noqa: F401
 
         found.append("pywin32-edge")
     except Exception:

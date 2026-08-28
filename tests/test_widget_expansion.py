@@ -248,7 +248,7 @@ def test_treeview_add_nested():
 
 def test_treeview_remove():
     tv = TreeView(items=[{"text": "a"}, {"text": "b"}])
-    assert tv.remove("a") is True
+    assert tv.remove_node("a") is True
     assert len(tv.items) == 1
 
 

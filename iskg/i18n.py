@@ -141,7 +141,11 @@ class Translator:
             trans = _gettext.GNUTranslations(f)
         count = 0
         catalog = _TRANSLATORS.setdefault(self.lang, {})
-        for key, val in trans._catalog.items():
+        # GNUTranslations stores entries in a private ``_catalog`` dict; we
+        # iterate it to extract only str->str pairs. The attribute is private
+        # but stable across all cpython versions.
+        mo_catalog: dict[object, object] = getattr(trans, "_catalog", {})
+        for key, val in mo_catalog.items():
             if isinstance(key, str) and isinstance(val, str):
                 catalog[key] = val
                 count += 1
