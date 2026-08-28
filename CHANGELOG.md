@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.4.9] — 2026-08-28
+
+### Type-safety fixes
+- **Pyright clean** across the entire package: 0 errors, 0 warnings.
+- `iskg/app.py`: capture `then` in worker closure to avoid the
+  ``"Object of type None cannot be called"`` warning; mark `gi`
+  imports with `type: ignore[import-not-found]`.
+- `iskg/cli.py`: `type: ignore[import-not-found]` on the optional
+  `objc` / `Foundation` / `win32gui` imports used only to detect
+  backends.
+- `iskg/i18n.py`: access `GNUTranslations._catalog` via `getattr`
+  with a typed fallback (the attribute is private but stable).
+- `iskg/widgets/_calendar.py`: harden `date` / `time` / `datetime`
+  property getters against `None`; fix the misplaced
+  ``from ._datetime import TimePicker`` (TimePicker lives in
+  this module).
+- `iskg/widgets/_charts2.py`: reorder the `isinstance` check so
+  tuple items are not fed to `float()` in the else branch.
+- `iskg/widgets/_data.py`: rename `TreeView.remove(path)` to
+  `remove_node(path)` to avoid overriding `Widget.remove(child)`;
+  update the test; tighten `add_node`'s children coercion.
+- `iskg/widgets/_extras.py`: add a `visible.setter` on `Modal` so
+  the override matches the base class shape.
+
+### Statistics
+- 854 tests passing, 0 ruff errors, 0 pyright errors.
+
 ## [0.4.8] — 2026-08-28
 
 ### CLI and project packaging

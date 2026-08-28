@@ -16,6 +16,15 @@
 
 No browser, no HTTP server — just a Python process and a lightweight WebView.
 
+## What's new in 0.4.9
+
+* **Pyright clean** across the whole package: 0 errors, 0 warnings.
+* Type-safety fixes across `app.py`, `cli.py`, `i18n.py`,
+  `_calendar.py`, `_charts2.py`, `_data.py`, `_extras.py`.
+* `TreeView.remove(path)` renamed to `remove_node(path)` to
+  avoid clashing with `Widget.remove(child)`.
+* 854 tests still passing.
+
 ## What's new in 0.4.8
 
 * **`iskg` CLI**: `iskg new`, `iskg run`, `iskg check`, `iskg bundle`,
@@ -24,7 +33,7 @@ No browser, no HTTP server — just a Python process and a lightweight WebView.
 * **Cross-platform packaging**: `pip install iskg` works on Linux, Windows,
   macOS, and BSD; the CLI uses XDG paths, `~/Library/Application Support`,
   or `%APPDATA%` as appropriate.
-* **2 lint warnings fixed**, 854 tests passing.
+* 854 tests passing.
 
 See [CHANGELOG.md](CHANGELOG.md) for the full history.
 
@@ -49,7 +58,7 @@ See [CHANGELOG.md](CHANGELOG.md) for the full history.
 pip install iskg
 
 # from GitHub Releases
-pip install https://github.com/Iskander-mlander/ISKG/releases/download/v0.4.8/iskg-0.4.8-py3-none-any.whl
+pip install https://github.com/Iskander-mlander/ISKG/releases/download/v0.4.9/iskg-0.4.9-py3-none-any.whl
 ```
 
 ```python
@@ -184,7 +193,7 @@ pip install -e .
 Once installed, `iskg` is on your `PATH`:
 
 ```bash
-iskg --version           # 0.4.8
+iskg --version           # 0.4.9
 iskg info                # environment, Python, backends
 iskg widgets             # list all public classes
 iskg themes              # list bundled CSS themes
