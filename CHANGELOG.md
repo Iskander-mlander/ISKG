@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.10] — 2026-08-28
+
+### Test portability
+- `tests/test_cli.py::test_run_non_python` no longer relies on
+  `/etc/hostname` (which does not exist on macOS). It now creates
+  a temporary `.txt` file and asserts the CLI rejects the non-Python
+  extension. 854 tests pass on Linux, macOS, and Windows.
+
 ## [0.4.9] — 2026-08-28
 
 ### Type-safety fixes

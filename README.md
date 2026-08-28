@@ -16,6 +16,12 @@
 
 No browser, no HTTP server — just a Python process and a lightweight WebView.
 
+## What's new in 0.4.10
+
+* **macOS CI fix**: `tests/test_cli.py::test_run_non_python` no
+  longer relies on `/etc/hostname` (which does not exist on macOS).
+  854 tests pass on Linux, macOS, and Windows.
+
 ## What's new in 0.4.9
 
 * **Pyright clean** across the whole package: 0 errors, 0 warnings.
@@ -58,7 +64,7 @@ See [CHANGELOG.md](CHANGELOG.md) for the full history.
 pip install iskg
 
 # from GitHub Releases
-pip install https://github.com/Iskander-mlander/ISKG/releases/download/v0.4.9/iskg-0.4.9-py3-none-any.whl
+pip install https://github.com/Iskander-mlander/ISKG/releases/download/v0.4.10/iskg-0.4.10-py3-none-any.whl
 ```
 
 ```python
@@ -193,7 +199,7 @@ pip install -e .
 Once installed, `iskg` is on your `PATH`:
 
 ```bash
-iskg --version           # 0.4.9
+iskg --version           # 0.4.10
 iskg info                # environment, Python, backends
 iskg widgets             # list all public classes
 iskg themes              # list bundled CSS themes

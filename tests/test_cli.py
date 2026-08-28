@@ -184,8 +184,13 @@ def test_run_missing_file() -> None:
     assert "not found" in p.stderr
 
 
-def test_run_non_python() -> None:
-    p = _run_cli("run", "/etc/hostname")
+def test_run_non_python(tmp_path: Path) -> None:
+    # Use a tmp file with a non-Python extension so the test is portable
+    # across Linux, macOS and Windows (avoids relying on /etc/hostname
+    # which doesn't exist on macOS).
+    f = tmp_path / "config.txt"
+    f.write_text("hello", encoding="utf-8")
+    p = _run_cli("run", str(f))
     assert p.returncode == 2
     assert ".py" in p.stderr
 
