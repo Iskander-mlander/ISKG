@@ -21,26 +21,6 @@ No browser, no HTTP server — just a Python process and a lightweight WebView.
 * **macOS CI fix**: `tests/test_cli.py::test_run_non_python` no
   longer relies on `/etc/hostname` (which does not exist on macOS).
   854 tests pass on Linux, macOS, and Windows.
-
-## What's new in 0.4.9
-
-* **Pyright clean** across the whole package: 0 errors, 0 warnings.
-* Type-safety fixes across `app.py`, `cli.py`, `i18n.py`,
-  `_calendar.py`, `_charts2.py`, `_data.py`, `_extras.py`.
-* `TreeView.remove(path)` renamed to `remove_node(path)` to
-  avoid clashing with `Widget.remove(child)`.
-* 854 tests still passing.
-
-## What's new in 0.4.8
-
-* **`iskg` CLI**: `iskg new`, `iskg run`, `iskg check`, `iskg bundle`,
-  `iskg info/widgets/themes` — see [CLI](#cli).
-* **Scaffolds**: `iskg new myapp --template tool|dashboard|form|viewer`.
-* **Cross-platform packaging**: `pip install iskg` works on Linux, Windows,
-  macOS, and BSD; the CLI uses XDG paths, `~/Library/Application Support`,
-  or `%APPDATA%` as appropriate.
-* 854 tests passing.
-
 See [CHANGELOG.md](CHANGELOG.md) for the full history.
 
 ## Features
