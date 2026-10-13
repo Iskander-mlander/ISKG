@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.4.11] — 2026-10-13
+
+### Fixed
+- **Ventana en blanco tras la actualización de Arch (2026-10-12)** —
+  WebKitGTK 2.52 → 2.54 allocates textures through GBM/dmabuf; on drivers
+  without working GBM buffers (NVIDIA proprietary) every allocation fails
+  with `Failed to create GBM buffer ... Invalid argument` and the window
+  opens completely blank. `iskg/app.py` now also forces
+  `WEBKIT_DISABLE_DMABUF_RENDERER=1` (via `setdefault`, so an explicit
+  user override still wins), next to the existing
+  `WEBKIT_DISABLE_COMPOSITING_MODE=1`.
+- **`Application(icon=...)` con una ruta inexistente bloqueaba la app** —
+  pywebview's GTK backend calls `Gtk.Window.set_icon_from_file()` during
+  window creation, so a bad path raised `GLib.GError` inside the GTK
+  `activate` callback, the window was never created and `run()` hung
+  forever. New `Application._resolve_icon()` validates the path before
+  `webview.start()` and falls back to "no icon" with a warning on stderr.
+- `examples/data_widgets_demo.py`: the `ListBox` `change` payload is
+  `"index:text"`, so `int(idx)` raised `ValueError` on every selection; the
+  callback now reads `listbox.selected_index`.
+- `examples/async_task.py`: pointed at a non-existent `icon.ico` (which
+  triggered the hang above); it now uses the image shipped next to the
+  example and only passes it when it exists.
+
+### Tests
+- 858 tests pass (2 skipped): new coverage for icon validation and for the
+  WebKit render-path environment variables.
+
 ## [0.4.10] — 2026-08-28
 
 ### Test portability

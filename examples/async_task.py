@@ -11,6 +11,7 @@ Shows the three roadmap improvements working together:
 """
 
 import time
+from pathlib import Path
 
 from iskg import Application, Button, Frame, Label, TreeView
 
@@ -22,11 +23,15 @@ def fake_long_task(seconds: float = 2.0) -> str:
 
 
 def main() -> None:
+    # Icono nativo de la ventana: cualquier imagen que exista junto al ejemplo
+    # (GTK acepta png/ico/svg). Si la ruta no existe, ISKG avisa y arranca
+    # sin icono en vez de bloquearse al crear la ventana.
+    icon_path = Path(__file__).with_name("Cap.png")
     app = Application(
         title="Roadmap Demo",
         width=720,
         height=480,
-        icon="icon.ico",  # ruta opcional al .ico de la ventana
+        icon=str(icon_path) if icon_path.is_file() else None,
     )
 
     main_col = Frame(app, direction="column", gap=8)

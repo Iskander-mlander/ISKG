@@ -16,6 +16,19 @@
 
 No browser, no HTTP server — just a Python process and a lightweight WebView.
 
+## What's new in 0.4.11
+
+* **Fixed blank/white window after the 2026-10 Arch update** (WebKitGTK
+  2.54): ISKG now also sets `WEBKIT_DISABLE_DMABUF_RENDERER=1`, the
+  documented workaround for GBM/dmabuf allocation failures on NVIDIA
+  proprietary drivers. Set the variable yourself before launching to
+  override.
+* **`Application(icon=...)` with a missing file no longer hangs**: the path
+  is validated up front — ISKG warns on stderr and starts without an icon
+  instead of blocking forever in `run()`.
+* Examples fixed (`async_task` icon, `data_widgets_demo` ListBox callback).
+  858 tests pass.
+
 ## What's new in 0.4.10
 
 * **macOS CI fix**: `tests/test_cli.py::test_run_non_python` no
@@ -44,7 +57,7 @@ See [CHANGELOG.md](CHANGELOG.md) for the full history.
 pip install iskg
 
 # from GitHub Releases
-pip install https://github.com/Iskander-mlander/ISKG/releases/download/v0.4.10/iskg-0.4.10-py3-none-any.whl
+pip install https://github.com/Iskander-mlander/ISKG/releases/download/v0.4.11/iskg-0.4.11-py3-none-any.whl
 ```
 
 ```python
@@ -151,6 +164,19 @@ not installed (older Windows 10 builds), download it from
 **BSD** — same as Linux, but install via your package manager
 (`webkit2-gtk3`, `gtk3`, `py3-gobject3` on FreeBSD).
 
+#### Window opens blank/white on Linux
+
+WebKitGTK ≥ 2.54 renders through GBM/dmabuf buffers; on drivers that cannot
+allocate them (NVIDIA proprietary is the usual case) the window opens but
+stays white and stderr shows `Failed to create GBM buffer ...`. ISKG sets
+`WEBKIT_DISABLE_DMABUF_RENDERER=1` for you (with `setdefault`, so an
+explicit value you export always wins):
+
+```bash
+WEBKIT_DISABLE_DMABUF_RENDERER=1 python app.py   # manual override
+WEBKIT_DISABLE_DMABUF_RENDERER=0 python app.py   # force the dmabuf path back on
+```
+
 ### Arch Linux — PEP 668
 
 Arch's Python is *externally-managed*, so a bare `pip install iskg` fails. Pick one:
@@ -179,7 +205,7 @@ pip install -e .
 Once installed, `iskg` is on your `PATH`:
 
 ```bash
-iskg --version           # 0.4.10
+iskg --version           # 0.4.11
 iskg info                # environment, Python, backends
 iskg widgets             # list all public classes
 iskg themes              # list bundled CSS themes

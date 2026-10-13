@@ -15,8 +15,16 @@ from typing import Any
 # when its accelerated compositing path misbehaves on some drivers. Force
 # the software/compositing-disabled path so the UI is always visible.
 # setdefault() keeps an explicit user override working.
+#
+# WEBKIT_DISABLE_DMABUF_RENDERER: WebKitGTK >= 2.54 (2026-10) allocates its
+# textures through GBM/dmabuf. On drivers that cannot create those buffers
+# (notably NVIDIA proprietary) every allocation fails with
+# "Failed to create GBM buffer ... Invalid argument" and the window stays
+# blank. Falling back to the legacy renderer keeps the UI visible; the
+# software path is plenty fast for an HTML widget toolkit.
 if os.name == "posix":
     os.environ.setdefault("WEBKIT_DISABLE_COMPOSITING_MODE", "1")
+    os.environ.setdefault("WEBKIT_DISABLE_DMABUF_RENDERER", "1")
 
 from .base import Widget
 from .template import build_html
@@ -416,6 +424,28 @@ class Application:
             "  Fedora       : sudo dnf install python3-gobject gtk3 webkit2gtk3\n"
         )
 
+    def _resolve_icon(self) -> str | None:
+        """Return the window icon path, or ``None`` when it is unusable.
+
+        pywebview's GTK backend calls ``Gtk.Window.set_icon_from_file()``
+        while creating the window. A missing/unreadable file raises a
+        ``GLib.GError`` inside the GTK ``activate`` callback, the window is
+        never created and ``run()`` blocks forever. Validate the path up
+        front so a bad icon degrades to "no icon" instead of a hung app.
+        """
+        icon = self._icon
+        if not icon:
+            return None
+        if os.path.isfile(icon):
+            return icon
+        import sys
+
+        print(
+            f"ISKG: icon file not found ({icon!r}) — starting without a window icon.",
+            file=sys.stderr,
+        )
+        return None
+
     def run(self, extra_js: str = "") -> None:
         """Open the window and start the application main loop.
 
@@ -433,13 +463,15 @@ class Application:
 
         # Re-assert before the GTK/WebKit loop starts; the GTK window is opaque,
         # so if the web-layer composition fails the user would see white. Forcing
-        # the disabled-compositing path here guards against late/lazy imports.
+        # the disabled paths here guards against late/lazy imports.
         if os.name == "posix":
             os.environ.setdefault("WEBKIT_DISABLE_COMPOSITING_MODE", "1")
+            os.environ.setdefault("WEBKIT_DISABLE_DMABUF_RENDERER", "1")
 
         import webview
 
         self._check_backend()
+        icon = self._resolve_icon()
 
         self._running = True
         html = self._build_html(extra_js)
@@ -462,7 +494,7 @@ class Application:
             os.close(log_fd)
 
         try:
-            webview.start(private_mode=False, debug=False, icon=self._icon)
+            webview.start(private_mode=False, debug=False, icon=icon)
         except Exception as exc:
             os.dup2(saved, 2)
             self._saved_stderr = None

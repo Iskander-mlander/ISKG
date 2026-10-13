@@ -13,8 +13,11 @@ Covers:
 
 import asyncio
 import contextlib
+import os
 import time
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 from iskg import (
     Application,
@@ -71,8 +74,10 @@ class TestAppIcon:
         app = Application()
         assert app._icon is None
 
-    def test_icon_passed_to_webview_start(self):
-        app = Application(icon="icon.ico")
+    def test_icon_passed_to_webview_start(self, tmp_path):
+        icon = tmp_path / "app.png"
+        icon.write_bytes(b"png")
+        app = Application(icon=str(icon))
         with (
             patch("webview.create_window", return_value=MagicMock()),
             patch("webview.start") as st,
@@ -82,7 +87,50 @@ class TestAppIcon:
                 app.run()
         st.assert_called_once()
         kwargs = st.call_args.kwargs
-        assert kwargs.get("icon") == "icon.ico"
+        assert kwargs.get("icon") == str(icon)
+
+    def test_missing_icon_resolves_to_none(self, tmp_path, capsys):
+        """A nonexistent icon must not reach pywebview (GTK raises and the
+        window never opens, leaving run() blocked forever)."""
+        app = Application(icon=str(tmp_path / "nope.png"))
+        assert app._resolve_icon() is None
+        assert "icon file not found" in capsys.readouterr().err
+
+    def test_missing_icon_not_passed_to_webview_start(self, capsys):
+        app = Application(icon="definitely/not/here.ico")
+        with (
+            patch("webview.create_window", return_value=MagicMock()),
+            patch("webview.start") as st,
+            patch.object(app, "_check_backend", lambda: None),
+        ):
+            with contextlib.suppress(SystemExit):
+                app.run()
+        st.assert_called_once()
+        assert st.call_args.kwargs.get("icon") is None
+        assert "icon file not found" in capsys.readouterr().err
+
+    def test_no_icon_passed_when_unset(self):
+        app = Application()
+        assert app._resolve_icon() is None
+
+
+# ── 6b. WebKit render-path env vars ────────────────────────────────
+class TestWebKitRenderEnv:
+    def test_dmabuf_and_compositing_disabled_on_posix(self, tmp_path):
+        """WebKitGTK >= 2.54 (2026-10) needs the dmabuf/renderer fallbacks or
+        the window renders blank on drivers without working GBM buffers."""
+        if os.name != "posix":
+            pytest.skip("Linux/macOS only")
+        app = Application()
+        with (
+            patch("webview.create_window", return_value=MagicMock()),
+            patch("webview.start"),
+            patch.object(app, "_check_backend", lambda: None),
+        ):
+            with contextlib.suppress(SystemExit):
+                app.run()
+        assert "WEBKIT_DISABLE_DMABUF_RENDERER" in os.environ
+        assert "WEBKIT_DISABLE_COMPOSITING_MODE" in os.environ
 
 
 # ── 7. Application.run_async ───────────────────────────────────────

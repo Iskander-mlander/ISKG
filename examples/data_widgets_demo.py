@@ -37,7 +37,7 @@ def build_app() -> Application:
     listbox.grid(row=0, column=0, padx=6, pady=6)
     listbox.bind(
         "change",
-        lambda idx: status.config(text=f"ListBox → {listbox.items[int(idx)]}"),
+        lambda _data: status.config(text=f"ListBox → {listbox.items[listbox.selected_index]}"),
     )
 
     # ---- DataGrid ----
