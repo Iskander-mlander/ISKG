@@ -19,7 +19,7 @@ from .widgets._advanced import render_markdown
 
 __version__ = VERSION
 from .app import Application, Window
-from .base import Widget
+from .base import PadValue, Widget
 from .i18n import (
     Translator,
     available_languages,
@@ -135,6 +135,7 @@ from .widgets import (
 __all__ = [
     "VERSION",
     "Widget",
+    "PadValue",
     "Label",
     "Button",
     "Entry",

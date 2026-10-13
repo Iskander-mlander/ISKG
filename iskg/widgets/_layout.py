@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..base import _LAYOUT_STACK
+from ..base import _LAYOUT_STACK, PadValue
 from ._containers import Frame, Separator, Spacer
 from ._controls import Button, ComboBox, Entry
 from ._data import TreeView
@@ -36,8 +36,8 @@ class Box(Frame):
         parent: Any = None,
         direction: str = "vertical",
         gap: int = 6,
-        padx: int = 4,
-        pady: int = 4,
+        padx: PadValue = 4,
+        pady: PadValue = 4,
         **kwargs: Any,
     ) -> None:
         super().__init__(parent, **kwargs)
@@ -56,7 +56,13 @@ class Box(Frame):
         return False
 
     def add(
-        self, child: Any, padx=None, pady=None, fill=None, expand: bool = False, **kwargs: Any
+        self,
+        child: Any,
+        padx: PadValue | None = None,
+        pady: PadValue | None = None,
+        fill=None,
+        expand: bool = False,
+        **kwargs: Any,
     ) -> Any:
         if child not in self._children:
             super().add(child)

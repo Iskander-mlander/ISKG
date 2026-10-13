@@ -1129,6 +1129,67 @@ class TestRenderStyle:
         style = w._render_style()
         assert "padding-top:12px" in style
 
+    def test_render_pack_padx_tuple(self):
+        w = _ConcreteWidget()
+        w.pack(padx=(8, 4))
+        style = w._render_style()
+        assert "padding-left:8px" in style
+        assert "padding-right:4px" in style
+
+    def test_render_pack_pady_tuple_asymmetric(self):
+        w = _ConcreteWidget()
+        w.pack(pady=(0, 6))
+        style = w._render_style()
+        assert "padding-top:0px" in style
+        assert "padding-bottom:6px" in style
+
+    def test_render_grid_padx_pady_tuple(self):
+        w = _ConcreteWidget()
+        w.grid(padx=(3, 9), pady=(1, 2))
+        style = w._render_style()
+        assert "padding-left:3px;padding-right:9px;" in style
+        assert "padding-top:1px;padding-bottom:2px;" in style
+
+    def test_render_pack_int_padding_still_symmetric(self):
+        w = _ConcreteWidget()
+        w.pack(padx=10, pady=5)
+        style = w._render_style()
+        assert "padding-left:10px;padding-right:10px;" in style
+        assert "padding-top:5px;padding-bottom:5px;" in style
+
+    def test_render_pad_zero_emits_nothing(self):
+        w = _ConcreteWidget()
+        w.pack(padx=0, pady=0)
+        assert "padding-" not in w._render_style()
+
+    def test_render_pad_zero_tuple_emits_nothing(self):
+        w = _ConcreteWidget()
+        w.pack(padx=(), pady=(0, 0))
+        assert "padding-" not in w._render_style()
+
+    def test_render_pad_list_accepted(self):
+        w = _ConcreteWidget()
+        w.grid(pady=[4, 8])
+        style = w._render_style()
+        assert "padding-top:4px;padding-bottom:8px;" in style
+
+    def test_layout_info_keeps_raw_tuple(self):
+        w = _ConcreteWidget()
+        w.pack(padx=(8, 4))
+        assert w._layout_info["padx"] == (8, 4)
+
+    def test_pad_pair_normalises(self):
+        from iskg.base import _pad_pair
+
+        assert _pad_pair(7) == (7, 7)
+        assert _pad_pair((1, 2)) == (1, 2)
+        assert _pad_pair((3,)) == (3, 3)
+        assert _pad_pair([1, 2]) == (1, 2)
+        assert _pad_pair(0) == (0, 0)
+        assert _pad_pair(None) == (0, 0)
+        assert _pad_pair(()) == (0, 0)
+        assert _pad_pair("n/a") == (0, 0)
+
     def test_render_grid_sticky_we(self):
         w = _ConcreteWidget()
         w.grid(sticky="we")

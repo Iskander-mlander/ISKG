@@ -7,7 +7,7 @@ import contextlib
 import difflib
 import json
 import warnings
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from typing import Any
 
 _counter: list[int] = [0]
@@ -26,6 +26,48 @@ def current_layout() -> Any | None:
 def _new_id() -> str:
     _counter[0] += 1
     return f"iw{_counter[0]}"
+
+
+#: Padding accepted by :meth:`Widget.pack` / :meth:`Widget.grid`: either one
+#: value applied to both sides, or a tkinter-style ``(before, after)`` sequence.
+PadValue = int | Sequence[int]
+
+
+def _pad_pair(value: Any) -> tuple[int, int]:
+    """Normalise padding to ``(left/top, right/bottom)`` pixels.
+
+    ``5`` → ``(5, 5)`` (the historical behaviour), ``(8, 4)`` → ``(8, 4)``,
+    ``0`` / ``None`` / malformed → ``(0, 0)``. Accepts lists as well as
+    tuples so values coming from JSON-ish config round-trip.
+    """
+    if isinstance(value, (tuple, list)):
+        if not value:
+            return (0, 0)
+        first = int(value[0])
+        second = int(value[1]) if len(value) > 1 else first
+        return (first, second)
+    if value is None:
+        return (0, 0)
+    try:
+        number = int(value)
+    except (TypeError, ValueError):
+        return (0, 0)
+    return (number, number)
+
+
+def _pad_css(axis: str, value: Any) -> str:
+    """Render ``padding-*`` declarations for a ``padx``/``pady`` value.
+
+    ``axis`` is ``"x"`` (left/right) or ``"y"`` (top/bottom). Returns ``""``
+    for zero padding so widgets without explicit padding keep inheriting any
+    class-level padding (an inline ``padding:0`` would otherwise clobber it).
+    """
+    first, second = _pad_pair(value)
+    if not first and not second:
+        return ""
+    if axis == "x":
+        return f"padding-left:{first}px;padding-right:{second}px;"
+    return f"padding-top:{first}px;padding-bottom:{second}px;"
 
 
 _CONFIG_TO_CSS: list[tuple[str, str, bool]] = [
@@ -361,8 +403,8 @@ class Widget:
         side: str = "top",
         fill: str = "none",
         expand: bool = False,
-        padx: int = 0,
-        pady: int = 0,
+        padx: PadValue = 0,
+        pady: PadValue = 0,
         anchor: str = "nw",
         in_: Widget | None = None,
     ) -> Widget:
@@ -372,8 +414,10 @@ class Widget:
             side: ``"top"``, ``"left"``, ``"bottom"``, or ``"right"``.
             fill: ``"none"``, ``"x"``, ``"y"``, or ``"both"``.
             expand: whether to take extra space.
-            padx: horizontal padding in pixels.
-            pady: vertical padding in pixels.
+            padx: horizontal padding in pixels — one value for both sides, or
+                a tkinter-style ``(left, right)`` tuple.
+            pady: vertical padding in pixels — one value for both sides, or
+                a tkinter-style ``(top, bottom)`` tuple.
             anchor: ``"nw"``, ``"n"``, ``"ne"``, ``"w"``, ``"e"``, ``"sw"``, ``"s"``, ``"se"``.
             in_: parent widget to pack into. If different from current parent,
                 the widget is reparented automatically.
@@ -407,8 +451,8 @@ class Widget:
         rowspan: int = 1,
         columnspan: int = 1,
         sticky: str = "",
-        padx: int = 0,
-        pady: int = 0,
+        padx: PadValue = 0,
+        pady: PadValue = 0,
     ) -> Widget:
         """Arrange this widget using grid layout.
 
@@ -419,8 +463,10 @@ class Widget:
             columnspan: number of columns to span.
             sticky: combination of ``"n"``, ``"s"``, ``"e"``, ``"w"``,
                 or ``"c"`` for center.
-            padx: horizontal padding.
-            pady: vertical padding.
+            padx: horizontal padding — one value for both sides, or a
+                tkinter-style ``(left, right)`` tuple.
+            pady: vertical padding — one value for both sides, or a
+                tkinter-style ``(top, bottom)`` tuple.
 
         To control row/column weights and minimum sizes, use
         :meth:`~iskg.widgets._containers.Frame.grid_columnconfigure`
@@ -1262,18 +1308,14 @@ el.onmouseleave=function(){{clearTimeout(timer);tip.style.display="none";}};
                     style += "height:100%;"
                 if side == "bottom":
                     style += "margin-top:auto;"
-            if li.get("padx"):
-                style += f"padding-left:{li['padx']}px;padding-right:{li['padx']}px;"
-            if li.get("pady"):
-                style += f"padding-top:{li['pady']}px;padding-bottom:{li['pady']}px;"
+            style += _pad_css("x", li.get("padx"))
+            style += _pad_css("y", li.get("pady"))
         elif self._layout_mode == "grid":
             g = li
             s = f"grid-row:{g.get('row', 0) + 1}/span {max(1, g.get('rowspan', 1))};"
             s += f"grid-column:{g.get('column', 0) + 1}/span {max(1, g.get('columnspan', 1))};"
-            if g.get("padx"):
-                s += f"padding-left:{g['padx']}px;padding-right:{g['padx']}px;"
-            if g.get("pady"):
-                s += f"padding-top:{g['pady']}px;padding-bottom:{g['pady']}px;"
+            s += _pad_css("x", g.get("padx"))
+            s += _pad_css("y", g.get("pady"))
             sticky = g.get("sticky", "")
             sticky_set = set(sticky)
             if "we" in sticky or "ew" in sticky:

@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.4.12] — 2026-10-13
+
+### Added
+- **`padx`/`pady` aceptan tuplas estilo tkinter** en `Widget.pack()`,
+  `Widget.grid()` y `Box`: `pady=(0, 8)` = top 0 / bottom 8, `padx=(8, 4)`
+  = left 8 / right 4. Antes el valor se interpolaba tal cual en el CSS
+  (`padding-top:(0, 8)px`), declaración inválida que el navegador descarta
+  en silencio — por eso los ejemplos que usaban tuplas perdían todo el
+  espaciado vertical. Un `int` sigue significando "ambos lados" y `0`
+  sigue sin emitir nada (para no pisar el padding de la clase CSS).
+
+### Changed
+- Nuevo alias de tipos público `iskg.PadValue = int | Sequence[int]` para
+  anotar helpers propios de layout; acepta también listas y tuplas de un
+  elemento.
+- `Box.__init__(padx=..., pady=...)` y `Box.add(..., padx=..., pady=...)`
+  usan el mismo tipo y heredan el comportamiento de tuplas.
+- README: quick start vuelve a demostrar `pady=(0, 8)` (ahora válido),
+  wheel enlazada a `v0.4.12`.
+
+### Tests
+- 869 tests pass (2 skipped): cobertura nueva de padding en tupla para
+  `pack` y `grid` (simétrico, asimétrico con `0`, lista, tupla vacía),
+  de `PadValue` en `Box`, y de la normalización de `_pad_pair`
+  (incluye entradas malformadas).
+
 ## [0.4.11] — 2026-10-13
 
 ### Fixed

@@ -16,6 +16,17 @@
 
 No browser, no HTTP server — just a Python process and a lightweight WebView.
 
+## What's new in 0.4.12
+
+* **`padx`/`pady` now accept tkinter-style tuples** in `pack()`, `grid()`
+  and `Box`: `pady=(0, 8)` means *top 0, bottom 8*. Before, tuples were
+  interpolated straight into CSS (`padding-top:(0, 8)px`), which the
+  browser silently dropped — so every example using them lost its spacing.
+  A single int still means "both sides", and `0` still emits nothing so
+  class-level padding keeps working.
+* `PadValue` is exported from `iskg` for annotating your own helpers.
+* 869 tests pass (2 skipped).
+
 ## What's new in 0.4.11
 
 * **Fixed blank/white window after the 2026-10 Arch update** (WebKitGTK
@@ -67,7 +78,7 @@ See [CHANGELOG.md](CHANGELOG.md) for the full history.
 pip install iskg
 
 # from GitHub Releases
-pip install https://github.com/Iskander-mlander/ISKG/releases/download/v0.4.11/iskg-0.4.11-py3-none-any.whl
+pip install https://github.com/Iskander-mlander/ISKG/releases/download/v0.4.12/iskg-0.4.12-py3-none-any.whl
 ```
 
 ```python
@@ -131,7 +142,9 @@ combo.grid(row=5, column=0, sticky="we", padx=8)
 
 ToggleSwitch(parent=root, text="Extra").grid(row=5, column=1, padx=8)
 
-Label(parent=root, text="Ready", anchor="center").grid(row=6, column=0, columnspan=2, pady=8)
+Label(parent=root, text="Ready", anchor="center").grid(
+    row=6, column=0, columnspan=2, pady=(0, 8)
+)
 
 app.add(root)
 app.run()
@@ -215,7 +228,7 @@ pip install -e .
 Once installed, `iskg` is on your `PATH`:
 
 ```bash
-iskg --version           # 0.4.11
+iskg --version           # 0.4.12
 iskg info                # environment, Python, backends
 iskg widgets             # list all public classes
 iskg themes              # list runtime themes (set_theme names)

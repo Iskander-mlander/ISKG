@@ -35,6 +35,22 @@ class TestBox:
         child = Label(parent=b)
         assert child._layout_info.get("fill") == "none"
 
+    def test_box_tuple_padding_applies_to_children(self):
+        b = VBox(padx=(6, 2), pady=(0, 8))
+        child = b.label("x")
+        assert child._layout_info.get("padx") == (6, 2)
+        assert child._layout_info.get("pady") == (0, 8)
+        style = child._render_style()
+        assert "padding-left:6px;padding-right:2px;" in style
+        assert "padding-top:0px;padding-bottom:8px;" in style
+
+    def test_box_per_child_padding_override(self):
+        b = VBox(padx=4, pady=4)
+        child = Label(parent=b, text="x")
+        b.add(child, padx=(1, 9))
+        assert child._layout_info.get("padx") == (1, 9)
+        assert child._layout_info.get("pady") == 4
+
     def test_shorthand_creators(self):
         b = VBox()
         btn = b.button("OK", command=lambda: None)
