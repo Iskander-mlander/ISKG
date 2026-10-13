@@ -148,15 +148,32 @@ def cmd_widgets(_args: argparse.Namespace) -> int:
 
 
 def cmd_themes(_args: argparse.Namespace) -> int:
+    """List the themes accepted by ``app.set_theme(name)``.
+
+    Runtime themes live in ``iskg.themes.THEMES`` (CSS variables swapped in
+    JS). The ``iskg/themes/`` directory only holds base CSS assets, so
+    listing it alone would show a single file and hide the 16 real themes.
+    """
+    try:
+        from iskg.themes import available_themes
+
+        names = sorted(available_themes())
+    except Exception as exc:
+        _print_err(f"cannot import iskg.themes: {exc}")
+        return 1
+    if not names:
+        _print_err("no themes registered (iskg package not installed?)")
+        return 1
+    print(f"ISKG runtime themes ({len(names)}):")
+    for name in names:
+        print(f"  - {name}")
+
     themes_dir = Path(__file__).resolve().parent / "themes"
-    if not themes_dir.is_dir():
-        print("no themes directory found")
-        return 0
-    files = sorted(themes_dir.glob("*.css"))
-    print(f"ISKG bundled themes ({len(files)}):")
-    for f in files:
-        size = f.stat().st_size
-        print(f"  - {f.stem:<24} ({size:>5} bytes)")
+    files = sorted(themes_dir.glob("*.css")) if themes_dir.is_dir() else []
+    if files:
+        print(f"Base CSS assets ({len(files)}):")
+        for f in files:
+            print(f"  - {f.stem:<24} ({f.stat().st_size:>5} bytes)")
     return 0
 
 

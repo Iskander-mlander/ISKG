@@ -27,18 +27,28 @@ No browser, no HTTP server — just a Python process and a lightweight WebView.
   is validated up front — ISKG warns on stderr and starts without an icon
   instead of blocking forever in `run()`.
 * Examples fixed (`async_task` icon, `data_widgets_demo` ListBox callback).
-  858 tests pass.
+* `iskg themes` now lists the 16 runtime themes accepted by
+  `app.set_theme()` instead of only the base CSS asset.
+* Features section corrected: **71 widgets** (real names, real families)
+  and **16 themes**. 858 tests pass.
 
 ## What's new in 0.4.10
 
 * **macOS CI fix**: `tests/test_cli.py::test_run_non_python` no
   longer relies on `/etc/hostname` (which does not exist on macOS).
   854 tests pass on Linux, macOS, and Windows.
+
 See [CHANGELOG.md](CHANGELOG.md) for the full history.
 
 ## Features
 
-- **72 widgets** across 5 families: inputs (Button, Entry, ComboBox, Slider, SpinBox, ToggleSwitch, ColorPicker, FontPicker, DirectoryPicker, ImagePicker, SearchCtrl, DatePicker, Calendar, TimePicker, DateTimePicker), display (Label, ImageBox, IconLabel, RichText, IndicatorLED, LEDDisplay, Knob, RadialGauge, ProgressBar, ProgressCircle, Sparkline, TimeSeriesGraph, BarChart, PieChart, ScatterPlot, Heatmap, Clock, Badge, Avatar, Spinner, Toast, Carousel, MarkdownViewer, GraphicsView), containers (Frame, ScrolledFrame, PanedWindow, Notebook, TabBar, MdiArea, MdiSubWindow, Box, HBox, VBox, Spacer, Separator, ToolBar, PropertyGrid, CommandPalette, SystemTray, FileBrowser, Modal, DropTarget), data (ListBox, DataGrid, TreeView, Text, Canvas, LogViewer, Menu, MenuBar, MenuItem, StatusBar, Tooltip, RangeSlider), infra (UndoStack, FileDialog, MessageDialog, ScrollBar, Scale, Slider).
+- **71 widgets** across 5 families:
+  *inputs* (Button, Entry, CheckBox, RadioButton, ComboBox, Slider, Scale, SpinBox, ToggleSwitch, RangeSlider, SearchCtrl, ColorPicker, FontPicker, DirectoryPicker, ImagePicker, DatePicker, TimePicker, DateTimePicker, Calendar),
+  *display* (Label, IconLabel, ImageBox, ProgressBar, ProgressCircle, RadialGauge, Knob, LEDDisplay, IndicatorLED, StatusBar, Spinner, Clock, Badge, Avatar, Carousel, RichText, Text, LogViewer, Tooltip, MarkdownViewer),
+  *charts* (BarChart, PieChart, ScatterPlot, Heatmap, Sparkline, TimeSeriesGraph, Canvas, GraphicsView),
+  *containers* (Frame, ScrolledFrame, Notebook, TabBar, PanedWindow, Box, HBox, VBox, Spacer, Separator, ToolBar, MdiArea, MdiSubWindow, Modal, DropTarget, FileBrowser, ScrollBar),
+  *data & infra* (ListBox, DataGrid, TreeView, MenuBar, MessageDialog, PropertyGrid, CommandPalette).
+- **16 built-in themes** (`app.set_theme("dracula")`, `iskg themes`), switchable at runtime — plus a custom theme registry.
 - **`iskg` CLI** with `iskg new`, `iskg run`, `iskg check`, `iskg bundle --standalone|--exe`, and introspection commands (`iskg info`, `iskg widgets`, `iskg themes`).
 - **Form validation** (`Form` + 8 validators: `Required`, `Range`, `Length`, `Pattern`, `Email`, `URL`, `Number`, `Custom`).
 - **I18n / L10n**: `tr()` / `_()` with JSON or `.mo` catalogues, `format_number` / `format_date`, `use_language()` context manager.
@@ -80,7 +90,7 @@ root = Frame(parent=None)
 root.grid_columnconfigure(0, weight=1)
 
 Label(parent=root, text="ISKG QUICK START", anchor="center", font="bold 16px").grid(
-    row=0, column=0, columnspan=2, pady=(8, 4)
+    row=0, column=0, columnspan=2, pady=4
 )
 
 # Greet: Entry in column 0, Button in column 1
@@ -208,7 +218,7 @@ Once installed, `iskg` is on your `PATH`:
 iskg --version           # 0.4.11
 iskg info                # environment, Python, backends
 iskg widgets             # list all public classes
-iskg themes              # list bundled CSS themes
+iskg themes              # list runtime themes (set_theme names)
 iskg check app.py        # syntax-check a script
 iskg run app.py          # run a script
 iskg new mytool          # scaffold a "tool" project

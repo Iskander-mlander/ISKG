@@ -71,6 +71,14 @@ def test_themes() -> None:
     p = _run_cli("themes")
     assert p.returncode == 0
     assert "themes" in p.stdout.lower()
+    # every name accepted by app.set_theme() must be listed
+    from iskg.themes import available_themes
+
+    names = available_themes()
+    assert names, "iskg.themes must register at least one theme"
+    for name in names:
+        assert name in p.stdout, f"theme {name} missing from `iskg themes`"
+    assert "ifaz" in p.stdout
 
 
 def test_check_existing_file(tmp_path: Path) -> None:

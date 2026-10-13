@@ -24,9 +24,21 @@
   triggered the hang above); it now uses the image shipped next to the
   example and only passes it when it exists.
 
+### Changed
+- **`iskg themes` ahora lista los 16 temas reales** (los que acepta
+  `app.set_theme(name)`, de `iskg.themes.THEMES`) más los assets CSS base;
+  antes solo mostraba `ifaz.css` y escondía el resto.
+- **README**: contador de widgets corregido (72 → **71**, con las 5
+  familias reales y sin nombres inexistentes como `Toast`/`SystemTray`),
+  bullet nuevo de los 16 temas, quick start sin tuplas `pady` (el padding
+  en tupla todavía no está soportado y se emitía como CSS inválido),
+  enlace de wheel a `v0.4.11` y nota de troubleshooting para la ventana
+  en blanco.
+
 ### Tests
-- 858 tests pass (2 skipped): new coverage for icon validation and for the
-  WebKit render-path environment variables.
+- 858 tests pass (2 skipped): new coverage for icon validation, the
+  WebKit render-path environment variables, and a stronger
+  `iskg themes` assertion (every registered theme must be listed).
 
 ## [0.4.10] — 2026-08-28
 
