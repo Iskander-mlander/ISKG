@@ -1,5 +1,36 @@
 # Changelog
 
+## [0.4.13] — 2026-10-16
+
+### Added
+- **`Application(on_top=..., frameless=..., easy_drag=..., x=..., y=...)`**:
+  la ventana nativa ahora acepta always-on-top, sin bordes, easy-drag en
+  modo frameless y posición inicial. Todo se pasa a `pywebview.create_window`
+  (que ya lo soportaba; ISKG no lo exponía). Pensado para overlays (chat
+  flotante, HUDs) donde la ventana debe quedar por encima del juego.
+- **`Application.on_top(value)`**: getter/setter estilo `title()` que
+  alterna always-on-top **en caliente** cuando la ventana está corriendo
+  (setter vivo de pywebview).
+- **`_JSAPI.resize(w, h)`**: método nuevo expuesto al JS como
+  `pywebview.api.resize(w, h)`. Sirve para construir un grip de resize
+  en HTML sobre una ventana frameless (GTK sin decoración no tiene
+  tiradores de resize).
+
+### Fixed
+- **`geometry()` devuelve la posición real de la ventana**: antes guardaba
+  `_x`/`_y` pero nunca se pasaban a `create_window` ni se leían del WM
+  (feature muerta). Ahora la posición inicial se envía a pywebview y el
+  getter, mientras la ventana corre, reporta la posición viva del window
+  manager. Se suscribe también al evento `moved` para conservar el último
+  valor tras el cierre.
+
+### Tests
+- Nueva clase `TestWindowFlags` (13 tests): defaults y flags custom de
+  init, kwargs que llegan a `create_window` (x/y omitidos por defecto),
+  get/set de `on_top` con y sin ventana, `geometry()` en vivo vs
+  almacenada, `_track_window_move`, y `_JSAPI.resize` (noop sin ventana,
+  enteros, basura rechazada). 838 passed, 2 skipped.
+
 ## [0.4.12] — 2026-10-13
 
 ### Added

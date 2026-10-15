@@ -100,6 +100,22 @@ class _JSAPI:
                 data = event_data_json
             handler(event_name, data)
 
+    # Host window set by Application.run(); lets JS resize a frameless
+    # window (resize grip) since undecorated GTK windows have no handles.
+    _window: Any = None
+
+    def resize(self, width: int, height: int) -> None:
+        """Resize the host window from JS: ``pywebview.api.resize(w, h)``."""
+        win = self._window
+        if win is None:
+            return
+        try:
+            w = max(1, int(width))
+            h = max(1, int(height))
+        except (TypeError, ValueError):
+            return
+        win.resize(w, h)
+
 
 _JSAPI_INSTANCE = _JSAPI()
 
@@ -154,6 +170,11 @@ class Application:
         stderr_log: str | None = None,
         font_ids: list[str] | None = None,
         icon: str | None = None,
+        on_top: bool = False,
+        frameless: bool = False,
+        easy_drag: bool = True,
+        x: int | None = None,
+        y: int | None = None,
     ) -> None:
         self._title = title
         self._width = width
@@ -166,6 +187,14 @@ class Application:
         self._stderr_log = stderr_log
         self._font_ids = font_ids
         self._icon = icon
+        self._on_top = on_top
+        self._frameless = frameless
+        self._easy_drag = easy_drag
+        self._x = 0 if x is None else x
+        self._y = 0 if y is None else y
+        # Only pass x/y to pywebview when both were given; a lone 0 would
+        # pin the window to the screen corner instead of WM auto-placement.
+        self._xy_from_user = x is not None and y is not None
 
         self._root_widgets: list[Widget] = []
         self._running = False
@@ -360,6 +389,18 @@ class Application:
             self._title = text
         return self._title
 
+    def on_top(self, value: bool | None = None) -> bool:
+        """Get or set the always-on-top flag.
+
+        When the window is running, the setter applies it live (the
+        window manager keeps the window above others immediately).
+        """
+        if value is not None:
+            self._on_top = bool(value)
+            if self._window is not None:
+                self._window.on_top = self._on_top
+        return self._on_top
+
     def geometry(
         self,
         x: int | None = None,
@@ -367,19 +408,34 @@ class Application:
         w: int | None = None,
         h: int | None = None,
     ) -> tuple[int, int, int, int]:
-        """Get or set the window position and size."""
+        """Get or set the window position and size.
+
+        While the window is running, the getter reports the live
+        position reported by the window manager.
+        """
         if w is not None and h is not None:
             self._width = w
             self._height = h
         if x is not None and y is not None:
             self._x = x
             self._y = y
+        if self._window is not None and self._running:
+            try:
+                self._x = self._window.x
+                self._y = self._window.y
+            except Exception:
+                pass
         return (
-            getattr(self, "_x", 0),
-            getattr(self, "_y", 0),
+            self._x,
+            self._y,
             self._width,
             self._height,
         )
+
+    def _track_window_move(self, x: int, y: int) -> None:
+        """pywebview ``moved`` event: remember the last window position."""
+        self._x = int(x)
+        self._y = int(y)
 
     _saved_stderr: int | None = None
 
@@ -482,7 +538,17 @@ class Application:
             width=self._width,
             height=self._height,
             js_api=_JSAPI_INSTANCE,
+            frameless=self._frameless,
+            easy_drag=self._easy_drag,
+            on_top=self._on_top,
+            x=self._x if self._xy_from_user else None,
+            y=self._y if self._xy_from_user else None,
         )
+        _JSAPI_INSTANCE._window = self._window
+        with contextlib.suppress(Exception):
+            # Keep _x/_y fresh so geometry() reports the real position
+            # even after the native window object is gone.
+            self._window.events.moved += self._track_window_move
 
         saved = os.dup(2)
         self._saved_stderr = saved
@@ -508,6 +574,7 @@ class Application:
                 self._saved_stderr = None
 
         self._running = False
+        _JSAPI_INSTANCE._window = None
         self._fire_close_callbacks()
         if self._saved_stderr is not None:
             os.dup2(self._saved_stderr, 2)

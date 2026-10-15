@@ -957,6 +957,130 @@ class TestRunStderr:
                 assert b"gtk noise line" in fh.read()
 
 
+# ── on_top / frameless / posición ─────────────────────────────────────
+
+
+class TestWindowFlags:
+    def test_init_defaults(self):
+        app = Application()
+        assert app._on_top is False
+        assert app._frameless is False
+        assert app._easy_drag is True
+        assert app._x == 0
+        assert app._y == 0
+        assert app._xy_from_user is False
+
+    def test_init_custom_flags(self):
+        app = Application(on_top=True, frameless=True, easy_drag=False, x=10, y=20)
+        assert app._on_top is True
+        assert app._frameless is True
+        assert app._easy_drag is False
+        assert app._x == 10
+        assert app._y == 20
+        assert app._xy_from_user is True
+
+    def test_init_lone_x_is_not_from_user(self):
+        # a single x (or y) must not pin the window to a corner
+        app = Application(x=10)
+        assert app._x == 10
+        assert app._xy_from_user is False
+
+    def test_create_window_receives_flags(self):
+        captured: dict = {}
+        window = MagicMock()
+
+        def _create_window(*a, **kw):
+            captured.update(kw)
+            return window
+
+        app = Application(on_top=True, frameless=True, easy_drag=False, x=10, y=20)
+        with (
+            patch("webview.create_window", side_effect=_create_window),
+            patch("webview.start", return_value=None),
+            patch.object(app, "_check_backend", lambda: None),
+        ):
+            app.run()
+        assert captured["on_top"] is True
+        assert captured["frameless"] is True
+        assert captured["easy_drag"] is False
+        assert captured["x"] == 10
+        assert captured["y"] == 20
+        # jsapi window ref is cleared after run() returns
+        assert _JSAPI_INSTANCE._window is None
+
+    def test_create_window_position_omitted_by_default(self):
+        captured: dict = {}
+
+        def _create_window(*a, **kw):
+            captured.update(kw)
+            return MagicMock()
+
+        app = Application()
+        with (
+            patch("webview.create_window", side_effect=_create_window),
+            patch("webview.start", return_value=None),
+            patch.object(app, "_check_backend", lambda: None),
+        ):
+            app.run()
+        assert captured["x"] is None
+        assert captured["y"] is None
+        assert captured["on_top"] is False
+        assert captured["frameless"] is False
+        assert captured["easy_drag"] is True
+
+    def test_on_top_get_set_without_window(self):
+        app = Application()
+        assert app.on_top() is False
+        assert app.on_top(True) is True
+        assert app._on_top is True
+        assert app.on_top(False) is False
+
+    def test_on_top_setter_applies_live(self):
+        app = Application()
+        app._window = MagicMock()
+        app.on_top(True)
+        assert app._window.on_top is True
+        app.on_top(False)
+        assert app._window.on_top is False
+
+    def test_geometry_reads_live_position_while_running(self):
+        app = Application()
+        app._window = MagicMock()
+        app._window.x = 55
+        app._window.y = 66
+        app._running = True
+        x, y, w, h = app.geometry()
+        assert (x, y) == (55, 66)
+        assert (w, h) == (800, 600)
+
+    def test_geometry_keeps_stored_position_when_not_running(self):
+        app = Application(x=10, y=20)
+        assert app.geometry() == (10, 20, 800, 600)
+
+    def test_track_window_move_updates_geometry(self):
+        app = Application()
+        app._track_window_move(3, 4)
+        x, y, _, _ = app.geometry()
+        assert (x, y) == (3, 4)
+
+    def test_jsapi_resize_no_window_is_noop(self):
+        api = _JSAPI()
+        api._window = None
+        api.resize(100, 100)  # must not raise
+
+    def test_jsapi_resize_calls_window_with_ints(self):
+        api = _JSAPI()
+        api._window = MagicMock()
+        api.resize("300", "200")
+        api._window.resize.assert_called_once_with(300, 200)
+
+    def test_jsapi_resize_rejects_garbage(self):
+        api = _JSAPI()
+        api._window = MagicMock()
+        api.resize("a", "b")
+        api._window.resize.assert_not_called()
+
+
 # ── test_loop (headless) ──────────────────────────────────────────────
 
 
