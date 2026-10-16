@@ -381,10 +381,19 @@ class Application:
         return "".join(self._render_one_global_key_js(e) for e in self._global_key_bindings)
 
     def _handle_global_event(self, event_name: str, event_data: Any) -> str | None:
+        data: Any = event_data or {}
+        if isinstance(data, str):
+            # the bridge JSON.stringify's the payload and the JS key
+            # listeners stringify too, so unwrap the extra layer
+            try:
+                data = json.loads(data)
+            except ValueError:
+                return None
+            if not isinstance(data, dict):
+                return None
         for entry in list(self._global_key_bindings):
             if entry["event_type"] not in ("keypress" if event_name == "key" else "keyrelease",):
                 continue
-            data = event_data or {}
             if entry.get("ctrl") and not data.get("ctrl"):
                 continue
             if entry.get("alt") and not data.get("alt"):

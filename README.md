@@ -79,7 +79,7 @@ See [CHANGELOG.md](CHANGELOG.md) for the full history.
 pip install iskg
 
 # from GitHub Releases
-pip install https://github.com/Iskander-mlander/ISKG/releases/download/v0.4.14/iskg-0.4.14-py3-none-any.whl
+pip install https://github.com/Iskander-mlander/ISKG/releases/download/v0.4.15/iskg-0.4.15-py3-none-any.whl
 ```
 
 ```python

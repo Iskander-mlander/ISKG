@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.4.15] — 2026-10-16
+
+### Fixed
+- **`app.bind` con teclas globales reventaba en produccion**:
+  `_handle_global_event` recibia el payload ya serializado (el bridge
+  hace `JSON.stringify` y los listeners de teclado lo pre-serializan
+  otra vez) y hacia `data.get(...)` sobre un `str` -> `AttributeError`
+  en cada pulsacion. Ningun bind global (`<Control-s>`,
+  `<KeyRelease-Enter>`, etc.) funcionaba fuera de los tests (que
+  pasan dict). Ahora se desenvuelve la capa extra de JSON; string no
+  valido devuelve `None` sin lanzar.
+
+### Added
+- **`Text` sincroniza al escribir**: `<textarea>` ahora tambien liga
+  `oninput` (ademas de `onchange`, que solo dispara al perder el foco),
+  igual que `Entry`. Sin esto, leer `text` justo tras escribir daba el
+  valor viejo.
+
+### Tests
+- `test_global_shortcut_dispatch_json_string_payload` (payload str + basura).
+- `test_render_js_binds_input_and_change` en `TestText`.
+
 ## [0.4.14] — 2026-10-16
 
 ### Added

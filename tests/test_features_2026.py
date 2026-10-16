@@ -261,6 +261,20 @@ def test_global_shortcut_rejects_non_key_event():
         app.bind("click", lambda d: None)
 
 
+def test_global_shortcut_dispatch_json_string_payload():
+    """Regression: the JS key listeners stringify the payload and the bridge
+    stringifies again, so handlers received a str and died with
+    AttributeError on data.get()."""
+    app = Application("t")
+    got = []
+    app.bind("<KeyRelease-Enter>", lambda d: got.append(d.get("key")))
+    payload = '{"key":"Enter","code":"Enter","shift":false}'
+    app._handle_global_event("global", payload)
+    assert got == ["Enter"]
+    # non-JSON string must return None without raising
+    assert app._handle_global_event("global", "basura") is None
+
+
 # ── Drag & drop ──────────────────────────────────────────────────────────────
 
 

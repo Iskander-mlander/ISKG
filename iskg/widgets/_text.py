@@ -87,6 +87,9 @@ class Text(Widget):
     def _render_js(self) -> str:
         return f'''document.getElementById("{self._id}").onchange=function(){{
   iskg_bridge_event("{self._id}","change",this.value);
+}};
+document.getElementById("{self._id}").oninput=function(){{
+  iskg_bridge_event("{self._id}","change",this.value);
 }};'''
 
     def _default_takefocus(self) -> bool:

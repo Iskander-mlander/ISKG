@@ -24,6 +24,12 @@ class TestText:
         assert "iskg-text" in html
         assert "textarea" in html
 
+    def test_render_js_binds_input_and_change(self):
+        t = Text(text="")
+        js = t._render_js()
+        assert "oninput" in js
+        assert js.count('"change"') == 2
+
 
 class TestRichText:
     def test_create(self):
