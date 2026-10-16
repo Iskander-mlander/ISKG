@@ -116,6 +116,23 @@ class _JSAPI:
             return
         win.resize(w, h)
 
+    def pause_drag(self) -> bool:
+        """Disable easy_drag window movement from JS.
+
+        ``pywebview.api.pause_drag()`` - a frameless resize grip calls this
+        on mousedown so the native easy_drag handler does not move the
+        window while the grip is dragged. The next button press re-arms
+        dragging, so one call per grip press is enough.
+        """
+        win = self._window
+        if win is None:
+            return False
+        gui = getattr(win, "gui", None)
+        if gui is None or not hasattr(gui, "move_progress"):
+            return False
+        gui.move_progress = False
+        return True
+
 
 _JSAPI_INSTANCE = _JSAPI()
 

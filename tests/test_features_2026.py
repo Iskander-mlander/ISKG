@@ -165,6 +165,19 @@ def test_logviewer_timestamp_dedupes_repeated_appends():
     loop.stop()
 
 
+def test_logviewer_update_js_wrapped_in_iife():
+    """Regression: the update JS used a bare `if(!el)return;` at top level.
+    evaluate_js runs the payload as a script, so every LogViewer live
+    update died with "Return statements are only valid inside functions"
+    and appended lines never reached the screen."""
+    lv = LogViewer(parent=None)
+    lv.append("hello")
+    js = lv._render_update_js()
+    assert js.startswith("(function(){")
+    assert js.endswith("})();")
+    assert "if(!el)return;" in js  # the guard stays, inside the IIFE
+
+
 # ── Clock / DatePicker ───────────────────────────────────────────────────────
 
 

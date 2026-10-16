@@ -1080,6 +1080,24 @@ class TestWindowFlags:
         api.resize("a", "b")
         api._window.resize.assert_not_called()
 
+    def test_jsapi_pause_drag_no_window(self):
+        api = _JSAPI()
+        api._window = None
+        assert api.pause_drag() is False
+
+    def test_jsapi_pause_drag_clears_move_progress(self):
+        api = _JSAPI()
+        gui = MagicMock()
+        gui.move_progress = True
+        api._window = MagicMock(gui=gui)
+        assert api.pause_drag() is True
+        assert gui.move_progress is False
+
+    def test_jsapi_pause_drag_without_easy_drag(self):
+        api = _JSAPI()
+        api._window = MagicMock(gui=object())  # no move_progress attr
+        assert api.pause_drag() is False
+
 
 # ── test_loop (headless) ──────────────────────────────────────────────
 

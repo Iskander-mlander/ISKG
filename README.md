@@ -69,7 +69,7 @@ See [CHANGELOG.md](CHANGELOG.md) for the full history.
 - **JS bridge**: bidirectional Python ↔ JavaScript calls for real-time UI updates.
 - **`.tooltip` on every widget**: set via property or `config()`.
 - **`after()` timers**: cancellable timer objects with `.cancel()` and `.running`.
-- **Window flags for overlays**: `Application(on_top=True, frameless=True, easy_drag=True, x=..., y=...)`, live `on_top()` toggle, real `geometry()` position, and `pywebview.api.resize(w, h)` for custom HTML resize grips on frameless windows.
+- **Window flags for overlays**: `Application(on_top=True, frameless=True, easy_drag=True, x=..., y=...)`, live `on_top()` toggle, real `geometry()` position, and `pywebview.api.resize(w, h)` / `pywebview.api.pause_drag()` for custom HTML resize grips on frameless windows.
 - **7 embedded fonts** (SIL OFL): [Inter](https://rsms.me/inter/), [JetBrains Mono](https://www.jetbrains.com/lp/mono/), [Nunito](https://fonts.google.com/specimen/Nunito), [Manrope](https://manropefont.com/), [Space Grotesk](https://fonts.google.com/specimen/Space+Grotesk), [Fira Sans](https://fonts.google.com/specimen/Fira+Sans), [Playfair Display](https://fonts.google.com/specimen/Playfair+Display) — no CDN, todo embebido.
 
 ## Quick start
@@ -79,7 +79,7 @@ See [CHANGELOG.md](CHANGELOG.md) for the full history.
 pip install iskg
 
 # from GitHub Releases
-pip install https://github.com/Iskander-mlander/ISKG/releases/download/v0.4.13/iskg-0.4.13-py3-none-any.whl
+pip install https://github.com/Iskander-mlander/ISKG/releases/download/v0.4.14/iskg-0.4.14-py3-none-any.whl
 ```
 
 ```python

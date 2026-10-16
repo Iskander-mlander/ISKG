@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.4.14] — 2026-10-16
+
+### Added
+- **`_JSAPI.pause_drag()`**: método nuevo expuesto como
+  `pywebview.api.pause_drag()`. Pone `gui.move_progress = False` para que
+  el easy_drag nativo no mueva la ventana mientras el usuario arrastra un
+  grip de resize en HTML; el siguiente press lo re-arma, así que el grip
+  solo lo llama una vez por pulsación. Devuelve `False` si no hay ventana
+  o la ventana no usa easy_drag.
+
+### Fixed
+- **`LogViewer` nunca actualizaba en vivo**: `_render_update_js` emitía
+  `if(!el)return;` a nivel superior. `evaluate_js` evalúa el payload como
+  script, así que cada sync reventaba con `SyntaxError: Return statements
+  are only valid inside functions` y las líneas nuevas no aparecían (el
+  HTML inicial sí, porque `_render()` las incluye). Ahora el payload va
+  envuelto en IIFE, igual que `_render_js` ya hacía.
+
+### Tests
+- `TestWindowFlags`: 3 tests nuevos de `pause_drag` (sin ventana, limpia
+  `move_progress`, noop sin easy_drag). `test_features_2026`: regresión
+  `test_logviewer_update_js_wrapped_in_iife`.
+
 ## [0.4.13] — 2026-10-16
 
 ### Added

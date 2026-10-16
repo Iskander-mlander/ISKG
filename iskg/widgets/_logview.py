@@ -127,12 +127,16 @@ if(content)content.scrollTop=content.scrollHeight;
 
         html = self._line_html()
         autoscroll = "true" if self._config_dict.get("autoscroll", True) else "false"
+        # IIFE: evaluate_js runs the payload as a script, so a bare
+        # `return` here would be a SyntaxError and every live update lost.
         return (
+            f"(function(){{"
             f'var el=document.getElementById("{self._id}");'
             f"if(!el)return;"
             f'var content=el.querySelector(".iskg-log-content");'
             f"if(content){{content.innerHTML={json.dumps(html)};"
             f"if({autoscroll})content.scrollTop=content.scrollHeight;}}"
+            f"}})();"
         )
 
     def __repr__(self) -> str:
