@@ -180,3 +180,11 @@ Debugging
    :members:
    :undoc-members:
    :show-inheritance:
+
+Layout & metrics
+----------------
+
+.. automodule:: iskg.metrics
+   :members:
+   :undoc-members:
+   :show-inheritance:

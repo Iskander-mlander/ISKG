@@ -109,9 +109,9 @@ class TestThemeCss:
         assert ".iskg-btn.sm, .iskg-btn.small" in IFAZ_CSS
         assert ".iskg-btn.lg, .iskg-btn.large" in IFAZ_CSS
         base = IFAZ_CSS[IFAZ_CSS.index(".iskg-btn {") :]
-        assert "height:26px" in base
+        assert "height:30px" in base
         sm = IFAZ_CSS[IFAZ_CSS.index(".iskg-btn.sm") :]
-        assert "height:22px" in sm
+        assert "height:24px" in sm
 
     def test_combo_dropdown_uses_fixed_position(self):
         """The ComboBox dropdown must escape ancestor overflow/stacking

@@ -244,6 +244,7 @@ class Application:
         easy_drag: bool = True,
         x: int | None = None,
         y: int | None = None,
+        min_size: bool = True,
     ) -> None:
         self._title = title
         self._width = width
@@ -267,6 +268,11 @@ class Application:
         # Only pass x/y to pywebview when both were given; a lone 0 would
         # pin the window to the screen corner instead of WM auto-placement.
         self._xy_from_user = x is not None and y is not None
+        # Window-level minimum so shrinking the OS window never covers the
+        # content (frames propagate their content minimum, see
+        # Widget._content_min_size). Pass min_size=False to opt out.
+        self._min_size_enabled = bool(min_size)
+        self._window_min: tuple[int, int] | None = None
 
         self._root_widgets: list[Widget] = []
         self._running = False
@@ -584,6 +590,32 @@ class Application:
         )
         return None
 
+    def _refresh_window_min(self) -> None:
+        """Recompute the OS-window minimum from the root widget tree.
+
+        Root widgets stack vertically inside ``#iskg-root`` (flex column):
+        the window width must fit the widest root, the height their sum.
+        """
+        if not self._min_size_enabled:
+            self._window_min = None
+            return
+        w = 0
+        h = 0
+        for root in self._root_widgets:
+            if root._config_dict.get("hidden"):
+                continue
+            mw, mh = root._content_min_size()
+            w = max(w, mw)
+            h += mh
+        self._window_min = (w, h) if (w > 0 and h > 0) else None
+
+    @property
+    def window_min_size(self) -> tuple[int, int] | None:
+        """Last computed OS-window minimum ``(width, height)``, or ``None``
+        when disabled (``min_size=False``) or the tree imposes no minimum.
+        """
+        return self._window_min
+
     def run(self, extra_js: str = "") -> None:
         """Open the window and start the application main loop.
 
@@ -613,12 +645,14 @@ class Application:
 
         self._running = True
         html = self._build_html(extra_js)
+        self._refresh_window_min()
 
         self._window = webview.create_window(
             self._title,
             html=html,
             width=self._width,
             height=self._height,
+            min_size=self._window_min,
             js_api=_JSAPI_INSTANCE,
             frameless=self._frameless,
             easy_drag=self._easy_drag,
@@ -1409,6 +1443,7 @@ class Application:
         """
         self._running = True
         self._window = _TestWindow()
+        self._refresh_window_min()
         self._flush_pending_js()
         return TestLoop(self)
 

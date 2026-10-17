@@ -16,6 +16,21 @@
 
 No browser, no HTTP server — just a Python process and a lightweight WebView.
 
+## What's new in 0.4.17
+
+* **Frames never cover their widgets again** — content-minimum
+  propagation: every `Frame`/`Notebook`/`PanedWindow` computes the
+  natural minimum of its children (pack sums, grid tracks, place
+  bounds, chrome + header) and refuses to shrink below it, and the OS
+  window itself gets a `min_size` from the whole tree
+  (`Application(min_size=False)` opts out). `ScrolledFrame` keeps
+  scrolling instead of propagating. Opt out per-widget with
+  `fit=False`; explicit `width`/`height`/`min_width`/`min_height`
+  always win.
+* **Comfortable default metrics** (`iskg.metrics`): buttons 30px
+  (sm 24 / lg 36 / tiny 18) at 12px font, entries 28px at 12px — the
+  theme CSS and the minimum propagation share one source of truth.
+
 ## What's new in 0.4.16
 
 * **Debug tools that actually work**: the bridge now keeps a 500-entry
@@ -81,6 +96,7 @@ See [CHANGELOG.md](CHANGELOG.md) for the full history.
 - **`iskg` CLI** with `iskg new`, `iskg run`, `iskg check`, `iskg bundle --standalone|--exe`, and introspection commands (`iskg info`, `iskg widgets`, `iskg themes`).
 - **Form validation** (`Form` + 8 validators: `Required`, `Range`, `Length`, `Pattern`, `Email`, `URL`, `Number`, `Custom`).
 - **I18n / L10n**: `tr()` / `_()` with JSON or `.mo` catalogues, `format_number` / `format_date`, `use_language()` context manager.
+- **Content-safe layout**: frames and the window propagate the natural minimum size of their content (`Widget._content_min_size()`, `fit=False` opt-out, `Application(min_size=False)` to disable) so widgets are never covered when resizing; shared defaults in `iskg.metrics`.
 - **Debug tools**: bridge trace (`app.trace()` / `trace_clear()`), widget tree dumps (`app.dump_tree()` / `app.dump_tree_text()` / `Widget.dump()`), `qDebug` / `qInfo` / `qWarning` / `qCritical` print helpers, `WidgetInspector` (Alt+I, click-to-inspect panel + `widget-picked` event), `fps_meter`, `enable_hot_reload` for CSS.
 - **Cross-platform**: Linux, Windows, macOS, BSD (same codebase). XDG paths on Linux, `~/Library/Application Support` on macOS, `%APPDATA%` on Windows.
 - **Zero HTTP**: no server, no ports, no browser tabs — just a window.

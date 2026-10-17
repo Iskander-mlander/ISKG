@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..base import Widget
+from ..base import Widget, _pad_pair
+from ..metrics import FRAME_BORDER, FRAME_HEADER_HEIGHT, FRAME_PADDING, NOTEBOOK_TABBAR_HEIGHT
 
 
 def _grid_template(
@@ -135,6 +136,101 @@ class Frame(Widget):
             return "flex:1;"
         return ""
 
+    def _own_min_size(self) -> tuple[int, int]:
+        # Frame chrome: CSS padding 6px + border 1px on each side, plus the
+        # header strip when the frame has a title. These ADD to the children
+        # contribution (see _content_min_size override).
+        chrome = 2 * (FRAME_PADDING + FRAME_BORDER)
+        h = chrome + (FRAME_HEADER_HEIGHT if self._config_dict.get("text") else 0)
+        return (chrome, h)
+
+    def _content_min_size(self) -> tuple[int, int]:
+        """Children minimum plus this frame's chrome (padding/border/header)."""
+        if self._get_cfg("fit", True) is False:
+            return (0, 0)
+        if self._config_dict.get("hidden"):
+            return (0, 0)
+        kw, kh = self._children_min_size()
+        ow, oh = self._own_min_size()
+        w = max(
+            self._cfg_px(self._config_dict.get("width")),
+            self._cfg_px(self._config_dict.get("min_width")),
+            kw + ow,
+        )
+        h = max(
+            self._cfg_px(self._config_dict.get("height")),
+            self._cfg_px(self._config_dict.get("min_height")),
+            kh + oh,
+        )
+        return (w, h)
+
+    def _children_min_size(self) -> tuple[int, int]:
+        """Combine children minimums according to the rendered layout."""
+        kids = [c for c in self._children if not c._destroyed and not c._config_dict.get("hidden")]
+        if not kids:
+            return (0, 0)
+        gap = self._cfg_px(self._get_cfg("gap", 3))
+        has_place = any(c._layout_mode == "place" for c in kids)
+        has_grid = any(c._layout_mode == "grid" for c in kids)
+        if has_place:
+            w = h = 0
+            for child in kids:
+                cw, ch = child._content_min_size()
+                if child._layout_mode == "place":
+                    li = child._layout_info
+                    x = self._cfg_px(li.get("x"))
+                    y = self._cfg_px(li.get("y"))
+                    cw = max(cw, self._cfg_px(li.get("width")))
+                    ch = max(ch, self._cfg_px(li.get("height")))
+                    w = max(w, x + cw)
+                    h = max(h, y + ch)
+                else:
+                    w = max(w, cw)
+                    h = max(h, ch)
+            return (w, h)
+        if has_grid:
+            ncols = max(1, self._max_grid_span("column"))
+            nrows = max(1, self._max_grid_span("row"))
+            col_min = [0] * ncols
+            row_min = [0] * nrows
+            for child in kids:
+                cw, ch = child._content_min_size()
+                li = child._layout_info if child._layout_mode == "grid" else {}
+                cs = max(1, li.get("columnspan", 1))
+                rs = max(1, li.get("rowspan", 1))
+                c0 = li.get("column", 0)
+                r0 = li.get("row", 0)
+                part_w = max(0, (cw - gap * (cs - 1)) // cs)
+                part_h = max(0, (ch - gap * (rs - 1)) // rs)
+                for i in range(cs):
+                    if c0 + i < ncols:
+                        col_min[c0 + i] = max(col_min[c0 + i], part_w)
+                for j in range(rs):
+                    if r0 + j < nrows:
+                        row_min[r0 + j] = max(row_min[r0 + j], part_h)
+            return (
+                sum(col_min) + gap * (ncols - 1),
+                sum(row_min) + gap * (nrows - 1),
+            )
+        # pack: one flex wrapper with a single direction (see _pack_direction)
+        horizontal = self._pack_direction() == "row"
+        main = 0
+        cross = 0
+        for child in kids:
+            cw, ch = child._content_min_size()
+            li = child._layout_info if child._layout_mode == "pack" else {}
+            cw += sum(_pad_pair(li.get("padx")))
+            ch += sum(_pad_pair(li.get("pady")))
+            if horizontal:
+                main += cw
+                cross = max(cross, ch)
+            else:
+                main += ch
+                cross = max(cross, cw)
+        if horizontal:
+            return (main + gap * (len(kids) - 1), cross)
+        return (cross, main + gap * (len(kids) - 1))
+
     def _render(self) -> str:
         text = self._config_dict.get("text", "")
         style = self._render_style()
@@ -182,7 +278,11 @@ class Frame(Widget):
         if container:
             h_mode = self._get_cfg("height-mode", "flex")
             h_fill = "flex:1;" if h_mode == "flex" and self._config_dict.get("flex", True) else ""
-            style += f"display:flex;flex-direction:column;min-height:0;{h_fill}"
+            if self._get_cfg("fit", True) is False:
+                style += f"display:flex;flex-direction:column;min-height:0;{h_fill}"
+            else:
+                mw, mh = self._content_min_size()
+                style += f"display:flex;flex-direction:column;min-width:{mw}px;min-height:{mh}px;{h_fill}"
 
         return f'''<div id="{self._id}" class="iskg-frame" style="{style}">
 {header}{children_html}</div>'''
@@ -231,6 +331,15 @@ class ScrolledFrame(Frame):
             "both": "overflow:auto;",
         }
         return m.get(s, "overflow-y:auto;overflow-x:hidden;")
+
+    def _content_min_size(self) -> tuple[int, int]:
+        """Scrollable viewport: content never propagates its size (it scrolls
+        by design). Only an explicitly configured viewport width/height
+        counts as minimum."""
+        return (
+            self._cfg_px(self._config_dict.get("width")),
+            self._cfg_px(self._config_dict.get("height")),
+        )
 
     def _render(self) -> str:
         style = self._render_style() + self._overflow_css()
@@ -288,11 +397,38 @@ class PanedWindow(Widget):
         self._config_dict["_sash_pos"] = max(0.0, min(1.0, float(pos)))
         self._sync()
 
+    def _children_min_size(self) -> tuple[int, int]:
+        minsize = self._cfg_px(self._config_dict.get("_minsize", 30))
+        sash_width = self._cfg_px(self._config_dict.get("_sash_width", 5))
+        panes = [
+            c for c in self._children if not c._destroyed and not c._config_dict.get("hidden")
+        ]
+        if not panes:
+            return (0, 0)
+        horizontal = self._config_dict.get("_orient", "horizontal") == "horizontal"
+        main = 0
+        cross = 0
+        for pane in panes:
+            pw, ph = pane._content_min_size()
+            if horizontal:
+                main += max(minsize, pw)
+                cross = max(cross, ph)
+            else:
+                main += max(minsize, ph)
+                cross = max(cross, pw)
+        main += sash_width * (len(panes) - 1)
+        return (main, cross) if horizontal else (cross, main)
+
     def _render(self) -> str:
         orient = self._config_dict.get("_orient", "horizontal")
         minsize = self._config_dict.get("_minsize", 30)
         sash_width = self._config_dict.get("_sash_width", 5)
         style = self._render_style()
+        if self._get_cfg("fit", True) is False:
+            style += "min-height:0;min-width:0;"
+        else:
+            pmw, pmh = self._content_min_size()
+            style += f"min-width:{pmw}px;min-height:{pmh}px;"
 
         if orient == "horizontal":
             flex_dir = "flex-direction:row;"
@@ -312,7 +448,7 @@ class PanedWindow(Widget):
 
         n = len(panes)
         if n == 0:
-            return f'<div id="{self._id}" class="iskg-panedwindow" style="{style}{flex_dir}display:flex;flex:1;min-height:0;min-width:0;"></div>'
+            return f'<div id="{self._id}" class="iskg-panedwindow" style="{style}{flex_dir}display:flex;flex:1;"></div>'
 
         sash_pos = self._config_dict.get("_sash_pos", 0.5)
         children_html = ""
@@ -324,11 +460,13 @@ class PanedWindow(Widget):
                     flex_val = max(0.05, 1.0 - min(0.95, float(sash_pos)))
             else:
                 flex_val = 1
-            children_html += f'<div style="display:flex;flex-direction:column;flex:{flex_val};min-{size_prop}:{minsize}px;">{pane._render()}</div>'
+            pcmw, pcmh = pane._content_min_size()
+            pane_min = max(int(minsize), pcmw if orient == "horizontal" else pcmh)
+            children_html += f'<div style="display:flex;flex-direction:column;flex:{flex_val};min-{size_prop}:{pane_min}px;">{pane._render()}</div>'
             if idx < n - 1:
                 children_html += f'<div id="{self._id}-sash-{idx}" class="iskg-sash" style="{sash_cursor}{sash_style}background:var(--border);flex-shrink:0;"></div>'
 
-        return f'<div id="{self._id}" class="iskg-panedwindow" style="{style}{flex_dir}display:flex;flex:1;min-height:0;min-width:0;">{children_html}</div>'
+        return f'<div id="{self._id}" class="iskg-panedwindow" style="{style}{flex_dir}display:flex;flex:1;">{children_html}</div>'
 
     def _render_js(self) -> str:
         orient = self._config_dict.get("_orient", "horizontal")
@@ -416,8 +554,26 @@ class Notebook(Widget):
     def tab_count(self) -> int:
         return len(self._tabs)
 
+    def _children_min_size(self) -> tuple[int, int]:
+        # Only the active page is visible; the notebook must fit the widest
+        # page plus the tab bar strip.
+        w = h = 0
+        for tab in self._tabs:
+            page = tab["widget"]
+            if page._destroyed or page._config_dict.get("hidden"):
+                continue
+            pw, ph = page._content_min_size()
+            w = max(w, pw)
+            h = max(h, ph)
+        return (w, h + NOTEBOOK_TABBAR_HEIGHT)
+
     def _render(self) -> str:
         style = self._render_style()
+        if self._get_cfg("fit", True) is False:
+            style += "min-height:0;min-width:0;"
+        else:
+            nmw, nmh = self._content_min_size()
+            style += f"min-width:{nmw}px;min-height:{nmh}px;"
         attrs = self._render_attrs()
         active = self._config_dict.get("active", 0)
         tabs_html = ""

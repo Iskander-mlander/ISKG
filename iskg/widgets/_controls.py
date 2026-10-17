@@ -6,6 +6,33 @@ from collections.abc import Callable
 from typing import Any
 
 from ..base import Widget
+from ..metrics import (
+    BUTTON_BORDER,
+    BUTTON_FONT_SIZE,
+    BUTTON_HEIGHT,
+    BUTTON_LETTER_SPACING,
+    BUTTON_LG_FONT_SIZE,
+    BUTTON_LG_HEIGHT,
+    BUTTON_LG_LETTER_SPACING,
+    BUTTON_LG_PAD_X,
+    BUTTON_PAD_X,
+    BUTTON_SM_FONT_SIZE,
+    BUTTON_SM_HEIGHT,
+    BUTTON_SM_LETTER_SPACING,
+    BUTTON_SM_PAD_X,
+    BUTTON_TINY_FONT_SIZE,
+    BUTTON_TINY_HEIGHT,
+    BUTTON_TINY_LETTER_SPACING,
+    BUTTON_TINY_PAD_X,
+    CHECK_BOX,
+    CHECK_FONT_SIZE,
+    CHECK_GAP,
+    CHECK_HEIGHT,
+    CHECK_PAD_X,
+    ENTRY_HEIGHT,
+    ENTRY_WIDTH,
+    estimate_text_width,
+)
 
 
 class Button(Widget):
@@ -69,6 +96,40 @@ class Button(Widget):
         # subclassing keeps the same public contract, but no extra work is
         # needed here.
         super()._handle_bridge_event(event_name, event_data)
+
+    def _own_min_size(self) -> tuple[int, int]:
+        text = self._config_dict.get("text", "")
+        size = str(self._config_dict.get("size", "") or "")
+        if size in ("sm", "small"):
+            fs, pad, ls, h = (
+                BUTTON_SM_FONT_SIZE,
+                BUTTON_SM_PAD_X,
+                BUTTON_SM_LETTER_SPACING,
+                BUTTON_SM_HEIGHT,
+            )
+        elif size in ("lg", "large"):
+            fs, pad, ls, h = (
+                BUTTON_LG_FONT_SIZE,
+                BUTTON_LG_PAD_X,
+                BUTTON_LG_LETTER_SPACING,
+                BUTTON_LG_HEIGHT,
+            )
+        elif size == "tiny":
+            fs, pad, ls, h = (
+                BUTTON_TINY_FONT_SIZE,
+                BUTTON_TINY_PAD_X,
+                BUTTON_TINY_LETTER_SPACING,
+                BUTTON_TINY_HEIGHT,
+            )
+        else:
+            fs, pad, ls, h = (
+                BUTTON_FONT_SIZE,
+                BUTTON_PAD_X,
+                BUTTON_LETTER_SPACING,
+                BUTTON_HEIGHT,
+            )
+        w = estimate_text_width(text, fs, pad_x=pad, letter_spacing=ls, extra=BUTTON_BORDER)
+        return (w, h)
 
     def _render(self) -> str:
         text = self._config_dict.get("text", "")
@@ -198,6 +259,9 @@ class Entry(Widget):
     @enabled.setter
     def enabled(self, value: bool) -> None:
         self._set_state("normal" if value else "disabled")
+
+    def _own_min_size(self) -> tuple[int, int]:
+        return (ENTRY_WIDTH, ENTRY_HEIGHT)
 
     def _render(self) -> str:
         val = self._config_dict.get("text", "")
@@ -329,6 +393,13 @@ class CheckBox(Widget):
                 with contextlib.suppress(Exception):
                     cmd(self.checked)
         super()._handle_bridge_event(event_name, event_data)
+
+    def _own_min_size(self) -> tuple[int, int]:
+        text = self._config_dict.get("text", "")
+        w = estimate_text_width(
+            text, CHECK_FONT_SIZE, pad_x=CHECK_PAD_X, extra=CHECK_BOX + CHECK_GAP
+        )
+        return (w, CHECK_HEIGHT)
 
     def _render(self) -> str:
         text = self._config_dict.get("text", "")
@@ -465,6 +536,13 @@ class RadioButton(Widget):
                     cmd(self.value)
         super()._handle_bridge_event(event_name, event_data)
         self._variable_handled = False
+
+    def _own_min_size(self) -> tuple[int, int]:
+        text = self._config_dict.get("text", "")
+        w = estimate_text_width(
+            text, CHECK_FONT_SIZE, pad_x=CHECK_PAD_X, extra=CHECK_BOX + CHECK_GAP
+        )
+        return (w, CHECK_HEIGHT)
 
     def _render(self) -> str:
         text = self._config_dict.get("text", "")

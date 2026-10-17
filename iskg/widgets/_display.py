@@ -6,6 +6,13 @@ from collections.abc import Callable
 from typing import Any
 
 from ..base import Widget
+from ..metrics import (
+    LABEL_FONT_SIZE,
+    LABEL_HEIGHT,
+    LABEL_LINE_HEIGHT,
+    LABEL_PAD_X,
+    estimate_text_width,
+)
 
 
 class Label(Widget):
@@ -86,6 +93,19 @@ class Label(Widget):
     def justify(self, value: str) -> None:
         self._config_dict["justify"] = value
         self._sync()
+
+    def _own_min_size(self) -> tuple[int, int]:
+        text = self._config_dict.get("text", "")
+        raw_fs = self._config_dict.get(
+            "font_size", self._config_dict.get("font-size", LABEL_FONT_SIZE)
+        )
+        try:
+            font_size = float(raw_fs)
+        except (TypeError, ValueError):
+            font_size = LABEL_FONT_SIZE
+        lines = str(text if text is not None else "").splitlines() or [""]
+        h = LABEL_HEIGHT if len(lines) <= 1 else LABEL_LINE_HEIGHT * len(lines)
+        return (estimate_text_width(text, font_size, pad_x=LABEL_PAD_X), h)
 
     def _render(self) -> str:
         text = self._config_dict.get("text", "")

@@ -55,9 +55,9 @@ html, body {
 /* ===== BUTTON ===== */
 .iskg-btn {
   font-family:var(--font-mono);
-  font-size:10px; letter-spacing:1px;
-  height:26px; line-height:26px;
-  padding:0 14px;
+  font-size:12px; letter-spacing:1px;
+  height:30px; line-height:30px;
+  padding:0 16px;
   background:var(--bg-panel-alt);
   border:1px solid var(--border-light);
   color:var(--text); border-radius:var(--radius);
@@ -92,14 +92,14 @@ html, body {
 /* Sizes: fixed heights so every button of a size matches in height; only the
    horizontal padding (and thus width) follows the label length. */
 .iskg-btn.sm, .iskg-btn.small {
-  height:22px; line-height:22px;
-  padding:0 10px;
-  font-size:9px; letter-spacing:0.5px;
+  height:24px; line-height:24px;
+  padding:0 12px;
+  font-size:11px; letter-spacing:0.5px;
 }
 .iskg-btn.lg, .iskg-btn.large {
-  height:30px; line-height:30px;
-  padding:0 18px;
-  font-size:11px;
+  height:36px; line-height:36px;
+  padding:0 20px;
+  font-size:14px;
 }
 .iskg-btn.tiny {
   height:18px; line-height:18px;
@@ -137,11 +137,12 @@ html, body {
 /* ===== ENTRY ===== */
 .iskg-entry {
   font-family:var(--font-mono);
-  font-size:11px; color:var(--cyan);
+  font-size:12px; color:var(--cyan);
   background:var(--bg-panel-alt);
   border:1px solid var(--border);
   border-radius:var(--radius);
-  padding:4px 8px;
+  padding:5px 10px;
+  height:28px; box-sizing:border-box;
   outline:none;
   transition:border-color var(--transition-speed);
   caret-color:var(--cyan);

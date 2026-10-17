@@ -1,5 +1,40 @@
 # Changelog
 
+## [0.4.17] — 2026-10-17
+
+### Added
+- **Propagación sistemática de mínimo de contenido**
+  (`Widget._content_min_size()`): al redimensionar la ventana, los
+  frames ya no se encogen por debajo de lo que contienen y dejan sus
+  widgets tapados/recortados. Cada contenedor calcula su mínimo
+  natural (hijos + gaps + padding + borde + cabecera) según su layout
+  — pack suma el eje principal, grid combina tracks, place usa los
+  bounds de los hijos — y lo emite como `min-width`/`min-height` en
+  el elemento. Los hijos con `pack(expand=True)` también dejan de
+  emitir los `min-*:0` ciegos.
+- **Ventana con mínimo**: `Application()` pasa `min_size` a pywebview
+  calculado del árbol raíz (ancho = raíz más ancha, alto = suma de
+  raíces apiladas). `Application(min_size=False)` lo desactiva;
+  `app.window_min_size` lo consulta.
+- **Opt-out por widget**: `fit=False` mantiene el viejo
+  comportamiento (shrink a cero) para ese contenedor. `width`,
+  `height`, `min_width` y `min_height` explícitos siempre ganan
+  sobre lo calculado.
+- **`iskg.metrics`**: fuente única de medidas por defecto
+  (botón 30px, entry 28px, estimador de ancho de texto mono
+  `estimate_text_width`). `ScrolledFrame` no propaga su contenido
+  (scrolla por diseño): solo cuenta su viewport explícito.
+- `tests/test_content_min.py` (29 tests).
+
+### Changed
+- **Escala cómoda por defecto** (tema `ifaz` + métricas): botones
+  30px de alto con fuente 12 (`sm` 24px/11, `lg` 36px/14, `tiny`
+  18px/8); entries 28px de alto con fuente 12 y `box-sizing`.
+  Antes: botón 26px/10, entry sin alto fijo.
+
+### Tests
+- 939 pasan, 2 skip. `ruff check` y `ruff format --check` limpios.
+
 ## [0.4.16] — 2026-10-17
 
 ### Fixed

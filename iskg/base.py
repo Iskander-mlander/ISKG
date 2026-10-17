@@ -663,6 +663,64 @@ el.onmouseleave=function(){{clearTimeout(timer);tip.style.display="none";}};
         alt = key.replace("-", "_")
         return self._config_dict.get(alt, default)
 
+    def _own_min_size(self) -> tuple[int, int]:
+        """Class-specific natural minimum ``(width, height)`` in pixels.
+
+        Leaf widgets override this using :mod:`iskg.metrics`; the base
+        implementation returns ``(0, 0)`` (no opinion).
+        """
+        return (0, 0)
+
+    def _children_min_size(self) -> tuple[int, int]:
+        """Minimum imposed by this widget's children, per its layout mode.
+
+        Containers (Frame and friends) override this; leaves return ``(0, 0)``.
+        """
+        return (0, 0)
+
+    @staticmethod
+    def _cfg_px(value: Any) -> int:
+        """Coerce a config pixel value (``int``/digit-string) to ``int``."""
+        if isinstance(value, bool):
+            return 0
+        if isinstance(value, int):
+            return max(0, value)
+        if isinstance(value, str) and value.isdigit():
+            return int(value)
+        return 0
+
+    def _content_min_size(self) -> tuple[int, int]:
+        """Natural minimum ``(width, height)`` so this widget is never squeezed
+        below its content (frames covering their widgets).
+
+        Systemic by default: explicit ``width``/``height``/``min_width``/
+        ``min_height`` always count, then the class default
+        (:meth:`_own_min_size`), then the children's contribution
+        (:meth:`_children_min_size`). Pass ``fit=False`` to opt out and keep
+        the old shrink-to-zero behaviour (``ImageBox`` reuses the name
+        ``fit`` for its image scaling mode — only the boolean ``False`` is
+        treated as opt-out).
+        """
+        if self._get_cfg("fit", True) is False:
+            return (0, 0)
+        if self._config_dict.get("hidden"):
+            return (0, 0)
+        own_w, own_h = self._own_min_size()
+        kids_w, kids_h = self._children_min_size()
+        w = max(
+            self._cfg_px(self._config_dict.get("width")),
+            self._cfg_px(self._config_dict.get("min_width")),
+            own_w,
+            kids_w,
+        )
+        h = max(
+            self._cfg_px(self._config_dict.get("height")),
+            self._cfg_px(self._config_dict.get("min_height")),
+            own_h,
+            kids_h,
+        )
+        return (w, h)
+
     def _var_updated(self, var: Any) -> None:
         """Called when a bound variable changes value.
         Override in subclasses to update the widget display.
@@ -1309,7 +1367,8 @@ el.onmouseleave=function(){{clearTimeout(timer);tip.style.display="none";}};
             if side in ("left", "right"):
                 # row: main-axis = horizontal, cross-axis = vertical
                 if expand:
-                    style += "flex:1;min-height:0;min-width:0;"
+                    emw, emh = self._content_min_size()
+                    style += f"flex:1;min-width:{emw}px;min-height:{emh}px;"
                 else:
                     style += "flex-shrink:0;"
                 if fill in ("y", "both"):
@@ -1321,7 +1380,8 @@ el.onmouseleave=function(){{clearTimeout(timer);tip.style.display="none";}};
             else:
                 # column: main-axis = vertical, cross-axis = horizontal
                 if expand:
-                    style += "flex:1;min-height:0;min-width:0;"
+                    emw, emh = self._content_min_size()
+                    style += f"flex:1;min-width:{emw}px;min-height:{emh}px;"
                 if fill in ("x", "both"):
                     style += "align-self:stretch;"
                 if fill in ("y", "both") and not expand:
