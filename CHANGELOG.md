@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.4.18] — 2026-10-17
+
+### Fixed
+- **pyright/CI**: `min_size` se pasaba a `webview.create_window()` como
+  `tuple | None`, pero el stub tipa el parámetro como tuple plano →
+  error de tipos en CI. Ahora el kwarg solo se incluye cuando el árbol
+  impone mínimo (runtime idéntico: sin mínimo se comporta como el
+  `None` por defecto de pywebview).
+
 ## [0.4.17] — 2026-10-17
 
 ### Added
