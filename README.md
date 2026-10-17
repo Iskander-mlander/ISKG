@@ -16,6 +16,24 @@
 
 No browser, no HTTP server — just a Python process and a lightweight WebView.
 
+## What's new in 0.4.16
+
+* **Debug tools that actually work**: the bridge now keeps a 500-entry
+  traffic trace — `app.trace()` shows every Python→JS eval, every
+  JS→Python event, debounce drops and unhandled events (the classic
+  "my click does nothing"), and `Application(debug=True)` echoes it to
+  stderr. `app.dump_tree()` / `app.dump_tree_text()` print the whole
+  widget tree as JSON or indented text; `app.get_widget(id)` looks one
+  up.
+* **`WidgetInspector` fixed** — it used to crash on `enable()`
+  (`inject_js` did not exist) and swallowed picks without a handler.
+  Now Alt+I / click-to-inspect shows a floating panel with the widget's
+  class, id and full config, and emits `widget-picked`.
+* **`fps_meter` fixed** — it registered a keyboard shortcut instead of
+  a bridge handler, so it always returned 0. `Application.inject_js()`
+  now exists (queue-safe before `run()`), unbreaking `SystemTray` and
+  the picker toast. 910 tests pass.
+
 ## What's new in 0.4.12
 
 * **`padx`/`pady` now accept tkinter-style tuples** in `pack()`, `grid()`
@@ -63,7 +81,7 @@ See [CHANGELOG.md](CHANGELOG.md) for the full history.
 - **`iskg` CLI** with `iskg new`, `iskg run`, `iskg check`, `iskg bundle --standalone|--exe`, and introspection commands (`iskg info`, `iskg widgets`, `iskg themes`).
 - **Form validation** (`Form` + 8 validators: `Required`, `Range`, `Length`, `Pattern`, `Email`, `URL`, `Number`, `Custom`).
 - **I18n / L10n**: `tr()` / `_()` with JSON or `.mo` catalogues, `format_number` / `format_date`, `use_language()` context manager.
-- **Debug tools**: `qDebug` / `qInfo` / `qWarning` / `qCritical` print helpers, `WidgetInspector` (Alt+I), `fps_meter`, `enable_hot_reload` for CSS.
+- **Debug tools**: bridge trace (`app.trace()` / `trace_clear()`), widget tree dumps (`app.dump_tree()` / `app.dump_tree_text()` / `Widget.dump()`), `qDebug` / `qInfo` / `qWarning` / `qCritical` print helpers, `WidgetInspector` (Alt+I, click-to-inspect panel + `widget-picked` event), `fps_meter`, `enable_hot_reload` for CSS.
 - **Cross-platform**: Linux, Windows, macOS, BSD (same codebase). XDG paths on Linux, `~/Library/Application Support` on macOS, `%APPDATA%` on Windows.
 - **Zero HTTP**: no server, no ports, no browser tabs — just a window.
 - **JS bridge**: bidirectional Python ↔ JavaScript calls for real-time UI updates.

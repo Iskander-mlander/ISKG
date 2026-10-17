@@ -172,3 +172,11 @@ Si una prop no tiene camino incremental, el escape hatch es
 inicialización. Ver ``docs/PLAN_MEJORAS.md`` (roadmap, punto 3) para el
 contrato completo y los tests correspondientes.
 
+
+Debugging
+---------
+
+.. automodule:: iskg.debug
+   :members:
+   :undoc-members:
+   :show-inheritance:

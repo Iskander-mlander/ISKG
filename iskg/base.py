@@ -28,6 +28,26 @@ def _new_id() -> str:
     return f"iw{_counter[0]}"
 
 
+def _dump_value(value: Any) -> Any:
+    """Sanitise a config value for :meth:`Widget.dump`.
+
+    Keeps JSON-friendly primitives as-is (truncating long strings),
+    caps lists/tuples, and falls back to ``repr()`` for callables or any
+    other non-serialisable object so ``json.dumps(widget.dump())`` never
+    raises.
+    """
+    if value is None or isinstance(value, (bool, int, float)):
+        return value
+    if isinstance(value, str):
+        return value if len(value) <= 160 else f"{value[:160]}…"
+    if isinstance(value, (list, tuple)):
+        items = [_dump_value(v) for v in list(value)[:12]]
+        if len(value) > 12:
+            items.append(f"…({len(value) - 12} more)")
+        return items
+    return repr(value)
+
+
 #: Padding accepted by :meth:`Widget.pack` / :meth:`Widget.grid`: either one
 #: value applied to both sides, or a tkinter-style ``(before, after)`` sequence.
 PadValue = int | Sequence[int]
@@ -1374,3 +1394,27 @@ el.onmouseleave=function(){{clearTimeout(timer);tip.style.display="none";}};
                 continue
             result.extend(child._collect_widgets(depth + 1))
         return result
+
+    def dump(self) -> dict[str, Any]:
+        """JSON-friendly snapshot of this widget and its subtree.
+
+        Returns a nested dict::
+
+            {"type": "Button", "id": "iw3", "destroyed": False,
+             "config": {...}, "children": [...]}
+
+        ``config`` mirrors ``_config_dict`` with every value sanitised by
+        :func:`_dump_value`, so the result can always be serialised with
+        ``json.dumps``. Useful from a REPL or a debug panel::
+
+            print(json.dumps(app.dump_tree(), indent=2))
+        """
+        node: dict[str, Any] = {
+            "type": type(self).__name__,
+            "id": self._id,
+            "destroyed": self._destroyed,
+            "config": {k: _dump_value(v) for k, v in self._config_dict.items()},
+        }
+        if self._children:
+            node["children"] = [child.dump() for child in self._children]
+        return node

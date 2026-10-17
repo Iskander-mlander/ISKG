@@ -9,11 +9,14 @@
 
 from __future__ import annotations
 
+import json
 import logging as _logging
 import os
 import time
 from collections.abc import Callable
 from typing import Any
+
+from .app import _HANDLERS
 
 _log = _logging.getLogger("iskg")
 
@@ -97,13 +100,20 @@ class Logger:
 
 
 class WidgetInspector:
-    """Click-to-inspect overlay that reports a widget's class, id, and key
-    config dict on click.
+    """Click-to-inspect overlay: click any widget to see its class, id and
+    full config in a floating panel.
 
-    Usage::
+    On pick, the panel is populated from :meth:`Application.get_widget`
+    / :meth:`Widget.dump` and the app event ``"widget-picked"`` is
+    emitted with the same dict, so other tools can subscribe::
 
         inspector = WidgetInspector(app)
-        inspector.enable()
+        inspector.enable()          # Alt+I toggles the panel
+        app.on("widget-picked", lambda info: print(info["type"]))
+
+    The bridge handler ``iskg-inspector`` is registered on ``enable()``
+    and removed on ``disable()`` (before this fix the pick event had no
+    handler, so clicks were silently swallowed).
     """
 
     def __init__(self, app: Any) -> None:
@@ -114,32 +124,60 @@ class WidgetInspector:
         if self._enabled:
             return
         self._enabled = True
+        _HANDLERS["iskg-inspector"] = self._on_pick
         self.app.inject_js(
             """
 (function(){
   if(document.getElementById('iskg-inspector'))return;
-  var b=document.createElement('div');
-  b.id='iskg-inspector';
-  b.innerHTML='<div class="iskg-inspector-hint">Click any widget (Alt+I to disable)</div>';
-  document.body.appendChild(b);
-  b.onclick=function(e){{
+  var p=document.createElement('div');
+  p.id='iskg-inspector';
+  p.style.cssText='position:fixed;right:12px;bottom:12px;z-index:99999;'
+    +'background:rgba(18,21,26,.96);color:#d6dae2;border:1px solid #3a4150;'
+    +'border-radius:6px;padding:8px 10px;max-width:440px;max-height:50vh;'
+    +'overflow:auto;font:11px/1.45 monospace;white-space:pre-wrap;'
+    +'box-shadow:0 4px 18px rgba(0,0,0,.5);display:none;cursor:default;';
+  p.innerHTML='<div style="color:#7dd3fc;font-weight:bold;">Inspector '
+    +'<span style="color:#6b7280;font-weight:normal;">(click a widget, '
+    +'Alt+I to hide, click title to close)</span></div>'
+    +'<pre id="iskg-inspector-body" style="margin:6px 0 0 0;'
+    +'white-space:pre-wrap;"></pre>';
+  document.body.appendChild(p);
+  window.iskg_inspect_show=function(info){
+    var b=document.getElementById('iskg-inspector-body');
+    b.textContent=JSON.stringify(info,null,1);
+    var head=p.firstChild;
+    head.firstChild.textContent='Inspector '
+      +(info&&info.type?info.type+'#'+info.id:'');
+    p.style.display='block';
+  };
+  document.addEventListener('click',function(e){
     var el=e.target.closest('[id^=iw]');
-    if(!el)return;
+    if(!el||p.contains(el))return;
     iskg_bridge_event('iskg-inspector','pick',el.id);
-  }};
-  window.addEventListener('keydown',function(e){{
-    if(e.altKey && e.key==='i'){{
-      var cur=document.getElementById('iskg-inspector');
-      if(cur)cur.style.display=cur.style.display==='none'?'block':'none';
-    }}
-  }});
+  },true);
+  window.addEventListener('keydown',function(e){
+    if(e.altKey&&e.key==='i'){
+      p.style.display=p.style.display==='none'?'block':'none';
+    }
+  });
 })();
 """
         )
 
+    def _on_pick(self, event_name: str, data: Any) -> None:
+        if event_name != "pick" or not self._enabled:
+            return
+        widget = self.app.get_widget(str(data))
+        info: dict[str, Any] = (
+            widget.dump() if widget is not None else {"error": f"unknown widget {data!r}"}
+        )
+        self.app.emit("widget-picked", info)
+        self.app.execute_js(f"window.iskg_inspect_show({json.dumps(info)});")
+
     def disable(self) -> None:
         self._enabled = False
-        self.app.execute_js("var c=document.getElementById('iskg-inspector');if(c)c.remove();")
+        _HANDLERS.pop("iskg-inspector", None)
+        self.app.inject_js("var c=document.getElementById('iskg-inspector');if(c)c.remove();")
 
 
 def fps_meter(app: Any, duration_s: float = 1.0) -> float:
@@ -159,17 +197,28 @@ def fps_meter(app: Any, duration_s: float = 1.0) -> float:
   requestAnimationFrame(tick);
 }})();
 """
-    done = []
+    done: list[int] = []
 
     def handler(event_name: str, data: Any) -> None:
         if event_name == "done":
-            done.append(int(data))
+            try:
+                done.append(int(data))
+            except (TypeError, ValueError):
+                done.append(0)
 
-    app.bind("__fps__", handler)
-    app.execute_js(js)
-    deadline = time.time() + duration_s + 1.0
-    while not done and time.time() < deadline:
-        time.sleep(0.05)
+    # The result arrives as a *widget* bridge event (widget id
+    # "__fps__"), so it must be registered in _HANDLERS. The previous
+    # version called app.bind(), which registers a keyboard shortcut —
+    # the event never reached the handler and fps_meter always returned
+    # 0 after blocking for duration_s.
+    _HANDLERS["__fps__"] = handler
+    try:
+        app.execute_js(js)
+        deadline = time.time() + duration_s + 1.0
+        while not done and time.time() < deadline:
+            time.sleep(0.05)
+    finally:
+        _HANDLERS.pop("__fps__", None)
     count = done[0] if done else 0
     return count / duration_s
 

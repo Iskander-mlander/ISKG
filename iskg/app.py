@@ -8,6 +8,7 @@ import os
 import queue
 import threading
 import time
+from collections import deque
 from collections.abc import Callable
 from typing import Any
 
@@ -32,6 +33,40 @@ from .theme import IFAZ_CSS
 
 _HANDLERS: dict[str, Callable] = {}
 _LOCK = threading.Lock()
+
+# ── Bridge trace (debug) ─────────────────────────────────────────────
+# Bounded ring buffer of every Python→JS eval and every JS→Python bridge
+# event (including debounced drops and unhandled events — the two classic
+# "why doesn't the UI react" mysteries). Always recording: the buffer is
+# fixed-size and payloads are truncated, so cost is negligible. Read it
+# with `Application.trace()`; `Application(debug=True)` additionally
+# echoes each entry to stderr as it happens.
+_TRACE_MAX = 500
+_trace: deque[dict[str, Any]] = deque(maxlen=_TRACE_MAX)
+_trace_lock = threading.Lock()
+_trace_stderr: bool = False
+
+
+def _trace_snippet(text: str | None, limit: int = 400) -> str | None:
+    """Truncate a payload for the trace buffer (keeps full byte count)."""
+    if text is None:
+        return None
+    if len(text) <= limit:
+        return text
+    return f"{text[:limit]}…({len(text)} bytes)"
+
+
+def _trace_record(kind: str, **fields: Any) -> None:
+    """Append one entry to the bridge trace ring buffer."""
+    entry: dict[str, Any] = {"t": time.time(), "kind": kind}
+    entry.update(fields)
+    with _trace_lock:
+        _trace.append(entry)
+    if _trace_stderr:
+        import sys
+
+        print(f"[ISKG:trace] {kind} {fields!r}", file=sys.stderr)
+
 
 _GTK_UNAVAILABLE = object()
 
@@ -71,9 +106,16 @@ class _JSAPI:
         event_name: str,
         event_data_json: str | None,
     ) -> None:
+        _trace_record(
+            "event-in",
+            widget=widget_id,
+            event=event_name,
+            data=_trace_snippet(event_data_json),
+        )
         if event_name in self._NON_DEBOUNCED:
             handler = _HANDLERS.get(widget_id)
             if handler is None:
+                _trace_record("event-unhandled", widget=widget_id, event=event_name)
                 return
             try:
                 data: Any = json.loads(event_data_json) if event_data_json else None
@@ -90,6 +132,12 @@ class _JSAPI:
                 and (now - last[0]) * 1000 < self._DEBOUNCE_MS
                 and last[1] == event_data_json
             ):
+                _trace_record(
+                    "event-dropped",
+                    widget=widget_id,
+                    event=event_name,
+                    data=_trace_snippet(event_data_json),
+                )
                 return
             self._last_event[key] = (now, event_data_json)
         handler = _HANDLERS.get(widget_id)
@@ -99,6 +147,8 @@ class _JSAPI:
             except json.JSONDecodeError:
                 data = event_data_json
             handler(event_name, data)
+        else:
+            _trace_record("event-unhandled", widget=widget_id, event=event_name)
 
     # Host window set by Application.run(); lets JS resize a frameless
     # window (resize grip) since undecorated GTK windows have no handles.
@@ -169,7 +219,9 @@ class Application:
         app.add(label)
         app.run()
 
-    Pass ``debug=True`` to log JavaScript errors to stderr::
+    Pass ``debug=True`` to log JavaScript errors — and every bridge
+    traffic line (Python→JS evals and JS→Python events) — to stderr,
+    mirrored in :meth:`trace`::
 
         app = Application(debug=True)
     """
@@ -200,6 +252,9 @@ class Application:
         self._vignette = vignette
         self._theme_name = theme
         self._debug = debug
+        if debug:
+            global _trace_stderr
+            _trace_stderr = True
         self._extra_css = extra_css
         self._stderr_log = stderr_log
         self._font_ids = font_ids
@@ -220,6 +275,7 @@ class Application:
         self._event_handlers: dict[str, list[Callable]] = {}
         self._window: Any = None
         self._deferred_sync: list[str] = []
+        self._pending_js: list[str] = []
         self._sync_lock = threading.Lock()
         self._sync_batch_depth = 0
         self._global_key_bindings: list[dict[str, Any]] = []
@@ -575,6 +631,10 @@ class Application:
             # Keep _x/_y fresh so geometry() reports the real position
             # even after the native window object is gone.
             self._window.events.moved += self._track_window_move
+        with contextlib.suppress(Exception):
+            # JS queued by inject_js() before run() (inspector, tray,
+            # toasts) executes once the DOM is ready.
+            self._window.events.loaded += self._flush_pending_js
 
         saved = os.dup(2)
         self._saved_stderr = saved
@@ -725,9 +785,11 @@ class Application:
 
     def _eval_js(self, js: str) -> None:
         if self._window and self._running:
+            _trace_record("js-out", bytes=len(js), js=_trace_snippet(js))
             try:
                 self._window.evaluate_js(js)
             except Exception as exc:
+                _trace_record("js-error", error=f"{type(exc).__name__}: {exc}")
                 # Always surface the failure so a silent UI freeze is at
                 # least diagnosable. Debug mode adds a full traceback.
                 import sys
@@ -807,7 +869,95 @@ class Application:
 
     @debug.setter
     def debug(self, value: bool) -> None:
+        global _trace_stderr
         self._debug = bool(value)
+        _trace_stderr = self._debug
+
+    # ── Debug: bridge trace ──────────────────────────────────────────
+
+    def trace(self, limit: int | None = None) -> list[dict[str, Any]]:
+        """Snapshot of the JS bridge traffic, oldest first.
+
+        Every entry is a dict with at least ``t`` (unix time) and one of
+        these ``kind`` values:
+
+        * ``"js-out"`` — Python evaluated JS in the webview (``bytes``,
+          ``js`` truncated to ~400 chars).
+        * ``"event-in"`` — bridge event arrived from JS (``widget``,
+          ``event``, ``data``).
+        * ``"event-dropped"`` — a debounced duplicate was discarded.
+        * ``"event-unhandled"`` — no handler was registered for the
+          widget id (classic "my click does nothing" cause).
+        * ``"js-error"`` — ``evaluate_js`` raised (``error``).
+
+        The buffer holds the last 500 entries and is always recording.
+
+        Args:
+            limit: if given, return only the last ``limit`` entries.
+
+        Example::
+
+            app = Application(debug=True)   # also echoes to stderr
+            ...
+            for e in app.trace(limit=20):
+                print(e["kind"], e.get("event") or e.get("bytes"))
+        """
+        with _trace_lock:
+            items = list(_trace)
+        if limit is not None:
+            items = items[-limit:] if limit > 0 else []
+        return items
+
+    def trace_clear(self) -> None:
+        """Empty the bridge trace ring buffer."""
+        with _trace_lock:
+            _trace.clear()
+
+    # ── Debug: widget tree ───────────────────────────────────────────
+
+    def dump_tree(self) -> list[dict[str, Any]]:
+        """Snapshot of every root widget and its subtree.
+
+        Returns a list of nested dicts (see :meth:`Widget.dump`), always
+        JSON-serialisable::
+
+            app.dump_tree()
+            app.dump_tree_text()   # same data, indented plain text
+        """
+        return [w.dump() for w in self._root_widgets]
+
+    def dump_tree_text(self) -> str:
+        """Plain-text rendering of :meth:`dump_tree`, indented per level."""
+        lines: list[str] = []
+
+        def walk(node: dict[str, Any], depth: int) -> None:
+            pad = "  " * depth
+            line = f"{pad}{node['type']}#{node['id']}"
+            if node.get("destroyed"):
+                line += " [destroyed]"
+            cfg = node.get("config") or {}
+            bits = [
+                f"{k}={cfg[k]!r}"
+                for k in ("text", "value", "checked", "visible")
+                if k in cfg and cfg[k] not in (None, "")
+            ]
+            if bits:
+                line += " " + " ".join(bits)
+            lines.append(line)
+            for child in node.get("children", []):
+                walk(child, depth + 1)
+
+        for root in self.dump_tree():
+            walk(root, 0)
+        return "\n".join(lines)
+
+    def get_widget(self, widget_id: str) -> Widget | None:
+        """Look up a widget by its id anywhere in the tree (or ``None``)."""
+        for root in self._root_widgets:
+            for _, w in root._collect_widgets():
+                if w._id == widget_id:
+                    return w
+        return None
 
     def _widget_destroyed(self, widget_id: str) -> None:
         _HANDLERS.pop(widget_id, None)
@@ -866,6 +1016,31 @@ class Application:
         """Execute arbitrary JavaScript in the webview window."""
         self._eval_js(js_code)
         return self
+
+    def inject_js(self, js_code: str) -> Application:
+        """Inject JavaScript at runtime (queue-safe alias of :meth:`execute_js`).
+
+        Symmetric counterpart of :meth:`inject_css`. Called **before**
+        :meth:`run` (the natural place for ``WidgetInspector.enable()``,
+        ``SystemTray``, toasts…) the code is queued and executed once the
+        DOM reports ``loaded`` — previously these call sites raised
+        ``AttributeError: 'Application' object has no attribute
+        'inject_js'`` the first time they ran, and an equivalent silent
+        drop would have swallowed pre-run injections.
+        """
+        if self._window and self._running:
+            return self.execute_js(js_code)
+        with self._sync_lock:
+            self._pending_js.append(js_code)
+        return self
+
+    def _flush_pending_js(self) -> None:
+        """Run JS queued by :meth:`inject_js` before the window was ready."""
+        with self._sync_lock:
+            items = self._pending_js
+            self._pending_js = []
+        for js in items:
+            self.execute_js(js)
 
     def inject_css(self, css: str) -> Application:
         """Inject a CSS string at runtime (after the app has started).
@@ -1234,6 +1409,7 @@ class Application:
         """
         self._running = True
         self._window = _TestWindow()
+        self._flush_pending_js()
         return TestLoop(self)
 
 

@@ -1,5 +1,47 @@
 # Changelog
 
+## [0.4.16] — 2026-10-17
+
+### Fixed
+- **`WidgetInspector` no inspeccionaba nada**: `enable()` llamaba a
+  `app.inject_js()`, un método que **no existía** (`AttributeError` al
+  activarlo), y su evento `pick` no tenía handler registrado — el click
+  se tragaba en silencio y nunca se mostraban clase/id/config a pesar
+  de lo que prometía el docstring. Ahora registra
+  `_HANDLERS["iskg-inspector"]`, pinta un panel flotante con el dump
+  completo del widget y emite el evento `widget-picked` (suscribible
+  con `app.on("widget-picked", ...)`). Se puede llamar `enable()`
+  antes de `run()` (el JS se encola, ver Added).
+- **`Application.inject_js()` no existía**: `SystemTray`, el toast de
+  los pickers (`_pickers.py`) y el inspector lo llamaban y reventaban
+  con `AttributeError` en el primer uso — nunca detectado porque los
+  tests headless no ejecutan esas rutas. Ahora es el counterpart de
+  `inject_css()`; llamado antes de `run()` se encola y se ejecuta cuando
+  el DOM da `loaded`.
+- **`fps_meter()` devolvía siempre 0**: registraba su callback con
+  `app.bind("__fps__", ...)`, que es un atajo de **teclado**, no un
+  handler del puente — el evento `done` jamás llegaba y la función
+  bloqueaba `duration_s` para devolver 0. Ahora registra en `_HANDLERS`
+  y limpia el handler al terminar.
+
+### Added
+- **Bridge trace** (`Application.trace()` / `trace_clear()`): ring
+  buffer siempre activo (500 entradas, payloads truncados) con todo el
+  tráfico Python↔JS: `js-out`, `event-in`, `event-dropped`
+  (debounce), `event-unhandled` (el clásico "mi click no hace nada") y
+  `js-error`. `Application(debug=True)` además espejea cada entrada a
+  stderr (`[ISKG:trace] ...`).
+- **Dumps del árbol de widgets**: `Application.dump_tree()` (lista de
+  dicts JSON), `Application.dump_tree_text()` (texto indentado),
+  `Application.get_widget(id)` y `Widget.dump()` — el árbol completo
+  con tipo, id, `destroyed` y config saneada (cadenas truncadas,
+  listas acotadas, `repr()` para no-serializables).
+- **`tests/test_debug_tools.py`**: 22 tests nuevos (trace, dumps,
+  inspector, fps_meter, cola de `inject_js`).
+
+### Tests
+- 910 pasan, 2 skip. `ruff check` y `ruff format --check` limpios.
+
 ## [0.4.15] — 2026-10-16
 
 ### Fixed
