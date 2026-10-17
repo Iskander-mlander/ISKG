@@ -7,6 +7,7 @@
   [![Python](https://img.shields.io/badge/python-3.10%20|%203.11%20|%203.12%20|%203.13%20|%203.14-blue?logo=python)](https://www.python.org)
   [![License](https://img.shields.io/github/license/Iskander-mlander/ISKG?color=green)](LICENSE)
   [![Release](https://img.shields.io/github/v/release/Iskander-mlander/ISKG?logo=github)](https://github.com/Iskander-mlander/ISKG/releases)
+  [![PyPI](https://img.shields.io/pypi/v/iskg?logo=pypi)](https://pypi.org/project/iskg/)
   [![Platform](https://img.shields.io/badge/platform-linux%20|%20windows%20|%20macos%20|%20bsd-lightgrey)](#)
 </div>
 
@@ -109,11 +110,12 @@ See [CHANGELOG.md](CHANGELOG.md) for the full history.
 ## Quick start
 
 ```bash
-# desde PyPI
-pip install iskg
+# desde PyPI (siempre la última versión)
+pip install -U iskg
 
-# from GitHub Releases
-pip install https://github.com/Iskander-mlander/ISKG/releases/download/v0.4.15/iskg-0.4.15-py3-none-any.whl
+# o el wheel más reciente desde GitHub Releases — pestaña "Assets" de
+# https://github.com/Iskander-mlander/ISKG/releases/latest
+pip install ./iskg-<versión>-py3-none-any.whl
 ```
 
 ```python
