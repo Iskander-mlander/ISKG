@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.19] — 2026-10-17
+
+### Fixed
+- **`pack(padx/pady)` y `grid(padx/pady)` no creaban espacio en widgets
+  de tamaño fijo**: se emitían como `padding-*` interno, y con
+  `box-sizing:border-box` + `height` fijo (botones) ese padding caía
+  *dentro* de la caja → `pady=4` sobre un botón no añadía ni un
+  píxel de hueco. `_pad_css()` ahora emite `margin-*` (semántica
+  tkinter: espacio *alrededor* del widget). Los widgets de altura
+  automática (Label…) ya funcionaban por accidente; ahora todos
+  funcionan igual.
+
 ## [0.4.18] — 2026-10-17
 
 ### Fixed

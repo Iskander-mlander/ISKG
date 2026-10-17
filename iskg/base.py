@@ -76,18 +76,23 @@ def _pad_pair(value: Any) -> tuple[int, int]:
 
 
 def _pad_css(axis: str, value: Any) -> str:
-    """Render ``padding-*`` declarations for a ``padx``/``pady`` value.
+    """Render ``margin-*`` declarations for a ``padx``/``pady`` value.
 
     ``axis`` is ``"x"`` (left/right) or ``"y"`` (top/bottom). Returns ``""``
     for zero padding so widgets without explicit padding keep inheriting any
     class-level padding (an inline ``padding:0`` would otherwise clobber it).
+
+    Emitted as ``margin`` — tkinter semantics: space *around* the widget.
+    Emitted as ``padding`` it would land *inside* the border-box of
+    fixed-size widgets (buttons have a fixed height) and create no visual
+    spacing at all.
     """
     first, second = _pad_pair(value)
     if not first and not second:
         return ""
     if axis == "x":
-        return f"padding-left:{first}px;padding-right:{second}px;"
-    return f"padding-top:{first}px;padding-bottom:{second}px;"
+        return f"margin-left:{first}px;margin-right:{second}px;"
+    return f"margin-top:{first}px;margin-bottom:{second}px;"
 
 
 _CONFIG_TO_CSS: list[tuple[str, str, bool]] = [

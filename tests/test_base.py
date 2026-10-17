@@ -1101,14 +1101,14 @@ class TestRenderStyle:
         w = _ConcreteWidget()
         w.pack(padx=10)
         style = w._render_style()
-        assert "padding-left:10px" in style
-        assert "padding-right:10px" in style
+        assert "margin-left:10px" in style
+        assert "margin-right:10px" in style
 
     def test_render_pack_pady(self):
         w = _ConcreteWidget()
         w.pack(pady=15)
         style = w._render_style()
-        assert "padding-top:15px" in style
+        assert "margin-top:15px" in style
 
     def test_render_grid_basic(self):
         w = _ConcreteWidget()
@@ -1121,57 +1121,57 @@ class TestRenderStyle:
         w = _ConcreteWidget()
         w.grid(padx=8)
         style = w._render_style()
-        assert "padding-left:8px" in style
+        assert "margin-left:8px" in style
 
     def test_render_grid_pady(self):
         w = _ConcreteWidget()
         w.grid(pady=12)
         style = w._render_style()
-        assert "padding-top:12px" in style
+        assert "margin-top:12px" in style
 
     def test_render_pack_padx_tuple(self):
         w = _ConcreteWidget()
         w.pack(padx=(8, 4))
         style = w._render_style()
-        assert "padding-left:8px" in style
-        assert "padding-right:4px" in style
+        assert "margin-left:8px" in style
+        assert "margin-right:4px" in style
 
     def test_render_pack_pady_tuple_asymmetric(self):
         w = _ConcreteWidget()
         w.pack(pady=(0, 6))
         style = w._render_style()
-        assert "padding-top:0px" in style
-        assert "padding-bottom:6px" in style
+        assert "margin-top:0px" in style
+        assert "margin-bottom:6px" in style
 
     def test_render_grid_padx_pady_tuple(self):
         w = _ConcreteWidget()
         w.grid(padx=(3, 9), pady=(1, 2))
         style = w._render_style()
-        assert "padding-left:3px;padding-right:9px;" in style
-        assert "padding-top:1px;padding-bottom:2px;" in style
+        assert "margin-left:3px;margin-right:9px;" in style
+        assert "margin-top:1px;margin-bottom:2px;" in style
 
     def test_render_pack_int_padding_still_symmetric(self):
         w = _ConcreteWidget()
         w.pack(padx=10, pady=5)
         style = w._render_style()
-        assert "padding-left:10px;padding-right:10px;" in style
-        assert "padding-top:5px;padding-bottom:5px;" in style
+        assert "margin-left:10px;margin-right:10px;" in style
+        assert "margin-top:5px;margin-bottom:5px;" in style
 
     def test_render_pad_zero_emits_nothing(self):
         w = _ConcreteWidget()
         w.pack(padx=0, pady=0)
-        assert "padding-" not in w._render_style()
+        assert "margin-" not in w._render_style()
 
     def test_render_pad_zero_tuple_emits_nothing(self):
         w = _ConcreteWidget()
         w.pack(padx=(), pady=(0, 0))
-        assert "padding-" not in w._render_style()
+        assert "margin-" not in w._render_style()
 
     def test_render_pad_list_accepted(self):
         w = _ConcreteWidget()
         w.grid(pady=[4, 8])
         style = w._render_style()
-        assert "padding-top:4px;padding-bottom:8px;" in style
+        assert "margin-top:4px;margin-bottom:8px;" in style
 
     def test_layout_info_keeps_raw_tuple(self):
         w = _ConcreteWidget()

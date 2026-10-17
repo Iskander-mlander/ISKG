@@ -41,8 +41,8 @@ class TestBox:
         assert child._layout_info.get("padx") == (6, 2)
         assert child._layout_info.get("pady") == (0, 8)
         style = child._render_style()
-        assert "padding-left:6px;padding-right:2px;" in style
-        assert "padding-top:0px;padding-bottom:8px;" in style
+        assert "margin-left:6px;margin-right:2px;" in style
+        assert "margin-top:0px;margin-bottom:8px;" in style
 
     def test_box_per_child_padding_override(self):
         b = VBox(padx=4, pady=4)
