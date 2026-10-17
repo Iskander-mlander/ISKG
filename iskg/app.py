@@ -646,19 +646,24 @@ class Application:
         self._running = True
         html = self._build_html(extra_js)
         self._refresh_window_min()
+        # Only pass min_size when the tree imposes one: the pywebview stub
+        # types it as a plain tuple, and None is the "no minimum" default.
+        window_kwargs: dict[str, Any] = {}
+        if self._window_min is not None:
+            window_kwargs["min_size"] = self._window_min
 
         self._window = webview.create_window(
             self._title,
             html=html,
             width=self._width,
             height=self._height,
-            min_size=self._window_min,
             js_api=_JSAPI_INSTANCE,
             frameless=self._frameless,
             easy_drag=self._easy_drag,
             on_top=self._on_top,
             x=self._x if self._xy_from_user else None,
             y=self._y if self._xy_from_user else None,
+            **window_kwargs,
         )
         _JSAPI_INSTANCE._window = self._window
         with contextlib.suppress(Exception):
