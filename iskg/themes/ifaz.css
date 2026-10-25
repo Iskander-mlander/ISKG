@@ -209,6 +209,9 @@ html, body {
   font-size:11px; font-family:var(--font-mono);
   vertical-align:top;
   width:140px;
+  /* En filas flex el wrap se estiraba a lo alto (align-items:stretch) y el
+     desplegable se anclaba a su borde inferior, lejisimos del combo. */
+  align-self:flex-start; height:fit-content; max-height:100%;
 }
 .iskg-cb-display {
   display:flex; align-items:center; justify-content:space-between;
@@ -474,6 +477,8 @@ html, body {
 .iskg-datepicker {
   position:relative; display:inline-block;
   font-family:var(--font-mono); font-size:11px;
+  /* Igual que .iskg-cb-wrap: no dejar que un padre flex lo estire. */
+  align-self:flex-start; height:fit-content;
 }
 .iskg-datepicker-field {
   display:block; padding:4px 8px;
@@ -885,6 +890,9 @@ html, body {
   background:var(--bg-panel); border:1px solid var(--border);
   border-radius:3px; padding:2px 4px; gap:2px;
   min-height:24px; font-size:11px;
+  /* Los dd cuelgan de top:100%: si el padre flex estira la barra, el menu
+     aparece muy abajo. */
+  align-self:flex-start; height:fit-content;
 }
 .iskg-menubar-item {
   padding:2px 8px; cursor:pointer; border-radius:2px;

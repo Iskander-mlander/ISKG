@@ -190,6 +190,7 @@ class MenuBar(Widget):
       if(!dd)return;
       if(openDD===dd){{hideAll();return;}}
       hideAll();
+      dd.style.left=h.offsetLeft+"px";
       dd.style.display="block";
       openDD=dd;
     }};
@@ -197,6 +198,7 @@ class MenuBar(Widget):
       cancelHide();
       if(dd&&dd!==openDD){{
         hideAll();
+        dd.style.left=h.offsetLeft+"px";
         dd.style.display="block";
         openDD=dd;
       }}

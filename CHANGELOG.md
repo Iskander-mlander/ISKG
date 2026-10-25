@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.4.20] — 2026-10-25
+
+### Fixed
+- **ComboBox: el desplegable se anclaba al fondo de la fila** cuando
+  un padre flex estiraba el wrap (`align-items:stretch`), apareciendo
+  lejísimos del combo. El wrap ya no se estira
+  (`align-self:flex-start; height:fit-content`) y el JS ancla la lista
+  al control visible, la abre hacia arriba si no cabe abajo, la limita
+  al viewport y la recoloca al hacer scroll.
+- **DatePicker**: el calendario se anclaba al contenedor estirado;
+  ahora se ancla al campo, se voltea si no cabe y se limita al
+  viewport, con recolocación en `resize` y `scroll`.
+- **MenuBar**: los desplegables se alinean horizontalmente con su
+  botón (`left = offsetLeft`) aunque la barra se estire.
+- **Tooltip**: clamp vertical para que no se salga de la ventana.
+- **Frame (grid)**: el wrapper interno usa `flex:1` para llenar el
+  frame.
+
+### Tests
+- 939 pasan, 2 skip. `ruff check` limpio.
+
 ## [0.4.19] — 2026-10-17
 
 ### Fixed

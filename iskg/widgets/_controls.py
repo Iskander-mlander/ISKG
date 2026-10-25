@@ -733,22 +733,69 @@ class ComboBox(Widget):
         return f'''(function(){{
 var wrap=document.getElementById("{self._id}");
 var drop=document.getElementById("{self._id}-drop");
+function anchorRect(){{
+  /* El wrap puede estar estirado por el flex del padre (align-items:stretch),
+     asi que anclamos al control visible y no a la caja del wrap. */
+  var r=null;
+  for(var i=0;i<wrap.children.length;i++){{
+    var c=wrap.children[i];
+    if(c===drop)continue;
+    var cr=c.getBoundingClientRect();
+    if(cr.width<=0||cr.height<=0)continue;
+    if(!r)r={{top:cr.top,bottom:cr.bottom,left:cr.left,right:cr.right}};
+    else{{
+      r.top=Math.min(r.top,cr.top);r.bottom=Math.max(r.bottom,cr.bottom);
+      r.left=Math.min(r.left,cr.left);r.right=Math.max(r.right,cr.right);
+    }}
+  }}
+  if(!r){{
+    var wr=wrap.getBoundingClientRect();
+    r={{top:wr.top,bottom:wr.top+Math.min(wr.height,26),left:wr.left,right:wr.left+wr.width}};
+  }}
+  return r;
+}}
+function fixedOrigin(){{
+  /* Un ancestro con transform/filter/contain:paint convierte position:fixed
+     en relativo a ese ancestro: compensamos su origen. */
+  var e=wrap.parentElement;
+  while(e&&e!==document.documentElement){{
+    var s=getComputedStyle(e);
+    var t=s.transform, f=s.filter, p=s.perspective, c=s.contain||"", w=s.willChange||"";
+    if((t&&t!=="none")||(f&&f!=="none")||(p&&p!=="none")||
+       c.indexOf("paint")>=0||w.indexOf("transform")>=0){{
+      var er=e.getBoundingClientRect();
+      return {{x:er.left,y:er.top}};
+    }}
+    e=e.parentElement;
+  }}
+  return {{x:0,y:0}};
+}}
 function placeDrop(){{
-  var r=wrap.getBoundingClientRect();
-  /* fixed positioning escapes any ancestor with overflow:hidden or a
-     stacking context, so the list always overlays surrounding widgets. */
+  var r=anchorRect(), o=fixedOrigin();
+  var vw=window.innerWidth, vh=window.innerHeight;
+  var width=Math.max(r.right-r.left,120);
+  var left=Math.max(4,Math.min(r.left-o.x,vw-width-4));
+  var gap=2;
+  var above=(r.top-o.y)-gap, below=vh-(r.bottom-o.y)-gap;
+  var full=drop.scrollHeight||180;
+  var up=(full>below&&above>below);
+  var cap=Math.max(60,Math.min(180,up?above:below));
+  /* fixed escapa overflow/stacking del resto de la UI */
   drop.style.position="fixed";
-  drop.style.top=(r.bottom)+"px";
-  drop.style.left=r.left+"px";
-  drop.style.width=r.width+"px";
+  drop.style.left=left+"px";
+  drop.style.width=width+"px";
+  drop.style.maxHeight=cap+"px";
+  var h=Math.min(full,cap);
+  drop.style.top=(up?(r.top-o.y)-h-gap:(r.bottom-o.y))+"px";
 }}
 function closeDrop(){{
   drop.style.display="none";wrap.classList.remove("iskg-cb-open");
-  drop.style.position="";drop.style.top="";drop.style.left="";drop.style.width="";
+  drop.style.position="";drop.style.top="";drop.style.left="";
+  drop.style.width="";drop.style.maxHeight="";
 }}
 function openDrop(){{
-  placeDrop();
   drop.style.display="block";wrap.classList.add("iskg-cb-open");
+  placeDrop();
 }}
 {refs}
 disp.onclick=function(e){{e.stopPropagation();
@@ -790,6 +837,7 @@ drop.onclick=function(e){{var item=e.target.closest(".iskg-cb-item");
             else ""
         }
 window.addEventListener("resize",function(){{if(drop.style.display=="block")placeDrop();}});
+document.addEventListener("scroll",function(){{if(drop.style.display=="block")placeDrop();}},true);
 document.addEventListener("click",function(e){{
   if(!wrap.contains(e.target))closeDrop();
 }});

@@ -37,7 +37,8 @@ class Tooltip(Widget):
       var r=target.getBoundingClientRect();
       el.style.display="block";
       el.style.left=Math.min(e.clientX,document.documentElement.clientWidth-el.offsetWidth)+"px";
-      el.style.top=(r.bottom+4)+"px";
+      var ty=Math.min(r.bottom+4,e.clientY+18);
+      el.style.top=Math.min(ty,document.documentElement.clientHeight-el.offsetHeight-4)+"px";
     }},{delay});
   }};
   target.onmouseleave=function(){{clearTimeout(timer);el.style.display="none";}};
